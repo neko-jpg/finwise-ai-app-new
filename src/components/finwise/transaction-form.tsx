@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -13,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
@@ -52,7 +54,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
         resolver: zodResolver(FormSchema),
         defaultValues: {
             bookedAt: new Date(),
-            amount: undefined,
+            amount: '' as any, // Changed from undefined to empty string
             merchant: '',
             categoryMajor: '',
             note: '',
@@ -65,7 +67,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
         if (merchant && amount && !form.getValues('categoryMajor')) {
             startAiCategorization(async () => {
                 try {
-                    const result = await categorizeTransaction({ merchant, amount: amount || 0 });
+                    const result = await categorizeTransaction({ merchant, amount: Number(amount) || 0 });
                     if (result.major && CATEGORIES.some(c => c.key === result.major)) {
                         form.setValue('categoryMajor', result.major, { shouldValidate: true });
                     }
@@ -123,7 +125,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
         if (open) {
             form.reset({
                 bookedAt: initialData?.bookedAt || new Date(),
-                amount: initialData?.amount,
+                amount: initialData?.amount || ('' as any),
                 merchant: initialData?.merchant || '',
                 categoryMajor: initialData?.categoryMajor || '',
                 note: initialData?.note || '',
@@ -133,7 +135,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                 debouncedCategorize();
             }
         }
-    }, [open, initialData, form]);
+    }, [open, initialData, form, debouncedCategorize]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,7 +164,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                                                         !field.value && "text-muted-foreground"
                                                     )}
                                                 >
-                                                    {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                    {field.value ? format(field.value, "M月d日(E)", { locale: ja }) : <span>日付を選択</span>}
                                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                 </Button>
                                             </FormControl>
@@ -174,6 +176,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                                                 onSelect={field.onChange}
                                                 disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
                                                 initialFocus
+                                                locale={ja}
                                             />
                                         </PopoverContent>
                                     </Popover>
@@ -208,7 +211,6 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                                     <FormControl>
                                         <Input placeholder="スターバックス" {...field} onChange={(e) => {
                                             field.onChange(e);
-
                                             debouncedCategorize();
                                         }}/>
                                     </FormControl>
