@@ -8,3 +8,5 @@ config();
 import '@/ai/flows/categorize-transaction.ts';
 import '@/ai/flows/speech-to-transaction.ts';
 import '@/ai/flows/receipt-ocr.ts';
+import '@/ai/flows/detect-subscriptions.ts';
+import '@/ai/flows/review-fixed-costs.ts';

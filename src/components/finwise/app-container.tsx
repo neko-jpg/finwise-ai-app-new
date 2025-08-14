@@ -125,9 +125,9 @@ export function AppContainer({ user }: AppContainerProps) {
       case 'profile':
         return <ProfileScreen offline={offline} setOffline={setOffline} user={user} />;
       case 'subscriptions':
-        return <SubscriptionsScreen />;
+        return <SubscriptionsScreen transactions={transactions || []} />;
       case 'reviews':
-        return <ReviewsScreen />;
+        return <ReviewsScreen transactions={transactions || []} />;
       case 'link':
         return <LinkScreen />;
       default:
