@@ -10,10 +10,13 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { DEMO_TRANSACTIONS, INITIAL_BUDGET, DEMO_GOALS } from '@/data/dummy-data';
+import type { Transaction } from '@/lib/types';
 
 const AssistantInputSchema = z.object({
   query: z.string().describe('The user\'s question about their finances.'),
+  transactions: z.array(z.any()).describe("The user's recent transactions."),
+  budget: z.any().describe("The user's current budget."),
+  goals: z.array(z.any()).describe("The user's financial goals."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 
@@ -28,12 +31,7 @@ export async function assistant(input: AssistantInput): Promise<AssistantOutput>
 
 const prompt = ai.definePrompt({
   name: 'assistantPrompt',
-  input: {schema: z.object({
-      query: z.string(),
-      transactions: z.any(),
-      budget: z.any(),
-      goals: z.any(),
-  })},
+  input: {schema: AssistantInputSchema},
   output: {schema: AssistantOutputSchema},
   prompt: `あなたはフレンドリーで有能なファイナンシャルアシスタントです。あなたの目標は、ユーザーの財務データに基づいて質問に答えることです。
 
@@ -69,12 +67,7 @@ const assistantFlow = ai.defineFlow(
     outputSchema: AssistantOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt({
-        ...input,
-        transactions: DEMO_TRANSACTIONS,
-        budget: INITIAL_BUDGET,
-        goals: DEMO_GOALS,
-    });
+    const {output} = await prompt(input);
     return output!;
   }
 );

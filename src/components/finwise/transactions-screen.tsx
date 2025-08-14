@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,20 @@ interface TransactionsScreenProps {
 
 export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter, loading }: TransactionsScreenProps) {
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
-  const [isPending, startTransition] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const handleAnalyze = () => {
+    if (filteredTx.length === 0) {
+        toast({
+            title: "データがありません",
+            description: "分析するには、まず取引をいくつか登録してください。",
+            variant: "destructive"
+        });
+        return;
+    }
     startTransition(true);
-    analyzeSpending({})
+    analyzeSpending({ transactions: filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})) })
       .then(result => {
         toast({
           title: "AIによる支出のインサイト",
@@ -83,7 +91,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
           </div>
           <div>
               <div className="font-medium">{t.merchant}</div>
-              <div className="text-xs text-muted-foreground">{format(t.bookedAt, 'yyyy-MM-dd')}</div>
+              <div className="text-xs text-muted-foreground">{t.bookedAt ? format(t.bookedAt, 'yyyy-MM-dd') : ''}</div>
           </div>
         </div>
         <div className="text-right">
@@ -106,7 +114,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
             <div className="flex justify-between items-center">
                 <CardTitle className="font-headline text-xl">取引明細</CardTitle>
                 <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
-                    {isPending ? <Loader className="animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     AIで分析
                 </Button>
             </div>

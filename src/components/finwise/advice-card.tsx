@@ -8,18 +8,31 @@ import { Sparkles, ChevronRight, Loader, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { Skeleton } from "../ui/skeleton";
+import type { Transaction, Budget } from "@/lib/types";
 
-export function AdviceCard() {
+interface AdviceCardProps {
+    transactions: Transaction[];
+    budget: Budget | null;
+}
+
+
+export function AdviceCard({ transactions, budget }: AdviceCardProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [advice, setAdvice] = useState<RealTimeSaverOutput | null>(null);
 
   useEffect(() => {
+    // Prevent calling AI if there is no data
+    if (!transactions || transactions.length === 0 || !budget) return;
+
     startTransition(async () => {
-        const result = await realTimeSaver({});
+        const result = await realTimeSaver({
+            transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
+            budget,
+        });
         setAdvice(result);
     });
-  }, []);
+  }, [transactions, budget]);
 
 
   const handleAction = () => {
@@ -29,7 +42,7 @@ export function AdviceCard() {
     });
   };
 
-  if (!advice) {
+  if (isPending || !advice) {
     return (
         <Card className="md:col-span-3 bg-primary/5 border-primary/20">
             <CardHeader className="pb-2">

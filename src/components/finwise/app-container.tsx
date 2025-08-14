@@ -15,7 +15,7 @@ import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
-import { INITIAL_BUDGET } from "@/data/dummy-data";
+import { DEMO_GOALS } from "@/data/dummy-data";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
@@ -41,7 +41,7 @@ export function AppContainer({ user }: AppContainerProps) {
     if (!transactions) return 0;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     return transactions
-      .filter((t: Transaction) => format(t.bookedAt, 'yyyy-MM-dd') === todayStr)
+      .filter((t: Transaction) => t.bookedAt && format(t.bookedAt, 'yyyy-MM-dd') === todayStr)
       .reduce((a, b) => a + Math.abs(b.amount), 0);
   }, [transactions]);
 
@@ -91,6 +91,8 @@ export function AppContainer({ user }: AppContainerProps) {
             setTab={setTab}
             onOpenTransactionForm={handleOpenTransactionForm}
             onOpenOcr={handleOpenOcr}
+            transactions={transactions || []}
+            budget={budget}
           />
         )}
         {tab === "tx" && (
@@ -108,6 +110,7 @@ export function AppContainer({ user }: AppContainerProps) {
             uid={user.uid}
             budget={budget} 
             loading={budgetLoading}
+            transactions={transactions || []}
           />
         )}
         {tab === "goals" && (
@@ -127,6 +130,9 @@ export function AppContainer({ user }: AppContainerProps) {
             setVoiceOpen(false);
             handleOpenTransactionForm(data);
         }}
+        transactions={transactions || []}
+        budget={budget}
+        goals={DEMO_GOALS}
       />
       <OcrScanner
         open={ocrOpen}

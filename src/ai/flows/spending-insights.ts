@@ -10,9 +10,10 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { DEMO_TRANSACTIONS } from '@/data/dummy-data';
 
-const AnalyzeSpendingInputSchema = z.object({});
+const AnalyzeSpendingInputSchema = z.object({
+    transactions: z.array(z.any()).describe("The user's recent transactions.")
+});
 
 export type AnalyzeSpendingInput = z.infer<typeof AnalyzeSpendingInputSchema>;
 
@@ -28,9 +29,7 @@ export async function analyzeSpending(input: AnalyzeSpendingInput): Promise<Anal
 
 const prompt = ai.definePrompt({
   name: 'analyzeSpendingPrompt',
-  input: {schema: z.object({
-    transactions: z.any(),
-  })},
+  input: {schema: AnalyzeSpendingInputSchema},
   output: {schema: AnalyzeSpendingOutputSchema},
   prompt: `あなたはパーソナルファイナンスアドバイザーです。以下の取引を分析し、ユーザーが自身の財務習慣を理解するのに役立つ、短くパーソナライズされたインサイト（150文字未満）を日本語で提供してください。
 
@@ -48,10 +47,8 @@ const analyzeSpendingFlow = ai.defineFlow(
     inputSchema: AnalyzeSpendingInputSchema,
     outputSchema: AnalyzeSpendingOutputSchema,
   },
-  async () => {
-    const {output} = await prompt({
-        transactions: DEMO_TRANSACTIONS,
-    });
+  async (input) => {
+    const {output} = await prompt(input);
     return output!;
   }
 );

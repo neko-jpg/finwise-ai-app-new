@@ -4,9 +4,9 @@ import { useState, useTransition, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { CATEGORIES } from "@/data/dummy-data";
+import { CATEGORIES, DEMO_GOALS } from "@/data/dummy-data";
 import { Progress } from "@/components/ui/progress";
-import type { Budget, BudgetItem } from "@/lib/types";
+import type { Budget, BudgetItem, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { budgetPlanner } from '@/ai/flows/budget-planner';
 import { Loader, Sparkles } from 'lucide-react';
@@ -20,6 +20,7 @@ interface BudgetScreenProps {
   uid: string;
   budget: Budget | null;
   loading: boolean;
+  transactions: Transaction[];
 }
 
 function impactText(row: BudgetItem) {
@@ -31,7 +32,7 @@ function impactText(row: BudgetItem) {
     return "良好。今の配分を維持しましょう。";
 }
 
-export function BudgetScreen({ uid, budget, loading }: BudgetScreenProps) {
+export function BudgetScreen({ uid, budget, loading, transactions }: BudgetScreenProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [currentBudget, setCurrentBudget] = useState<Budget | null>(budget);
@@ -79,9 +80,20 @@ export function BudgetScreen({ uid, budget, loading }: BudgetScreenProps) {
   };
 
   const handleAiSuggestion = () => {
+    if (transactions.length === 0) {
+      toast({
+        title: "データがありません",
+        description: "AIが提案するには、まず取引をいくつか登録してください。",
+        variant: "destructive"
+      });
+      return;
+    }
     startTransition(async () => {
       try {
-        const result = await budgetPlanner({});
+        const result = await budgetPlanner({
+            transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
+            goals: DEMO_GOALS,
+        });
         const newLimits = { ...currentBudget?.limits };
         result.suggestedBudget.forEach(item => {
           if (CATEGORIES.some(c => c.key === item.key)) {
@@ -93,7 +105,15 @@ export function BudgetScreen({ uid, budget, loading }: BudgetScreenProps) {
           title: "AIが予算を再提案しました",
           description: "支出パターンと目標に合わせて調整しました。",
         });
-        await handleSave();
+        // Also save the new budget automatically
+        if (currentBudget) {
+            const period = format(new Date(), 'yyyy-MM');
+            const docRef = doc(db, `users/${uid}/budgets`, period);
+            await setDoc(docRef, { 
+              limits: newLimits,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+        }
       } catch (e) {
         console.error(e);
         toast({
@@ -202,10 +222,10 @@ export function BudgetScreen({ uid, budget, loading }: BudgetScreenProps) {
 
       <div className="flex items-center justify-end rounded-lg p-3 space-x-2 sticky bottom-20 bg-background/80 backdrop-blur-sm">
           <Button variant="outline" onClick={handleAiSuggestion} disabled={isPending}>
-            {isPending ? <Loader className="animate-spin" /> : <><Sparkles className="h-4 w-4 mr-2" />AIに再提案させる</>}
+            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}AIに再提案させる
           </Button>
           <Button onClick={handleSave} disabled={isPending}>
-            {isPending ? <Loader className="animate-spin" /> : '変更を保存'}
+            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : null}変更を保存
           </Button>
       </div>
     </div>

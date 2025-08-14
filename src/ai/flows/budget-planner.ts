@@ -11,10 +11,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { DEMO_TRANSACTIONS, DEMO_GOALS, CATEGORIES } from '@/data/dummy-data';
+import { CATEGORIES } from '@/data/dummy-data';
 
 const BudgetPlannerInputSchema = z.object({
-  // In the future, we can pass user's real transactions and goals here
+  transactions: z.array(z.any()).describe("The user's recent transactions."),
+  goals: z.array(z.any()).describe("The user's financial goals."),
 });
 export type BudgetPlannerInput = z.infer<typeof BudgetPlannerInputSchema>;
 
@@ -36,10 +37,7 @@ const validCategories = CATEGORIES.map(c => c.key).join(', ');
 
 const prompt = ai.definePrompt({
   name: 'budgetPlannerPrompt',
-  input: {schema: z.object({
-    transactions: z.any(),
-    goals: z.any(),
-  })},
+  input: {schema: BudgetPlannerInputSchema},
   output: {schema: BudgetPlannerOutputSchema},
   prompt: `あなたはパーソナルファイナンスのアドバイザーです。ユーザーの過去の取引と財務目標に基づき、パーソナライズされた月次予算計画を提案してください。
 
@@ -63,13 +61,8 @@ const budgetPlannerFlow = ai.defineFlow(
     inputSchema: BudgetPlannerInputSchema,
     outputSchema: BudgetPlannerOutputSchema,
   },
-  async () => {
-    // DEV NOTE: For now, we are using demo data.
-    // In a real application, you would fetch the user's actual transactions and goals from Firestore.
-    const {output} = await prompt({
-        transactions: DEMO_TRANSACTIONS,
-        goals: DEMO_GOALS,
-    });
+  async (input) => {
+    const {output} = await prompt(input);
     return output!;
   }
 );

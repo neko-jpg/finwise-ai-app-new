@@ -10,9 +10,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { DEMO_TRANSACTIONS, INITIAL_BUDGET } from '@/data/dummy-data';
 
-const RealTimeSaverInputSchema = z.object({});
+const RealTimeSaverInputSchema = z.object({
+    transactions: z.array(z.any()).describe("The user's recent transactions."),
+    budget: z.any().describe("The user's current budget."),
+});
 export type RealTimeSaverInput = z.infer<typeof RealTimeSaverInputSchema>;
 
 const RealTimeSaverOutputSchema = z.object({
@@ -28,10 +30,7 @@ export async function realTimeSaver(input: RealTimeSaverInput): Promise<RealTime
 
 const realTimeSaverPrompt = ai.definePrompt({
   name: 'realTimeSaverPrompt',
-  input: {schema: z.object({
-    transactions: z.any(),
-    budget: z.any(),
-  })},
+  input: {schema: RealTimeSaverInputSchema},
   output: {schema: RealTimeSaverOutputSchema},
   prompt: `あなたはリアルタイムで節約のヒントを提供するパーソナルファイナンスアドバイザーです。現在の日付は2025-08-13です。
 
@@ -56,11 +55,8 @@ const realTimeSaverFlow = ai.defineFlow(
     inputSchema: RealTimeSaverInputSchema,
     outputSchema: RealTimeSaverOutputSchema,
   },
-  async () => {
-    const {output} = await realTimeSaverPrompt({
-        transactions: DEMO_TRANSACTIONS,
-        budget: INITIAL_BUDGET,
-    });
+  async (input) => {
+    const {output} = await realTimeSaverPrompt(input);
     return output!;
   }
 );

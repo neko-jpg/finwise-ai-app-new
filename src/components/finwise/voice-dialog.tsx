@@ -6,14 +6,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Mic, Search, Bot, Loader } from "lucide-react";
 import { assistant } from '@/ai/flows/assistant';
-import { speechToTransaction, SpeechToTransactionOutput } from '@/ai/flows/speech-to-transaction';
+import { speechToTransaction } from '@/ai/flows/speech-to-transaction';
 import type { TransactionFormValues } from './transaction-form';
+import type { Budget, Goal, Transaction } from '@/lib/types';
 
 
 interface VoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: (data: Partial<TransactionFormValues>) => void;
+  transactions: Transaction[];
+  budget: Budget | null;
+  goals: Goal[];
 }
 
 const QUICK_QUERIES = [
@@ -23,7 +27,7 @@ const QUICK_QUERIES = [
     "台湾旅行の進捗はどう？",
 ]
 
-export function VoiceDialog({ open, onOpenChange, onComplete }: VoiceDialogProps) {
+export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budget, goals }: VoiceDialogProps) {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -41,7 +45,12 @@ export function VoiceDialog({ open, onOpenChange, onComplete }: VoiceDialogProps
                 amount: result.amount,
             });
         } else {
-            const assistantResult = await assistant({ query: currentQuery });
+            const assistantResult = await assistant({
+                query: currentQuery,
+                transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
+                budget,
+                goals,
+            });
             setResponse(assistantResult.response);
         }
       } catch (e) {

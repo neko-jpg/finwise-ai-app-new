@@ -8,6 +8,7 @@ import { Wallet, PiggyBank, ArrowDown, Plus, ScanLine } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
 import { TransactionFormValues } from "./transaction-form";
+import type { Transaction, Budget } from "@/lib/types";
 
 interface HomeDashboardProps {
   todaySpend: number;
@@ -16,9 +17,11 @@ interface HomeDashboardProps {
   setTab: (t: string) => void;
   onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
   onOpenOcr: () => void;
+  transactions: Transaction[];
+  budget: Budget | null;
 }
 
-export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm, onOpenOcr }: HomeDashboardProps) {
+export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm, onOpenOcr, transactions, budget }: HomeDashboardProps) {
   const remain = Math.max(0, monthLimit - monthUsed);
   const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
@@ -65,7 +68,7 @@ export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpe
         </CardContent>
       </Card>
 
-      <AdviceCard />
+      <AdviceCard transactions={transactions} budget={budget} />
 
       <QuickActions />
     </div>
