@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,10 +17,11 @@ export function useTransactions(uid: string, setTransactions: (transactions: Tra
         if (!uid) {
             setLoading(false);
             setTransactions([]);
-            return;
+            return () => {}; // Return an empty function for cleanup
         }
 
         const transactionsCollectionRef = collection(db, `users/${uid}/transactions`);
+        // Order by `bookedAt` for display, but you might also want a secondary sort key like `createdAt` for stable ordering
         const q = query(transactionsCollectionRef, orderBy('bookedAt', 'desc'));
 
         const unsubscribe: Unsubscribe = onSnapshot(q, 

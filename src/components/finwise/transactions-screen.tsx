@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Sparkles, Loader } from "lucide-react";
+import { Search, Filter, Sparkles, Loader, Trash2, Undo2 } from "lucide-react";
 import { CATEGORIES } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { useToast } from '@/hooks/use-toast';
@@ -15,25 +15,31 @@ import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
 import { useMemo } from 'react';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
 
 interface TransactionsScreenProps {
   loading?: boolean;
   transactions?: Transaction[];
+  user?: User;
 }
 
-export function TransactionsScreen({ loading, transactions = [] }: TransactionsScreenProps) {
+export function TransactionsScreen({ loading, transactions = [], user }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const filteredTx = useMemo(() => {
     return transactions.filter((t: Transaction) => 
+      (showDeleted ? t.deletedAt : !t.deletedAt) &&
       (catFilter ? t.category.major === catFilter : true) && 
       (q ? t.merchant.toLowerCase().includes(q.toLowerCase()) : true)
     );
-  }, [transactions, catFilter, q]);
+  }, [transactions, catFilter, q, showDeleted]);
 
   const handleAnalyze = () => {
     if (filteredTx.length === 0) {
@@ -61,6 +67,39 @@ export function TransactionsScreen({ loading, transactions = [] }: TransactionsS
         });
       })
   };
+
+  const handleDelete = async (txId: string) => {
+    if (!user) return;
+    const docRef = doc(db, `users/${user.uid}/transactions`, txId);
+    try {
+      await updateDoc(docRef, {
+        deletedAt: serverTimestamp()
+      });
+      toast({
+        title: "取引を削除しました",
+        description: "「削除済み」から復元できます。",
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "削除に失敗しました"});
+    }
+  };
+
+  const handleRestore = async (txId: string) => {
+    if (!user) return;
+    const docRef = doc(db, `users/${user.uid}/transactions`, txId);
+    try {
+      await updateDoc(docRef, {
+        deletedAt: null
+      });
+      toast({
+        title: "取引を復元しました"
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "復元に失敗しました"});
+    }
+  };
   
   const renderList = () => {
     if (loading) {
@@ -84,13 +123,13 @@ export function TransactionsScreen({ loading, transactions = [] }: TransactionsS
     if (filteredTx.length === 0) {
       return (
         <div className="text-center py-16 text-muted-foreground">
-          <p>取引が見つかりません。</p>
+          <p>{showDeleted ? "削除済みの取引はありません。" : "取引が見つかりません。"}</p>
         </div>
       );
     }
     
     return filteredTx.map((t: Transaction) => (
-      <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
+      <div key={t.id} className="group flex items-center justify-between p-4 hover:bg-muted/50">
         <div className="flex items-center gap-4">
           <div className="p-2 bg-muted rounded-full">
             {CATEGORIES.find(c => c.key === t.category.major)?.icon || <div className="h-4 w-4"/>}
@@ -100,13 +139,20 @@ export function TransactionsScreen({ loading, transactions = [] }: TransactionsS
               <div className="text-xs text-muted-foreground">{t.bookedAt ? format(t.bookedAt, 'yyyy-MM-dd') : ''}</div>
           </div>
         </div>
-        <div className="text-right">
-          <div className={`font-bold font-mono ${t.amount < 0 ? 'text-foreground' : 'text-green-600'}`}>
-              {t.amount < 0 ? "-" : "+"}¥{Math.abs(t.amount).toLocaleString()}
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <div className={`font-bold font-mono ${t.amount < 0 ? 'text-foreground' : 'text-green-600'}`}>
+                {t.amount < 0 ? "-" : "+"}¥{Math.abs(t.amount).toLocaleString()}
+            </div>
+            <Badge variant="outline" className="mt-1 font-normal">
+                {CATEGORIES.find(c => c.key === t.category.major)?.label || t.category.major}
+            </Badge>
           </div>
-          <Badge variant="outline" className="mt-1 font-normal">
-              {CATEGORIES.find(c => c.key === t.category.major)?.label || t.category.major}
-          </Badge>
+           {showDeleted ? (
+              <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => handleRestore(t.id)}><Undo2 className="h-4 w-4" /></Button>
+            ) : (
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleDelete(t.id)}><Trash2 className="h-4 w-4" /></Button>
+            )}
         </div>
       </div>
     ));
@@ -119,10 +165,15 @@ export function TransactionsScreen({ loading, transactions = [] }: TransactionsS
         <CardHeader>
             <div className="flex justify-between items-center">
                 <CardTitle className="font-headline text-xl">取引明細</CardTitle>
-                <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
-                    {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    AIで分析
-                </Button>
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
+                    {showDeleted ? "一覧に戻る" : "削除済みを表示"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
+                      {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      AIで分析
+                  </Button>
+                </div>
             </div>
         </CardHeader>
         <CardContent>

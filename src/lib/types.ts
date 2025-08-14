@@ -33,6 +33,7 @@ export interface Transaction {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   clientUpdatedAt: Date;
+  deletedAt?: Timestamp | null; // For soft deletes
 }
 
 export interface BudgetItem {
