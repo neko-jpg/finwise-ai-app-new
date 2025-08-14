@@ -1,6 +1,6 @@
 import {getRequestConfig} from 'next-intl/server';
 
 export default getRequestConfig(async ({locale}) => ({
-  // Validate that the incoming `locale` parameter is valid
+  // ルート直下の messages ディレクトリを参照
   messages: (await import(`./messages/${locale}.json`)).default
 }));

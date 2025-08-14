@@ -4,22 +4,22 @@ import '../globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
 
+
 const noto = Noto_Sans_JP({
   subsets: ['latin'],
   variable: '--font-noto-sans-jp',
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_sans({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-plus-jakarta-sans',
   display: 'swap',
 });
 
-const locales = ['en', 'ja'];
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({locale}));
+  return [{locale: 'ja'}, {locale: 'en'}];
 }
 
 export default async function RootLayout({
@@ -29,13 +29,16 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: {locale: string};
 }) {
+  // App Router でロケールを固定
   unstable_setRequestLocale(locale);
+
+  // next-intl.config.ts に基づいて messages を取得
   const messages = await getMessages();
 
   return (
     <html lang={locale} className={`${noto.variable} ${jakarta.variable} dark`}>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster />
         </NextIntlClientProvider>
