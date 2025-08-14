@@ -1,4 +1,4 @@
-import {NextIntlClientProvider, useMessages} from 'next-intl';
+import {NextIntlClientProvider} from 'next-intl';
 import {unstable_setRequestLocale} from 'next-intl/server';
 import '../globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -22,7 +22,7 @@ export function generateStaticParams() {
   return [{locale: 'ja'}, {locale: 'en'}];
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   params: {locale}
 }: {
@@ -33,7 +33,7 @@ export default function RootLayout({
   unstable_setRequestLocale(locale);
  
   // Receive messages provided in `i18n.ts`
-  const messages = useMessages();
+  const messages = (await import(`../../messages/${locale}.json`)).default;
 
   return (
     <html lang={locale} className={`${noto.variable} ${jakarta.variable} dark`}>
