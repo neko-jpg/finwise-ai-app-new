@@ -16,15 +16,22 @@ import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
 import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuthState } from '@/hooks/use-auth-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AuthDialog } from '@/components/finwise/auth-dialog';
+import { LogIn } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface AppContainerProps {
-    user: User;
     children: React.ReactNode;
 }
 
-export function AppContainer({ user, children }: AppContainerProps) {
+export function AppContainer({ children }: AppContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
+  
+  const { user, loading: authLoading } = useAuthState();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
@@ -33,9 +40,10 @@ export function AppContainer({ user, children }: AppContainerProps) {
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [offline, setOffline] = useState(false);
 
-  const { transactions, loading: txLoading, error: txError } = useTransactions(user.uid);
-  const { budget, loading: budgetLoading, error: budgetError } = useBudget(user.uid, format(new Date(), 'yyyy-MM'));
-  const { goals, loading: goalsLoading, error: goalsError } = useGoals(user.uid);
+  const uid = user?.uid || '';
+  const { transactions, loading: txLoading, error: txError } = useTransactions(uid);
+  const { budget, loading: budgetLoading, error: budgetError } = useBudget(uid, format(new Date(), 'yyyy-MM'));
+  const { goals, loading: goalsLoading, error: goalsError } = useGoals(uid);
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
@@ -73,6 +81,41 @@ export function AppContainer({ user, children }: AppContainerProps) {
     };
     router.push(pathMap[newTab] || '/');
   };
+  
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+      return (
+          <>
+            <main className="min-h-dvh bg-gradient-to-b from-[#0B1220] to-[#111827] text-white flex items-center justify-center">
+              <div className="mx-auto max-w-4xl px-6 py-14 text-center">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">家計、話して、見える。</h1>
+                <p className="mt-3 text-white/80">AIがあなたの支出を整理し、今日の一手を提案します。</p>
+                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button size="lg" onClick={() => setAuthDialogOpen(true)}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    ログイン / 新規登録
+                  </Button>
+                </div>
+              </div>
+            </main>
+            <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} onSignin={() => {}}/>
+          </>
+      )
+  }
+
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
@@ -93,6 +136,7 @@ export function AppContainer({ user, children }: AppContainerProps) {
             onOpenOcr: handleOpenOcr,
             onOpenGoalForm: handleOpenGoalForm,
             setTab: handleSetTab,
+            loading: txLoading || budgetLoading || goalsLoading,
          })}
       </main>
 

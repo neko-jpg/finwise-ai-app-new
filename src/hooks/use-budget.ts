@@ -14,16 +14,26 @@ interface UseBudgetReturn {
 
 // Dummy initial limits for new users
 const initialLimits = CATEGORIES.reduce((acc, cat) => {
-    acc[cat.key] = INITIAL_BUDGET[cat.key]?.limit || 0;
+    acc[cat.key] = INITIAL_BUDGET[cat.key as keyof typeof INITIAL_BUDGET]?.limit || 0;
     return acc;
 }, {} as {[key: string]: number});
 
 
 export function useBudget(uid: string, period: string): UseBudgetReturn {
-    const budgetDocRef = doc(db, `users/${uid}/budgets`, period);
+    const budgetDocRef = uid ? doc(db, `users/${uid}/budgets`, period) : null;
     const [value, loading, error] = useDocument(budgetDocRef);
 
     const budget = useMemo(() => {
+        if (!uid) {
+            return {
+                id: period,
+                limits: initialLimits,
+                used: {},
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+            } as Budget;
+        }
+
         if (!value) return null;
 
         if (!value.exists()) {
@@ -46,7 +56,7 @@ export function useBudget(uid: string, period: string): UseBudgetReturn {
             used: data.used || {},
         } as Budget;
 
-    }, [value, period]);
+    }, [value, period, uid]);
 
-    return { budget, loading, error };
+    return { budget, loading: loading || !uid, error };
 }

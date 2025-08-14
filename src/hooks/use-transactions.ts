@@ -11,13 +11,14 @@ interface UseTransactionsReturn {
 }
 
 export function useTransactions(uid: string): UseTransactionsReturn {
-    const transactionsCollection = collection(db, `users/${uid}/transactions`);
-    const q = query(transactionsCollection, orderBy('bookedAt', 'desc'));
+    const transactionsCollectionRef = uid ? collection(db, `users/${uid}/transactions`) : null;
+    const q = transactionsCollectionRef ? query(transactionsCollectionRef, orderBy('bookedAt', 'desc')) : null;
 
     const [value, loading, error] = useCollection(q);
 
     const transactions = useMemo(() => {
-        return value ? value.docs.map(doc => {
+        if (!value) return null;
+        return value.docs.map(doc => {
             const data = doc.data() as DocumentData;
             // Firestore Timestamps need to be converted to JS Dates
             const bookedAt = data.bookedAt?.toDate();
@@ -32,9 +33,9 @@ export function useTransactions(uid: string): UseTransactionsReturn {
                 updatedAt,
                 clientUpdatedAt,
              } as Transaction
-        }) : null;
+        });
     }, [value]);
 
 
-    return { transactions, loading, error };
+    return { transactions, loading: loading || !uid, error };
 }

@@ -1,13 +1,13 @@
 
 'use client';
 
-import AppContainerWrapper from '@/components/finwise/app-container-wrapper';
+import { AppContainer } from '@/components/finwise/app-container';
 import { TransactionsScreen } from '@/components/finwise/transactions-screen';
 
 export default function TransactionsPage() {
-    return (
-        <AppContainerWrapper>
-            <TransactionsScreen />
-        </AppContainerWrapper>
-    );
+  return (
+    <AppContainer>
+      <TransactionsScreen />
+    </AppContainer>
+  );
 }

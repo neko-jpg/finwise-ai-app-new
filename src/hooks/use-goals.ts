@@ -12,13 +12,14 @@ interface UseGoalsReturn {
 }
 
 export function useGoals(uid: string): UseGoalsReturn {
-    const goalsCollection = collection(db, `users/${uid}/goals`);
-    const q = query(goalsCollection, orderBy('createdAt', 'desc'));
+    const goalsCollectionRef = uid ? collection(db, `users/${uid}/goals`) : null;
+    const q = goalsCollectionRef ? query(goalsCollectionRef, orderBy('createdAt', 'desc')) : null;
 
     const [value, loading, error] = useCollection(q);
 
     const goals = useMemo(() => {
-        return value ? value.docs.map(doc => {
+        if (!value) return null;
+        return value.docs.map(doc => {
             const data = doc.data() as DocumentData;
             const due = data.due?.toDate();
             const createdAt = data.createdAt?.toDate();
@@ -30,9 +31,9 @@ export function useGoals(uid: string): UseGoalsReturn {
                 createdAt,
                 updatedAt,
              } as Goal
-        }) : null;
+        });
     }, [value]);
 
 
-    return { goals, loading, error };
+    return { goals, loading: loading || !uid, error };
 }

@@ -1,13 +1,13 @@
 
 'use client';
 
-import AppContainerWrapper from '@/components/finwise/app-container-wrapper';
+import { AppContainer } from '@/components/finwise/app-container';
 import { BudgetScreen } from '@/components/finwise/budget-screen';
 
 export default function BudgetPage() {
-    return (
-        <AppContainerWrapper>
-            <BudgetScreen />
-        </AppContainerWrapper>
-    );
+  return (
+    <AppContainer>
+      <BudgetScreen />
+    </AppContainer>
+  );
 }
