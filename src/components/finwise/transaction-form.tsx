@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useTransition, useCallback, useEffect } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
@@ -94,7 +94,7 @@ export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProp
               clientUpdatedAt: new Date(),
             };
 
-            const docRef = await addDoc(collection(db, `users/${uid}/transactions`), {
+            await addDoc(collection(db, `users/${uid}/transactions`), {
                 ...docData,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -118,7 +118,6 @@ export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProp
         }
     };
     
-    // Reset form when dialog closes
     useEffect(() => {
         if (!open) {
             form.reset({
