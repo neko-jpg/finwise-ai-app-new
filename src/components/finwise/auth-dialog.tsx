@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/lib/auth';
 import { Loader } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 interface AuthDialogProps {
   open: boolean;
@@ -19,7 +18,6 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
-  const t = useTranslations('AuthDialog');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<null | 'google' | 'email' | 'anonymous'>(null);
   const [email, setEmail] = useState('');
@@ -121,9 +119,9 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline text-center text-2xl">{t('welcome')}</DialogTitle>
+          <DialogTitle className="font-headline text-center text-2xl">Finwise AIへようこそ</DialogTitle>
           <DialogDescription className="text-center">
-            {t('description')}
+            あなたに最適な方法で家計管理をはじめましょう。
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -132,41 +130,41 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
             className="w-full mb-4"
             disabled={!!isLoading}
           >
-            {isLoading === 'google' ? <Loader className="animate-spin" /> : t('google')}
+            {isLoading === 'google' ? <Loader className="animate-spin" /> : 'Googleで続行'}
           </Button>
 
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">{t('signin')}</TabsTrigger>
-              <TabsTrigger value="signup">{t('signup')}</TabsTrigger>
+              <TabsTrigger value="signin">ログイン</TabsTrigger>
+              <TabsTrigger value="signup">新規登録</TabsTrigger>
             </TabsList>
             <TabsContent value="signin">
               <form onSubmit={handleEmailSignIn} className="space-y-4 pt-4">
                 <div className="space-y-1">
-                  <Label htmlFor="email-in">{t('emailLabel')}</Label>
-                  <Input id="email-in" type="email" placeholder={t('emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Label htmlFor="email-in">メールアドレス</Label>
+                  <Input id="email-in" type="email" placeholder="user@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="pass-in">{t('passwordLabel')}</Label>
+                  <Label htmlFor="pass-in">パスワード</Label>
                   <Input id="pass-in" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading === 'email'}>
-                  {isLoading === 'email' ? <Loader className="animate-spin" /> : t('signinButton')}
+                  {isLoading === 'email' ? <Loader className="animate-spin" /> : 'メールアドレスでログイン'}
                 </Button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
                <form onSubmit={handleEmailSignUp} className="space-y-4 pt-4">
                 <div className="space-y-1">
-                  <Label htmlFor="email-up">{t('emailLabel')}</Label>
-                  <Input id="email-up" type="email" placeholder={t('emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Label htmlFor="email-up">メールアドレス</Label>
+                  <Input id="email-up" type="email" placeholder="user@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="pass-up">{t('passwordMin')}</Label>
+                  <Label htmlFor="pass-up">パスワード (6文字以上)</Label>
                   <Input id="pass-up" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading === 'email'}>
-                  {isLoading === 'email' ? <Loader className="animate-spin" /> : t('signupButton')}
+                  {isLoading === 'email' ? <Loader className="animate-spin" /> : 'メールアドレスで登録'}
                 </Button>
               </form>
             </TabsContent>
@@ -177,12 +175,12 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
                 <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">{t('or')}</span>
+                <span className="bg-background px-2 text-muted-foreground">または</span>
             </div>
           </div>
           
           <Button variant="secondary" className="w-full" onClick={handleAnonymousSignIn} disabled={!!isLoading}>
-             {isLoading === 'anonymous' ? <Loader className="animate-spin" /> : t('anonymous')}
+             {isLoading === 'anonymous' ? <Loader className="animate-spin" /> : '匿名で試す'}
           </Button>
         </div>
       </DialogContent>

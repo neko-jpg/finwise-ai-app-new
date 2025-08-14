@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthDialog } from '@/components/finwise/auth-dialog';
-import { useTranslations } from 'next-intl';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppContainer } from '@/components/finwise/app-container';
@@ -15,7 +14,6 @@ export default function Page() {
   const { user, loading } = useAuthState();
   const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const t = useTranslations('AuthDialog');
 
   const handleSignIn = () => {
     // This will be handled by the auth state listener which will re-render
@@ -45,7 +43,7 @@ export default function Page() {
                 <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                   <Button size="lg" onClick={() => setAuthDialogOpen(true)}>
                     <LogIn className="mr-2 h-4 w-4" />
-                    {t('signin')} / {t('signup')}
+                    ログイン / 新規登録
                   </Button>
                 </div>
               </div>

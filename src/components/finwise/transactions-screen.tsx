@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { useTranslations } from 'next-intl';
 
 interface TransactionsScreenProps {
   q: string;
@@ -27,7 +26,6 @@ interface TransactionsScreenProps {
 }
 
 export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter, loading, transactions }: TransactionsScreenProps) {
-  const t = useTranslations('TransactionsScreen');
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -81,7 +79,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
     if (filteredTx.length === 0) {
       return (
         <div className="text-center py-16 text-muted-foreground">
-          <p>{t('no_transactions')}</p>
+          <p>取引が見つかりません。</p>
         </div>
       );
     }
@@ -115,10 +113,10 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
       <Card>
         <CardHeader>
             <div className="flex justify-between items-center">
-                <CardTitle className="font-headline text-xl">{t('title')}</CardTitle>
+                <CardTitle className="font-headline text-xl">取引明細</CardTitle>
                 <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
                     {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    {t('analyze_with_ai')}
+                    AIで分析
                 </Button>
             </div>
         </CardHeader>
@@ -126,18 +124,18 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search_placeholder')} className="pl-9" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="店名・メモ・金額で検索..." className="pl-9" />
                 </div>
                 <Sheet open={isFilterSheetOpen} onOpenChange={setFilterSheetOpen}>
                 <SheetTrigger asChild>
                     <Button variant="outline" size="icon">
                         <Filter className="h-4 w-4" />
-                        <span className="sr-only">{t('filter_alt')}</span>
+                        <span className="sr-only">フィルタ</span>
                     </Button>
                 </SheetTrigger>
                 <SheetContent>
                     <SheetHeader>
-                    <SheetTitle className="font-headline">{t('filter_title')}</SheetTitle>
+                    <SheetTitle className="font-headline">カテゴリで絞り込み</SheetTitle>
                     </SheetHeader>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                     {CATEGORIES.map(c => (
@@ -162,7 +160,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
                         }}
                         className="col-span-2"
                         >
-                        {t('all_categories')}
+                        すべてのカテゴリ
                     </Button>
                     </div>
                 </SheetContent>

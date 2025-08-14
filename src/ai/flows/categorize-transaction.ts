@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -39,11 +40,18 @@ export async function categorizeTransaction(input: CategorizeTransactionInput): 
     return categorizeTransactionFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'categorizeTransactionPrompt',
-  input: { schema: CategorizeTransactionInputSchema },
-  output: { schema: CategorizeTransactionOutputSchema },
-  prompt: `あなたは個人の財務管理を専門とする会計アシスタントです。あなたのタスクは、提供された詳細情報に基づいて取引を分類することです。
+const categorizeTransactionFlow = ai.defineFlow(
+  {
+    name: 'categorizeTransactionFlow',
+    inputSchema: CategorizeTransactionInputSchema,
+    outputSchema: CategorizeTransactionOutputSchema,
+  },
+  async (input) => {
+    const prompt = ai.definePrompt({
+      name: 'categorizeTransactionPrompt',
+      input: { schema: CategorizeTransactionInputSchema },
+      output: { schema: CategorizeTransactionOutputSchema },
+      prompt: `あなたは個人の財務管理を専門とする会計アシスタントです。あなたのタスクは、提供された詳細情報に基づいて取引を分類することです。
 
 入力（店名、金額、メモ）を分析し、最も適切なカテゴリを判断してください。
 主要カテゴリは必ず以下のいずれかである必要があります: food, daily, trans, fun, util, income, other。
@@ -55,16 +63,8 @@ const prompt = ai.definePrompt({
 {{#if note}}- メモ: {{{note}}}{{/if}}
 
 出力は、提案されたカテゴリを含む構造化されたJSONオブジェクトのみとしてください。`,
-});
-
-
-const categorizeTransactionFlow = ai.defineFlow(
-  {
-    name: 'categorizeTransactionFlow',
-    inputSchema: CategorizeTransactionInputSchema,
-    outputSchema: CategorizeTransactionOutputSchema,
-  },
-  async (input) => {
+    });
+    
     const { output } = await prompt(input);
     return output!;
   }

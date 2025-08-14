@@ -2,7 +2,6 @@
 'use client';
 
 import { QUICK_ACTIONS } from "@/data/dummy-data";
-import { useTranslations } from "next-intl";
 
 interface QuickActionsProps {
     onOpenGoalForm: () => void;
@@ -20,7 +19,6 @@ function QAButton({ icon, label, onClick }: { icon: React.ReactNode; label: stri
 
 
 export function QuickActions({ onOpenGoalForm, setTab }: QuickActionsProps) {
-  const t = useTranslations('QuickActions');
   const handleActionClick = (actionKey: string) => {
     switch (actionKey) {
       case 'create_goal':
@@ -42,7 +40,7 @@ export function QuickActions({ onOpenGoalForm, setTab }: QuickActionsProps) {
 
   return (
     <div className="md:col-span-3 mt-4">
-        <h2 className="font-headline text-lg font-semibold mb-3">{t('title')}</h2>
+        <h2 className="font-headline text-lg font-semibold mb-3">クイックアクション</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {QUICK_ACTIONS.map((action) => (
             <QAButton

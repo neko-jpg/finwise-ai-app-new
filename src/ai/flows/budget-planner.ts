@@ -35,11 +35,18 @@ export async function budgetPlanner(input: BudgetPlannerInput): Promise<BudgetPl
 
 const validCategories = CATEGORIES.map(c => c.key).join(', ');
 
-const prompt = ai.definePrompt({
-  name: 'budgetPlannerPrompt',
-  input: {schema: BudgetPlannerInputSchema},
-  output: {schema: BudgetPlannerOutputSchema},
-  prompt: `あなたはパーソナルファイナンスのアドバイザーです。ユーザーの過去の取引と財務目標に基づき、パーソナライズされた月次予算計画を提案してください。
+const budgetPlannerFlow = ai.defineFlow(
+  {
+    name: 'budgetPlannerFlow',
+    inputSchema: BudgetPlannerInputSchema,
+    outputSchema: BudgetPlannerOutputSchema,
+  },
+  async (input) => {
+    const prompt = ai.definePrompt({
+      name: 'budgetPlannerPrompt',
+      input: {schema: BudgetPlannerInputSchema},
+      output: {schema: BudgetPlannerOutputSchema},
+      prompt: `あなたはパーソナルファイナンスのアドバイザーです。ユーザーの過去の取引と財務目標に基づき、パーソナライズされた月次予算計画を提案してください。
 
 取引履歴:
 \`\`\`json
@@ -53,15 +60,8 @@ const prompt = ai.definePrompt({
 
 データを分析し、以下のカテゴリに新しい予算配分を提案してください: ${validCategories}。
 結果は構造化されたJSONオブジェクトとして日本語で返してください。出力の 'key' は有効なカテゴリのいずれかでなければなりません。`,
-});
-
-const budgetPlannerFlow = ai.defineFlow(
-  {
-    name: 'budgetPlannerFlow',
-    inputSchema: BudgetPlannerInputSchema,
-    outputSchema: BudgetPlannerOutputSchema,
-  },
-  async (input) => {
+    });
+    
     const {output} = await prompt(input);
     return output!;
   }
