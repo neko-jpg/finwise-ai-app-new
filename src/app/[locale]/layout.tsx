@@ -1,5 +1,4 @@
 import {NextIntlClientProvider} from 'next-intl';
-import {unstable_setRequestLocale} from 'next-intl/server';
 import '../globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
@@ -29,10 +28,7 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: {locale: string};
 }) {
-  // App Router でロケールを固定
-  unstable_setRequestLocale(locale);
- 
-  // Receive messages provided in `i18n.ts`
+  // Directly import messages to avoid config dependency
   const messages = (await import(`../../messages/${locale}.json`)).default;
 
   return (
