@@ -5,6 +5,8 @@ import { useAuthState } from "@/hooks/use-auth-state";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader } from "lucide-react";
+import { MarketingFooter } from './(marketing)/_components/footer';
+import { MarketingHeader } from './(marketing)/_components/header';
 import { Hero } from './(marketing)/_components/hero';
 import { ValueCards } from './(marketing)/_components/value-cards';
 import { ScrollDemo } from './(marketing)/_components/scroll-demo';
@@ -36,13 +38,15 @@ export default function LandingPage() {
   // The CTA buttons will lead to /entry.
   if (!user) {
     return (
-      <>
+       <div className="marketing-body font-headline">
+        <MarketingHeader />
         <Hero />
         <ValueCards />
         <ScrollDemo />
         <SocialProof />
         <CtaSection />
-      </>
+        <MarketingFooter />
+      </div>
     );
   }
 

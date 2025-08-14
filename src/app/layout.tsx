@@ -1,10 +1,7 @@
 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { Inter } from 'next/font/google';
-import { Noto_Sans_JP } from 'next/font/google';
-import { MarketingHeader } from './(marketing)/_components/header';
-import { MarketingFooter } from './(marketing)/_components/footer';
+import { Inter, Noto_Sans_JP } from 'next/font/google';
 import { AnimatePresence, m } from 'framer-motion';
 
 const noto = Noto_Sans_JP({
@@ -26,10 +23,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" className={`${noto.variable} ${inter.variable}`}>
-      <body className="marketing-body font-headline">
-          <MarketingHeader />
-          <main>{children}</main>
-          <MarketingFooter />
+      <body className="font-body">
+           <AnimatePresence mode="wait">
+              <m.main 
+                  key="main-app-wrapper"
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  exit={{ opacity: 0 }} 
+                  transition={{ duration: 0.45, ease: 'easeInOut' }}
+              >
+                {children}
+              </m.main>
+            </AnimatePresence>
           <Toaster />
       </body>
     </html>

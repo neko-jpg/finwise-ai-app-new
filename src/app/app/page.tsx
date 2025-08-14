@@ -1,4 +1,3 @@
-
 'use client';
 
 import { HomeDashboard } from '@/components/finwise/home-dashboard';
