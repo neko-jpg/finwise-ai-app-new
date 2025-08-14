@@ -16,6 +16,10 @@ import { format } from 'date-fns';
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
+import SHA256 from 'crypto-js/sha256';
 
 const FormSchema = z.object({
   bookedAt: z.date({
@@ -40,6 +44,9 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // TODO: Replace with actual user ID from Firebase Auth
+    const uid = 'user-123';
+
     const form = useForm<TransactionFormValues>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
@@ -53,19 +60,47 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
 
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
-        console.log("Submitting:", values);
+        try {
+            const hashSource = uid + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
+            const docData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
+              bookedAt: values.bookedAt,
+              amount: values.amount,
+              currency: 'JPY',
+              merchant: values.merchant,
+              category: {
+                major: values.categoryMajor,
+              },
+              source: 'manual',
+              note: values.note,
+              hash: SHA256(hashSource).toString(),
+              clientUpdatedAt: new Date(),
+            };
 
-        // TODO: Replace with actual Firestore call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+            const docRef = await addDoc(collection(db, `users/${uid}/transactions`), {
+                ...docData,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
 
-        toast({
-            title: "取引を登録しました",
-            description: `${values.merchant}: ¥${Math.abs(values.amount).toLocaleString()}`,
-        });
+            console.log("Document written with ID: ", docRef.id);
 
-        setIsSubmitting(false);
-        onOpenChange(false);
-        form.reset();
+            toast({
+                title: "取引を登録しました",
+                description: `${values.merchant}: ¥${Math.abs(values.amount).toLocaleString()}`,
+            });
+
+            onOpenChange(false);
+            form.reset();
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            toast({
+                variant: 'destructive',
+                title: "登録に失敗しました",
+                description: "保存中にエラーが発生しました。もう一度お試しください。",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

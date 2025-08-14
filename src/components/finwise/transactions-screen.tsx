@@ -7,8 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Sparkles, Loader } from "lucide-react";
-import { CATEGORIES } from "@/data/dummy-data";
-import { Transaction as DummyTransaction } from "@/data/dummy-data";
+import { CATEGORIES, DummyTransaction } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { useToast } from '@/hooks/use-toast';
 

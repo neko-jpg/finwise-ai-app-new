@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from "react";
-import { DEMO_TRANSACTIONS, INITIAL_BUDGET } from '@/data/dummy-data';
+import { DEMO_TRANSACTIONS, INITIAL_BUDGET, DummyTransaction } from '@/data/dummy-data';
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
 import { HomeDashboard } from './home-dashboard';
@@ -13,7 +13,7 @@ import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { TransactionForm } from './transaction-form';
 import type { Budget } from "@/lib/types";
-import { Transaction as DummyTransaction } from "@/data/dummy-data";
+
 
 export default function AppContainer() {
   const [tab, setTab] = useState("home");

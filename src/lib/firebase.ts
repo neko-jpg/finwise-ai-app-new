@@ -1,4 +1,5 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   "projectId": "finwise-ai-s18cs",
@@ -12,5 +13,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const db = getFirestore(firebaseApp);
 
-export { firebaseApp };
+export { firebaseApp, db };

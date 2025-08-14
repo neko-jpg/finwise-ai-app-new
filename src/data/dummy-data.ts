@@ -1,6 +1,14 @@
-import type { Budget, Category, Transaction, Goal, QuickAction } from '@/lib/types';
+import type { Budget, Category, Goal, QuickAction } from '@/lib/types';
 import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet } from "lucide-react";
 import React from 'react';
+
+export interface DummyTransaction {
+    id: number;
+    cat: string;
+    name: string;
+    amount: number;
+    date: string;
+}
 
 export const CATEGORIES: Category[] = [
   { key: "food", label: "食費", icon: React.createElement(Coffee, {className: "h-4 w-4"}) },
@@ -10,7 +18,7 @@ export const CATEGORIES: Category[] = [
   { key: "util", label: "光熱費", icon: React.createElement(Zap, {className: "h-4 w-4"}) },
 ];
 
-export const DEMO_TRANSACTIONS: Transaction[] = [
+export const DEMO_TRANSACTIONS: DummyTransaction[] = [
   { id: 1, cat: "food", name: "カフェラテ", amount: -580, date: "2025-08-13" },
   { id: 2, cat: "trans", name: "地下鉄", amount: -210, date: "2025-08-13" },
   { id: 3, cat: "food", name: "学食ランチ", amount: -480, date: "2025-08-12" },
