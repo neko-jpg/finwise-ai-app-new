@@ -2,7 +2,7 @@
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
-import { AnimatePresence, m } from 'framer-motion';
+import AnimationProvider from '@/components/animation-provider';
 
 
 const noto = Noto_Sans_JP({
@@ -26,17 +26,9 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${noto.variable} ${jakarta.variable}`}>
       <body className="font-body">
-           <AnimatePresence mode="wait">
-              <m.main 
-                  key="main-app-wrapper"
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  exit={{ opacity: 0 }} 
-                  transition={{ duration: 0.45, ease: 'easeInOut' }}
-              >
-                {children}
-              </m.main>
-            </AnimatePresence>
+           <AnimationProvider>
+              {children}
+            </AnimationProvider>
           <Toaster />
       </body>
     </html>
