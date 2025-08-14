@@ -29,9 +29,15 @@ export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps)
       });
     } catch(e: any) {
       console.error(e);
+      let description = "時間をおいて再度お試しください。"
+      if (e.code === 'auth/popup-blocked') {
+        description = "ポップアップがブロックされました。ブラウザの設定でポップアップを許可してから、再度お試しください。"
+      } else if (e.code === 'auth/credential-already-in-use') {
+        description = "このGoogleアカウントは既に使用されています。別のアカウントで試すか、一度ログアウトしてから再度ログインしてください。"
+      }
       toast({
         title: "連携に失敗しました",
-        description: "時間をおいて再度お試しください。",
+        description,
         variant: "destructive"
       });
     } finally {
