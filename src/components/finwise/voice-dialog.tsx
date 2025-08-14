@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useTransition } from 'react';
@@ -49,7 +50,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
                 query: currentQuery,
                 transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
                 budget,
-                goals,
+                goals: goals.map(g => ({...g, due: g.due?.toISOString()})),
             });
             setResponse(assistantResult.response);
         }

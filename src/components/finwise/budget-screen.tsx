@@ -4,9 +4,9 @@ import { useState, useTransition, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { CATEGORIES, DEMO_GOALS } from "@/data/dummy-data";
+import { CATEGORIES } from "@/data/dummy-data";
 import { Progress } from "@/components/ui/progress";
-import type { Budget, BudgetItem, Transaction } from "@/lib/types";
+import type { Budget, BudgetItem, Transaction, Goal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { budgetPlanner } from '@/ai/flows/budget-planner';
 import { Loader, Sparkles } from 'lucide-react';
@@ -21,6 +21,7 @@ interface BudgetScreenProps {
   budget: Budget | null;
   loading: boolean;
   transactions: Transaction[];
+  goals: Goal[];
 }
 
 function impactText(row: BudgetItem) {
@@ -32,7 +33,7 @@ function impactText(row: BudgetItem) {
     return "良好。今の配分を維持しましょう。";
 }
 
-export function BudgetScreen({ uid, budget, loading, transactions }: BudgetScreenProps) {
+export function BudgetScreen({ uid, budget, loading, transactions, goals }: BudgetScreenProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [currentBudget, setCurrentBudget] = useState<Budget | null>(budget);
@@ -92,7 +93,7 @@ export function BudgetScreen({ uid, budget, loading, transactions }: BudgetScree
       try {
         const result = await budgetPlanner({
             transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
-            goals: DEMO_GOALS,
+            goals: goals.map(g => ({...g, due: g.due?.toISOString()})),
         });
         const newLimits = { ...currentBudget?.limits };
         result.suggestedBudget.forEach(item => {

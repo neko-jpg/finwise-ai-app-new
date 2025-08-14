@@ -1,24 +1,72 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Target, PlusCircle } from "lucide-react";
-import { DEMO_GOALS } from "@/data/dummy-data";
+import type { Goal } from "@/lib/types";
+import { format } from "date-fns";
+import { Skeleton } from "../ui/skeleton";
 
-export function GoalsScreen() {
+
+interface GoalsScreenProps {
+  uid: string;
+  goals: Goal[];
+  loading: boolean;
+  onOpenGoalForm: () => void;
+}
+
+
+export function GoalsScreen({ uid, goals, loading, onOpenGoalForm }: GoalsScreenProps) {
+  
+  if (loading) {
+      return (
+          <div className="space-y-4">
+               <div className="flex justify-between items-center">
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-10 w-40" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {Array.from({length: 2}).map((_, i) => (
+                      <Card key={i}>
+                          <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+                          <CardContent className="space-y-2">
+                              <Skeleton className="h-4 w-full" />
+                              <Skeleton className="h-3 w-full" />
+                              <Skeleton className="h-10 w-full" />
+                          </CardContent>
+                      </Card>
+                  ))}
+              </div>
+          </div>
+      )
+  }
+
   return (
     <div className="space-y-4">
         <div className="flex justify-between items-center">
             <h2 className="font-headline text-xl font-bold">目標</h2>
-            <Button>
+            <Button onClick={onOpenGoalForm}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 新しい目標を追加
             </Button>
         </div>
+        
+        {goals.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                <Target className="h-8 w-8 mx-auto mb-2" />
+                <h3 className="font-bold">まだ目標がありません</h3>
+                <p className="text-sm mt-1">最初の目標を設定して、貯金のモチベーションを上げましょう！</p>
+                 <Button onClick={onOpenGoalForm} className="mt-4">目標を作成する</Button>
+            </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {DEMO_GOALS.map((g, i) => {
+        {goals.map((g) => {
             const pct = g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
             return (
-            <Card key={i}>
+            <Card key={g.id}>
                 <CardHeader className="pb-3">
                     <CardTitle className="font-headline flex items-center gap-2 text-base">
                         <Target className="h-5 w-5 text-primary" />
@@ -39,7 +87,7 @@ export function GoalsScreen() {
                     <Progress value={pct} className="h-3" />
                     <div className="mt-1 flex justify-between text-xs text-muted-foreground">
                         <span>{pct}% 達成</span>
-                        <span>期限: {g.due}</span>
+                        {g.due && <span>期限: {format(g.due, 'yyyy/MM/dd')}</span>}
                     </div>
                 
                     <div className="mt-4 flex flex-col sm:flex-row gap-2">

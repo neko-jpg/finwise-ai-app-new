@@ -1,4 +1,5 @@
-import type { Budget, Category, Goal, QuickAction } from '@/lib/types';
+
+import type { Category, QuickActionDefinition, Goal } from '@/lib/types';
 import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet } from "lucide-react";
 import React from 'react';
 
@@ -16,6 +17,8 @@ export const CATEGORIES: Category[] = [
   { key: "trans", label: "交通費", icon: React.createElement(Bus, {className: "h-4 w-4"}) },
   { key: "fun", label: "娯楽", icon: React.createElement(Gamepad2, {className: "h-4 w-4"}) },
   { key: "util", label: "光熱費", icon: React.createElement(Zap, {className: "h-4 w-4"}) },
+  { key: "income", label: "収入", icon: React.createElement(Wallet, {className: "h-4 w-4"}) },
+  { key: "other", label: "その他", icon: React.createElement(Rocket, {className: "h-4 w-4"}) },
 ];
 
 export const DEMO_TRANSACTIONS: DummyTransaction[] = [
@@ -29,22 +32,35 @@ export const DEMO_TRANSACTIONS: DummyTransaction[] = [
   { id: 8, cat: "trans", name: "バス料金", amount: -220, date: "2025-08-09" },
 ];
 
-export const INITIAL_BUDGET: Budget = {
+export const DEMO_GOALS: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>[] = [
+    {
+        name: '台湾旅行',
+        target: 150000,
+        saved: 65000,
+        due: new Date('2026-03-31'),
+    },
+    {
+        name: '新しいPC',
+        target: 280000,
+        saved: 120000,
+        due: null,
+    }
+]
+
+
+export const INITIAL_BUDGET = {
   food: { limit: 25000, used: 11250 },
   daily: { limit: 8000, used: 3200 },
   trans: { limit: 7000, used: 1800 },
   fun: { limit: 15000, used: 9500 },
   util: { limit: 12000, used: 4200 },
+  income: { limit: 0, used: 0 },
+  other: { limit: 5000, used: 0 },
 };
 
-export const DEMO_GOALS: Goal[] = [
-    { name: "台湾旅行", target: 200000, saved: 58000, due: "2025-12-20" },
-    { name: "新しいPC", target: 150000, saved: 100000, due: "2025-10-31" },
-];
-
-export const QUICK_ACTIONS: QuickAction[] = [
-    { text: "無駄サブスク検知", icon: Bell },
-    { text: "毎週の固定費レビュー", icon: Rocket },
-    { text: "目標を作成", icon: Target },
-    { text: "銀行口座を連携", icon: Wallet },
+export const QUICK_ACTIONS: QuickActionDefinition[] = [
+    { key: "detect_subscription", text: "無駄サブスク検知", icon: Bell },
+    { key: "review_fixed_costs", text: "毎週の固定費レビュー", icon: Rocket },
+    { key: "create_goal", text: "目標を作成", icon: Target },
+    { key: "link_bank", text: "銀行口座を連携", icon: Wallet },
 ];

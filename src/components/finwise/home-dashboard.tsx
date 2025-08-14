@@ -17,11 +17,12 @@ interface HomeDashboardProps {
   setTab: (t: string) => void;
   onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
   onOpenOcr: () => void;
+  onOpenGoalForm: () => void;
   transactions: Transaction[];
   budget: Budget | null;
 }
 
-export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm, onOpenOcr, transactions, budget }: HomeDashboardProps) {
+export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm, onOpenOcr, onOpenGoalForm, transactions, budget }: HomeDashboardProps) {
   const remain = Math.max(0, monthLimit - monthUsed);
   const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
@@ -70,7 +71,7 @@ export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpe
 
       <AdviceCard transactions={transactions} budget={budget} />
 
-      <QuickActions />
+      <QuickActions onOpenGoalForm={onOpenGoalForm} />
     </div>
   );
 }

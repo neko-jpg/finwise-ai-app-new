@@ -13,12 +13,13 @@ import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
-import type { Budget, Transaction } from "@/lib/types";
+import type { Budget, Goal, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
-import { DEMO_GOALS } from "@/data/dummy-data";
+import { useGoals } from "@/hooks/use-goals";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
+import { GoalForm } from "./goal-form";
 
 interface AppContainerProps {
     user: User;
@@ -31,11 +32,14 @@ export function AppContainer({ user }: AppContainerProps) {
   const [ocrOpen, setOcrOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
+  const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [offline, setOffline] = useState(false);
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
   const { transactions, loading: txLoading, error: txError } = useTransactions(user.uid);
   const { budget, loading: budgetLoading, error: budgetError } = useBudget(user.uid, format(new Date(), 'yyyy-MM'));
+  const { goals, loading: goalsLoading, error: goalsError } = useGoals(user.uid);
+
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -64,6 +68,10 @@ export function AppContainer({ user }: AppContainerProps) {
     setTransactionInitialData(initialData);
     setTransactionFormOpen(true);
   };
+  
+  const handleOpenGoalForm = () => {
+    setGoalFormOpen(true);
+  };
 
   const handleOpenVoice = () => {
       setVoiceOpen(true);
@@ -91,6 +99,7 @@ export function AppContainer({ user }: AppContainerProps) {
             setTab={setTab}
             onOpenTransactionForm={handleOpenTransactionForm}
             onOpenOcr={handleOpenOcr}
+            onOpenGoalForm={handleOpenGoalForm}
             transactions={transactions || []}
             budget={budget}
           />
@@ -111,10 +120,16 @@ export function AppContainer({ user }: AppContainerProps) {
             budget={budget} 
             loading={budgetLoading}
             transactions={transactions || []}
+            goals={goals || []}
           />
         )}
         {tab === "goals" && (
-          <GoalsScreen />
+          <GoalsScreen 
+            uid={user.uid}
+            goals={goals || []}
+            loading={goalsLoading}
+            onOpenGoalForm={handleOpenGoalForm}
+          />
         )}
         {tab === "profile" && (
           <ProfileScreen offline={offline} setOffline={setOffline} user={user} />
@@ -132,7 +147,7 @@ export function AppContainer({ user }: AppContainerProps) {
         }}
         transactions={transactions || []}
         budget={budget}
-        goals={DEMO_GOALS}
+        goals={goals || []}
       />
       <OcrScanner
         open={ocrOpen}
@@ -147,6 +162,11 @@ export function AppContainer({ user }: AppContainerProps) {
         onOpenChange={setTransactionFormOpen}
         uid={user.uid}
         initialData={transactionInitialData}
+      />
+      <GoalForm
+        open={goalFormOpen}
+        onOpenChange={setGoalFormOpen}
+        uid={user.uid}
       />
     </div>
   );

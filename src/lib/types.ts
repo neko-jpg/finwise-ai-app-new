@@ -50,13 +50,17 @@ export interface Budget {
 }
 
 export interface Goal {
+    id: string; // Firestore document ID
     name: string;
     target: number;
     saved: number;
-    due: string;
+    due: Date | null;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
 }
 
-export interface QuickAction {
+export interface QuickActionDefinition {
+    key: string;
     text: string;
     icon: LucideIcon;
 }
