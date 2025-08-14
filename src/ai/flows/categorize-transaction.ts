@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const CategorizeTransactionInputSchema = z.object({
+const CategorizeTransactionInputSchema = z.object({
   merchant: z.string().describe('The merchant name of the transaction.'),
   amount: z.number().describe('The amount of the transaction.'),
   note: z.string().optional().describe('An optional note about the transaction.'),

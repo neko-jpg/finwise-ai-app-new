@@ -15,11 +15,10 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
-import SHA256 from 'crypto-js/sha256';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -81,6 +80,7 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
         try {
+            const SHA256 = require('crypto-js/sha256');
             const hashSource = uid + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
             const docData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
               bookedAt: values.bookedAt,
@@ -122,7 +122,7 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
     };
     
     // Reset form when dialog closes
-    React.useEffect(() => {
+    useEffect(() => {
         if (!open) {
             form.reset({
                 bookedAt: new Date(),
@@ -207,6 +207,7 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
                                     <FormControl>
                                         <Input placeholder="スターバックス" {...field} onChange={(e) => {
                                             field.onChange(e);
+
                                             debouncedCategorize();
                                         }}/>
                                     </FormControl>
