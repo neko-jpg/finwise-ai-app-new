@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mic, Settings, PiggyBank, Plus } from "lucide-react";
-import { LanguageSwitcher } from "./language-switcher";
 
 interface AppHeaderProps {
   onOpenVoice: () => void;
@@ -23,7 +22,6 @@ export function AppHeader({ onOpenVoice, onOpenSettings }: AppHeaderProps) {
           <Button variant="ghost" size="icon" onClick={onOpenVoice} aria-label="Open voice assistant">
             <Mic className="h-5 w-5" />
           </Button>
-          <LanguageSwitcher />
           <Button variant="ghost" size="icon" onClick={onOpenSettings} aria-label="Open settings">
             <Settings className="h-5 w-5" />
           </Button>

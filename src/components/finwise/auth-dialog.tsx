@@ -15,9 +15,10 @@ import { useTranslations } from 'next-intl';
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSignin: () => void;
 }
 
-export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
   const t = useTranslations('AuthDialog');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<null | 'google' | 'email' | 'anonymous'>(null);
@@ -66,6 +67,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await signInWithGoogle();
       onOpenChange(false); // Success will be handled by auth state listener
+      onSignin();
     } catch (e) {
       handleAuthError(e);
     } finally {
@@ -79,6 +81,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await signUpWithEmail(email, password);
       onOpenChange(false);
+      onSignin();
       toast({ title: "登録が完了しました", description: "確認メールは送信されません（開発モード）。" });
     } catch (e) {
       handleAuthError(e);
@@ -93,6 +96,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await signInWithEmail(email, password);
       onOpenChange(false);
+      onSignin();
     } catch (e) {
       handleAuthError(e);
     } finally {
@@ -105,6 +109,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await signInGuest();
       onOpenChange(false);
+      onSignin();
     } catch (e) {
       handleAuthError(e);
     } finally {

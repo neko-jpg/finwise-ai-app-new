@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { AppContainer } from '@/components/finwise/app-container';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,14 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Page() {
   const { user, loading } = useAuthState();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
-      const locale = pathname.split('/')[1] || 'ja';
-      router.push(`/${locale}/entry`);
+      router.push(`/`);
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (

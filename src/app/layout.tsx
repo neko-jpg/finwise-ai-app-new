@@ -1,5 +1,5 @@
 import {NextIntlClientProvider} from 'next-intl';
-import '../globals.css';
+import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
 
@@ -16,25 +16,18 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-
-export function generateStaticParams() {
-  return [{locale: 'ja'}, {locale: 'en'}];
-}
-
 export default async function RootLayout({
-  children,
-  params: {locale}
+  children
 }: {
   children: React.ReactNode;
-  params: {locale: string};
 }) {
-  // Directly import messages to avoid config dependency
-  const messages = (await import(`../../messages/${locale}.json`)).default;
+  // 日本語メッセージを相対パスで直読み（config不要）
+  const messages = (await import('../messages/ja.json')).default;
 
   return (
-    <html lang={locale} className={`${noto.variable} ${jakarta.variable} dark`}>
+    <html lang="ja" className={`${noto.variable} ${jakarta.variable} dark`}>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale="ja" messages={messages}>
           {children}
           <Toaster />
         </NextIntlClientProvider>
