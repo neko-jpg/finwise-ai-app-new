@@ -2,6 +2,8 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
+import {NextIntlClientProvider} from 'next-intl';
+import {getMessages} from 'next-intl/server';
 
 export const metadata: Metadata = {
   title: 'Finwise AI - Personal Finance Manager',
@@ -20,16 +22,22 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params: {locale}
 }: Readonly<{
   children: React.ReactNode;
+  params: {locale: string};
 }>) {
+  const messages = await getMessages();
+
   return (
-    <html lang="ja" className={`${noto.variable} ${jakarta.variable} dark`}>
+    <html lang={locale} className={`${noto.variable} ${jakarta.variable} dark`}>
       <body className="font-body antialiased">
-        {children}
-        <Toaster />
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

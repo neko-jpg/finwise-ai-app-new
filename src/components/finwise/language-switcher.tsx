@@ -10,31 +10,38 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {useLocale, useTranslations} from 'next-intl';
+import {useRouter, usePathname} from 'next-intl/client';
+import { useTransition } from "react";
+
 
 export function LanguageSwitcher() {
-  const { toast } = useToast();
+  const t = useTranslations('LanguageSwitcher');
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const handleLanguageChange = (lang: 'ja' | 'en') => {
-    toast({
-      title: "言語切替",
-      description: `この機能は現在UIのみです。選択された言語: ${lang === 'ja' ? '日本語' : 'English'}`
+    startTransition(() => {
+      router.replace(pathname, {locale: lang});
     });
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" disabled={isPending}>
           <Globe className="h-5 w-5"/>
           <span className="sr-only">Change Language</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleLanguageChange('ja')}>
-          日本語
+        <DropdownMenuItem onClick={() => handleLanguageChange('ja')} disabled={locale === 'ja'}>
+          {t('locale', {locale: 'ja'})}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
-          English
+        <DropdownMenuItem onClick={() => handleLanguageChange('en')} disabled={locale === 'en'}>
+          {t('locale', {locale: 'en'})}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

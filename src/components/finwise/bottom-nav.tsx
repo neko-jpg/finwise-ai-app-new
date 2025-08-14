@@ -1,14 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Home, List, PiggyBank, Target, Mic } from "lucide-react";
-
-const navItems = [
-  { key: "home", label: "ホーム", Icon: Home },
-  { key: "tx", label: "明細", Icon: List },
-  { key: "budget", label: "予算", Icon: PiggyBank },
-  { key: "goals", label: "目標", Icon: Target },
-];
+import { useTranslations } from "next-intl";
 
 export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: string) => void; onMic: () => void }) {
+  const t = useTranslations('BottomNav');
+
+  const navItems = [
+    { key: "home", label: t('home'), Icon: Home },
+    { key: "tx", label: t('transactions'), Icon: List },
+    { key: "budget", label: t('budget'), Icon: PiggyBank },
+    { key: "goals", label: t('goals'), Icon: Target },
+  ];
+
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (
     <button
       onClick={() => setTab(itemKey)}

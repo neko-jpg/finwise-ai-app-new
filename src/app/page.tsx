@@ -3,7 +3,7 @@
 
 import { useAuthState } from './hooks/use-auth-state';
 import { AppContainer } from '@/components/finwise/app-container';
-import { EntryPage } from './entry/page';
+import EntryPage from './entry/page';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
