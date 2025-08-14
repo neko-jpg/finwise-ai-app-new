@@ -1,4 +1,4 @@
-import {NextIntlClientProvider} from 'next-intl';
+import {NextIntlClientProvider, useMessages} from 'next-intl';
 import {unstable_setRequestLocale} from 'next-intl/server';
 import '../globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -22,7 +22,7 @@ export function generateStaticParams() {
   return [{locale: 'ja'}, {locale: 'en'}];
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
   params: {locale}
 }: {
@@ -31,9 +31,9 @@ export default async function RootLayout({
 }) {
   // App Router でロケールを固定
   unstable_setRequestLocale(locale);
-
-  // next-intl.config.ts に依存しないように直接読み込む
-  const messages = (await import(`../../messages/${locale}.json`)).default;
+ 
+  // Receive messages provided in `i18n.ts`
+  const messages = useMessages();
 
   return (
     <html lang={locale} className={`${noto.variable} ${jakarta.variable} dark`}>
