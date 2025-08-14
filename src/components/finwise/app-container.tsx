@@ -17,7 +17,7 @@ import { INITIAL_BUDGET } from "@/data/dummy-data";
 import { format } from "date-fns";
 
 
-export default function AppContainer() {
+export function AppContainer() {
   const [tab, setTab] = useState("home");
   const [q, setQ] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
