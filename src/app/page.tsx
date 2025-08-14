@@ -1,23 +1,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthDialog } from '@/components/finwise/auth-dialog';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppContainer } from '@/components/finwise/app-container';
+import { HomeDashboard } from '@/components/finwise/home-dashboard';
 
 export default function Page() {
   const { user, loading } = useAuthState();
-  const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
-
-  const handleSignIn = () => {
-    // This will be handled by the auth state listener which will re-render
-  }
 
   if (loading) {
     return (
@@ -48,10 +43,14 @@ export default function Page() {
                 </div>
               </div>
             </main>
-            <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} onSignin={handleSignIn}/>
+            <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} onSignin={() => {}}/>
           </>
       )
   }
 
-  return <AppContainer user={user} />;
+  return (
+    <AppContainer user={user}>
+        <HomeDashboard />
+    </AppContainer>
+  );
 }

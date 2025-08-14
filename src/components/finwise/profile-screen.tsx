@@ -15,16 +15,20 @@ import type { Transaction } from '@/lib/types';
 import { format, parse } from 'date-fns';
 
 interface ProfileScreenProps {
-  offline: boolean;
-  setOffline: (v: boolean) => void;
-  user: User;
+  user?: User;
+  offline?: boolean;
+  setOffline?: (v: boolean) => void;
 }
 
-export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps) {
+export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileScreenProps) {
   const { toast } = useToast();
   const [isLinking, setIsLinking] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  if (!user) {
+      return null;
+  }
   
   const handleLink = async () => {
     setIsLinking(true);

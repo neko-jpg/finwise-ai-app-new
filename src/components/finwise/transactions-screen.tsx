@@ -14,21 +14,26 @@ import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import { useMemo } from 'react';
 
 interface TransactionsScreenProps {
-  q: string;
-  setQ: (q: string) => void;
-  filteredTx: Transaction[];
-  catFilter: string | null;
-  setCatFilter: (cat: string | null) => void;
-  loading: boolean;
-  transactions: Transaction[];
+  loading?: boolean;
+  transactions?: Transaction[];
 }
 
-export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter, loading, transactions }: TransactionsScreenProps) {
+export function TransactionsScreen({ loading, transactions = [] }: TransactionsScreenProps) {
+  const [q, setQ] = useState("");
+  const [catFilter, setCatFilter] = useState<string | null>(null);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+
+  const filteredTx = useMemo(() => {
+    return transactions.filter((t: Transaction) => 
+      (catFilter ? t.category.major === catFilter : true) && 
+      (q ? t.merchant.toLowerCase().includes(q.toLowerCase()) : true)
+    );
+  }, [transactions, catFilter, q]);
 
   const handleAnalyze = () => {
     if (filteredTx.length === 0) {

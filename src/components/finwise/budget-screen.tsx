@@ -14,30 +14,33 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
+import type { User } from 'firebase/auth';
 
 
 interface BudgetScreenProps {
-  uid: string;
-  budget: Budget | null;
-  loading: boolean;
-  transactions: Transaction[];
-  goals: Goal[];
+  user?: User;
+  budget?: Budget | null;
+  loading?: boolean;
+  transactions?: Transaction[];
+  goals?: Goal[];
 }
 
-export function BudgetScreen({ uid, budget, loading, transactions, goals }: BudgetScreenProps) {
+export function BudgetScreen({ user, budget, loading, transactions = [], goals = [] }: BudgetScreenProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [currentBudget, setCurrentBudget] = useState<Budget | null>(budget);
+  const [currentBudget, setCurrentBudget] = useState<Budget | null>(budget || null);
 
   useEffect(() => {
-    setCurrentBudget(budget);
+    if (budget) {
+      setCurrentBudget(budget);
+    }
   }, [budget]);
 
   const handleBudgetChange = (key: string, value: number) => {
-    if (!currentBudget) return;
+    if (!currentBudget || !user) return;
     
     const newLimits = {
-      ...currentBudget.limits,
+      ...(currentBudget.limits || {}),
       [key]: value,
     };
     
@@ -50,7 +53,7 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
     startTransition(async () => {
         try {
             const period = format(new Date(), 'yyyy-MM');
-            const docRef = doc(db, `users/${uid}/budgets`, period);
+            const docRef = doc(db, `users/${user.uid}/budgets`, period);
             await setDoc(docRef, { 
               limits: newLimits,
               updatedAt: serverTimestamp()
@@ -76,6 +79,7 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
       return;
     }
     startTransition(async () => {
+      if (!user) return;
       try {
         const result = await budgetPlanner({
             transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
@@ -87,20 +91,19 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
              newLimits[item.key] = item.limit;
           }
         });
-        setCurrentBudget(prev => ({...prev!, limits: newLimits as any}));
+        setCurrentBudget(prev => ({...(prev || {} as Budget), limits: newLimits as any}));
         toast({
           title: "AIが予算を再提案しました",
           description: "支出パターンと目標に合わせて調整しました。",
         });
-        // Also save the new budget automatically
-        if (currentBudget) {
-            const period = format(new Date(), 'yyyy-MM');
-            const docRef = doc(db, `users/${uid}/budgets`, period);
-            await setDoc(docRef, { 
-              limits: newLimits,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-        }
+        
+        const period = format(new Date(), 'yyyy-MM');
+        const docRef = doc(db, `users/${user.uid}/budgets`, period);
+        await setDoc(docRef, { 
+          limits: newLimits,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        
       } catch (e) {
         console.error(e);
         toast({

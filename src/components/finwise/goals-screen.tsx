@@ -11,14 +11,13 @@ import { Skeleton } from "../ui/skeleton";
 
 
 interface GoalsScreenProps {
-  uid: string;
-  goals: Goal[];
-  loading: boolean;
-  onOpenGoalForm: () => void;
+  goals?: Goal[];
+  loading?: boolean;
+  onOpenGoalForm?: () => void;
 }
 
 
-export function GoalsScreen({ uid, goals, loading, onOpenGoalForm }: GoalsScreenProps) {
+export function GoalsScreen({ goals = [], loading, onOpenGoalForm = () => {} }: GoalsScreenProps) {
   
   if (loading) {
       return (
