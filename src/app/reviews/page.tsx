@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -10,9 +11,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { reviewFixedCosts, ReviewFixedCostsOutput } from '@/ai/flows/review-fixed-costs';
 import type { Transaction } from '@/lib/types';
+import AppContainerWrapper from '@/components/finwise/app-container-wrapper';
 
 interface ReviewsScreenProps {
     transactions: Transaction[];
+}
+
+export default function ReviewsPage() {
+    return (
+        <AppContainerWrapper>
+            <ReviewsScreen transactions={[]} />
+        </AppContainerWrapper>
+    );
 }
 
 export function ReviewsScreen({ transactions }: ReviewsScreenProps) {

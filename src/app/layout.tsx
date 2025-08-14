@@ -1,3 +1,4 @@
+
 import {NextIntlClientProvider} from 'next-intl';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"

@@ -6,10 +6,10 @@ export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: str
   const t = useTranslations('BottomNav');
 
   const navItems = [
-    { key: "home", label: t('home'), Icon: Home },
-    { key: "tx", label: t('transactions'), Icon: List },
-    { key: "budget", label: t('budget'), Icon: PiggyBank },
-    { key: "goals", label: t('goals'), Icon: Target },
+    { key: "home", label: t('home'), Icon: Home, path: '/' },
+    { key: "tx", label: t('transactions'), Icon: List, path: '/transactions' },
+    { key: "budget", label: t('budget'), Icon: PiggyBank, path: '/budget' },
+    { key: "goals", label: t('goals'), Icon: Target, path: '/goals' },
   ];
 
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (

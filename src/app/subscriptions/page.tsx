@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -9,10 +10,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { detectSubscriptions, DetectSubscriptionsOutput } from '@/ai/flows/detect-subscriptions';
 import type { Transaction } from '@/lib/types';
+import AppContainerWrapper from '@/components/finwise/app-container-wrapper';
 
 
 interface SubscriptionsScreenProps {
     transactions: Transaction[];
+}
+
+export default function SubscriptionsPage() {
+    return (
+        <AppContainerWrapper>
+            <SubscriptionsScreen transactions={[]} />
+        </AppContainerWrapper>
+    );
 }
 
 export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) {

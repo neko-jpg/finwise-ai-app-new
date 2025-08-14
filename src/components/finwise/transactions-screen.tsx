@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,10 @@ interface TransactionsScreenProps {
   catFilter: string | null;
   setCatFilter: (cat: string | null) => void;
   loading: boolean;
+  transactions: Transaction[];
 }
 
-export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter, loading }: TransactionsScreenProps) {
+export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter, loading, transactions }: TransactionsScreenProps) {
   const t = useTranslations('TransactionsScreen');
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -39,7 +41,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
         });
         return;
     }
-    startTransition(true);
+    startTransition();
     analyzeSpending({ transactions: filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})) })
       .then(result => {
         toast({
@@ -55,7 +57,6 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
           variant: "destructive",
         });
       })
-      .finally(() => startTransition(false));
   };
   
   const renderList = () => {

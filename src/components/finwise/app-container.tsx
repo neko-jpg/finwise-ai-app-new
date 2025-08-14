@@ -11,7 +11,7 @@ import { GoalsScreen } from './goals-screen';
 import { ProfileScreen } from './profile-screen';
 import { SubscriptionsScreen } from '@/app/subscriptions/page';
 import { ReviewsScreen } from '@/app/reviews/page';
-import { LinkScreen } from '@/app/link/page';
+import LinkScreen from '@/app/link/page';
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
@@ -23,13 +23,16 @@ import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
 import { GoalForm } from "./goal-form";
+import { useRouter, usePathname } from 'next/navigation';
+import { Home } from "lucide-react";
 
 interface AppContainerProps {
     user: User;
 }
 
 export function AppContainer({ user }: AppContainerProps) {
-  const [tab, setTab] = useState("home");
+  const router = useRouter();
+  const pathname = usePathname();
   const [q, setQ] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
@@ -84,62 +87,100 @@ export function AppContainer({ user }: AppContainerProps) {
       setOcrOpen(true);
   }
 
+  const tab = useMemo(() => {
+      if (pathname === '/') return 'home';
+      if (pathname.startsWith('/transactions')) return 'tx';
+      if (pathname.startsWith('/budget')) return 'budget';
+      if (pathname.startsWith('/goals')) return 'goals';
+      if (pathname.startsWith('/profile')) return 'profile';
+      if (pathname.startsWith('/subscriptions')) return 'subscriptions';
+      if (pathname.startsWith('/reviews')) return 'reviews';
+      if (pathname.startsWith('/link')) return 'link';
+      return 'home';
+  }, [pathname]);
+
+  const handleSetTab = (newTab: string) => {
+    const pathMap: { [key: string]: string } = {
+      home: '/',
+      tx: '/transactions',
+      budget: '/budget',
+      goals: '/goals',
+      profile: '/profile',
+      subscriptions: '/subscriptions',
+      reviews: '/reviews',
+      link: '/link',
+    };
+    router.push(pathMap[newTab] || '/');
+  };
+
   const renderContent = () => {
     switch (tab) {
-      case 'home':
-        return <HomeDashboard 
-          todaySpend={todaySpend} 
-          monthUsed={monthUsed} 
-          monthLimit={monthLimit} 
-          setTab={setTab}
-          onOpenTransactionForm={handleOpenTransactionForm}
-          onOpenOcr={handleOpenOcr}
-          onOpenGoalForm={handleOpenGoalForm}
-          transactions={transactions || []}
-          budget={budget}
-        />;
-      case 'tx':
-        return <TransactionsScreen 
-          q={q} 
-          setQ={setQ} 
-          filteredTx={filteredTx} 
-          catFilter={catFilter} 
-          setCatFilter={setCatFilter}
-          loading={txLoading}
-        />;
-      case 'budget':
-        return <BudgetScreen 
-          uid={user.uid}
-          budget={budget} 
-          loading={budgetLoading}
-          transactions={transactions || []}
-          goals={goals || []}
-        />;
-      case 'goals':
-        return <GoalsScreen 
-          uid={user.uid}
-          goals={goals || []}
-          loading={goalsLoading}
-          onOpenGoalForm={handleOpenGoalForm}
-        />;
-      case 'profile':
-        return <ProfileScreen offline={offline} setOffline={setOffline} user={user} />;
-      case 'subscriptions':
-        return <SubscriptionsScreen transactions={transactions || []} />;
-      case 'reviews':
-        return <ReviewsScreen transactions={transactions || []} />;
-      case 'link':
-        return <LinkScreen />;
-      default:
-        return null;
+        case 'home':
+            return <HomeDashboard 
+                todaySpend={todaySpend}
+                monthUsed={monthUsed}
+                monthLimit={monthLimit}
+                setTab={handleSetTab}
+                onOpenTransactionForm={handleOpenTransactionForm}
+                onOpenOcr={handleOpenOcr}
+                onOpenGoalForm={handleOpenGoalForm}
+                transactions={transactions || []}
+                budget={budget}
+            />;
+        case 'tx':
+            return <TransactionsScreen 
+                q={q} 
+                setQ={setQ} 
+                filteredTx={filteredTx}
+                catFilter={catFilter}
+                setCatFilter={setCatFilter}
+                loading={txLoading}
+                transactions={transactions || []}
+            />;
+        case 'budget':
+            return <BudgetScreen
+                uid={user.uid}
+                budget={budget}
+                loading={budgetLoading}
+                transactions={transactions || []}
+                goals={goals || []}
+            />;
+        case 'goals':
+            return <GoalsScreen 
+                uid={user.uid}
+                goals={goals || []}
+                loading={goalsLoading}
+                onOpenGoalForm={handleOpenGoalForm}
+            />;
+        case 'profile':
+            return <ProfileScreen user={user} offline={offline} setOffline={setOffline} />;
+        case 'subscriptions':
+            return <SubscriptionsScreen transactions={transactions || []} />;
+        case 'reviews':
+            return <ReviewsScreen transactions={transactions || []} />;
+        case 'link':
+            // LinkScreen doesn't need any props
+            return <LinkScreen />;
+        default:
+            return <HomeDashboard 
+                todaySpend={todaySpend}
+                monthUsed={monthUsed}
+                monthLimit={monthLimit}
+                setTab={handleSetTab}
+                onOpenTransactionForm={handleOpenTransactionForm}
+                onOpenOcr={handleOpenOcr}
+                onOpenGoalForm={handleOpenGoalForm}
+                transactions={transactions || []}
+                budget={budget}
+            />;
     }
-  };
+  }
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
       <AppHeader 
         onOpenVoice={handleOpenVoice}
-        onOpenSettings={() => setTab("profile")}
+        onOpenSettings={() => handleSetTab("profile")}
       />
 
       {offline && <OfflineBanner />}
@@ -148,7 +189,7 @@ export function AppContainer({ user }: AppContainerProps) {
         {renderContent()}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} onMic={handleOpenVoice} />
+      <BottomNav tab={tab} setTab={handleSetTab} onMic={handleOpenVoice} />
 
       <VoiceDialog 
         open={voiceOpen} 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ const dummyProviders = [
     { name: "デモ証券", logo: "📈" },
 ];
 
-export function LinkScreen() {
+export default function LinkScreen() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="text-center">
