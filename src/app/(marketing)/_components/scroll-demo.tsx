@@ -42,7 +42,7 @@ export function ScrollDemo() {
 
   const scale = useTransform(scrollYProgress, [0, 0.4, 0.9, 1], [0.9, 1, 1, 0.9]);
   const opacity = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0, 1, 1, 0]);
-  const gauge = useTransform(scrollYProgress, [0.3, 0.9], [35, 68]);
+  const gaugeWidth = useTransform(scrollYProgress, [0.3, 0.9], ['35%', '68%']);
   const textOpacity = useTransform(scrollYProgress, [0.1, 0.2, 0.8, 0.9], [0, 1, 1, 0]);
   
   const [lottieOpacity, setLottieOpacity] = useState(0);
@@ -82,7 +82,7 @@ export function ScrollDemo() {
                         <div className="mt-8">
                             <div className="text-white/70 text-sm mb-2">今月の予算使用率</div>
                             <div className="w-full bg-white/10 rounded-full h-3">
-                                 <m.div style={{ width: gauge.to(v => `${v}%`)}} className="h-3 rounded-full bg-mk-accent" />
+                                 <m.div style={{ width: gaugeWidth }} className="h-3 rounded-full bg-mk-accent" />
                             </div>
                         </div>
                     </CardContent>
