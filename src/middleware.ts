@@ -10,6 +10,5 @@ export default createMiddleware({
  
 export const config = {
   // Match only internationalized pathnames
-  // Make sure this is configured correctly for your app
   matcher: ['/', '/(ja|en)/:path*']
 };

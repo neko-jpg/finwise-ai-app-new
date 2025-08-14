@@ -3,8 +3,7 @@ import '../globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
 import {NextIntlClientProvider} from 'next-intl';
-import {getMessages} from 'next-intl/server';
-import {unstable_setRequestLocale} from 'next-intl/server';
+import {getMessages, unstable_setRequestLocale} from 'next-intl/server';
 
 export const metadata: Metadata = {
   title: 'Finwise AI - Personal Finance Manager',

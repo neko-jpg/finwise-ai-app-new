@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
 
   const handleLanguageChange = (lang: 'ja' | 'en') => {
     startTransition(() => {
-      router.replace(pathname, {locale: lang});
+      router.replace(`/${lang}${pathname}`);
     });
   }
 
