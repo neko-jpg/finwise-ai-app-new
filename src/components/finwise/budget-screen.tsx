@@ -3,10 +3,9 @@
 import { useState, useTransition, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { CATEGORIES } from "@/data/dummy-data";
 import { Progress } from "@/components/ui/progress";
-import type { Budget, BudgetItem, Transaction, Goal } from "@/lib/types";
+import type { Budget, Goal, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { budgetPlanner } from '@/ai/flows/budget-planner';
 import { Loader, Sparkles } from 'lucide-react';
@@ -14,6 +13,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import { BudgetInput } from './budget-input';
 
 
 interface BudgetScreenProps {
@@ -22,15 +22,6 @@ interface BudgetScreenProps {
   loading: boolean;
   transactions: Transaction[];
   goals: Goal[];
-}
-
-function impactText(row: BudgetItem) {
-    const usageRate = row.limit > 0 ? (row.used / row.limit) * 100 : 100;
-
-    if (usageRate > 95) return "超過傾向。削減案をおすすめします。";
-    if (usageRate > 75) return "予算の大部分を使用済みです。";
-    if (usageRate > 50) return "無理のない節約余地あり。";
-    return "良好。今の配分を維持しましょう。";
 }
 
 export function BudgetScreen({ uid, budget, loading, transactions, goals }: BudgetScreenProps) {
@@ -43,40 +34,35 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
   }, [budget]);
 
   const handleBudgetChange = (key: string, value: number) => {
-    setCurrentBudget(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        limits: {
-          ...prev.limits,
-          [key]: value,
-        }
-      }
-    });
-  };
-
-  const handleSave = async () => {
     if (!currentBudget) return;
+    
+    const newLimits = {
+      ...currentBudget.limits,
+      [key]: value,
+    };
+    
+    setCurrentBudget({
+        ...currentBudget,
+        limits: newLimits
+    });
+    
+    // Save to Firestore optimistically
     startTransition(async () => {
-      try {
-        const period = format(new Date(), 'yyyy-MM');
-        const docRef = doc(db, `users/${uid}/budgets`, period);
-        await setDoc(docRef, { 
-          limits: currentBudget.limits,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-        toast({
-          title: "予算を保存しました",
-          description: "新しい予算設定が適用されました。",
-        });
-      } catch (e) {
-         console.error(e);
-        toast({
-          title: "エラー",
-          description: "予算の保存に失敗しました。",
-          variant: "destructive",
-        });
-      }
+        try {
+            const period = format(new Date(), 'yyyy-MM');
+            const docRef = doc(db, `users/${uid}/budgets`, period);
+            await setDoc(docRef, { 
+              limits: newLimits,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+        } catch (e) {
+            console.error(e);
+            toast({
+              title: "エラー",
+              description: "予算の保存に失敗しました。",
+              variant: "destructive",
+            });
+        }
     });
   };
 
@@ -160,10 +146,13 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-headline text-xl">予算管理</CardTitle>
+           <Button variant="outline" onClick={handleAiSuggestion} disabled={isPending}>
+            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}AIに再提案させる
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -178,7 +167,7 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
             </div>
           </div>
           <p className="text-sm text-muted-foreground pt-4 border-t">
-            AIが過去の支出から予算を提案します。各カテゴリの予算はスライダーで調整できます。
+            しきい値（¥20,000）以下の予算はスライダーで、それ以上は直接入力で調整できます。AI提案も活用しましょう。
           </p>
         </CardContent>
       </Card>
@@ -187,47 +176,18 @@ export function BudgetScreen({ uid, budget, loading, transactions, goals }: Budg
         {CATEGORIES.map((category) => {
           const itemLimit = currentBudget?.limits?.[category.key] || 0;
           const itemUsed = currentBudget?.used?.[category.key] || 0;
-          const usageRate = itemLimit > 0 ? (itemUsed / itemLimit) * 100 : 0;
+          
           return (
-            <Card key={category.key}>
-              <CardHeader className="pb-3">
-                <CardTitle className="font-headline flex items-center gap-2 text-base">
-                    {category?.icon}
-                    {category?.label || category.key}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-muted-foreground">使用済み</span>
-                    <span className="font-bold">¥{itemUsed.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-sm text-muted-foreground">予算</span>
-                    <span className="font-bold">¥{itemLimit.toLocaleString()}</span>
-                </div>
-                <Progress value={usageRate} className="h-2" />
-                <Slider 
-                    value={[itemLimit]} 
-                    min={0} 
-                    max={Math.max(itemLimit * 2, 50000)}
-                    step={1000} 
-                    onValueChange={(v) => handleBudgetChange(category.key, v[0])}
-                    className="mt-4" 
-                />
-                <p className="mt-3 text-xs text-muted-foreground h-8">{impactText({limit: itemLimit, used: itemUsed})}</p>
-              </CardContent>
-            </Card>
+            <BudgetInput 
+                key={category.key}
+                label={category.label}
+                value={itemLimit}
+                used={itemUsed}
+                onChange={(newValue) => handleBudgetChange(category.key, newValue)}
+                onAiSuggest={handleAiSuggestion}
+            />
           )
         })}
-      </div>
-
-      <div className="flex items-center justify-end rounded-lg p-3 space-x-2 sticky bottom-20 bg-background/80 backdrop-blur-sm">
-          <Button variant="outline" onClick={handleAiSuggestion} disabled={isPending}>
-            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}AIに再提案させる
-          </Button>
-          <Button onClick={handleSave} disabled={isPending}>
-            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : null}変更を保存
-          </Button>
       </div>
     </div>
   );

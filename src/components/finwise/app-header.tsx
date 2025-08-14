@@ -1,22 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Settings, PiggyBank, Plus, Globe } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Mic, Settings, PiggyBank, Plus } from "lucide-react";
+import { LanguageSwitcher } from "./language-switcher";
 
 interface AppHeaderProps {
   onOpenVoice: () => void;
   onOpenSettings: () => void;
 }
 
-function LanguageSwitcher() {
-  const { toast } = useToast();
-  return (
-    <Button variant="ghost" size="icon" onClick={() => toast({title: "言語切替", description: "この機能は現在開発中です"})}>
-      <Globe className="h-5 w-5"/>
-      <span className="sr-only">Change Language</span>
-    </Button>
-  )
-}
 
 export function AppHeader({ onOpenVoice, onOpenSettings }: AppHeaderProps) {
   return (
