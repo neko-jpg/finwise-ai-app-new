@@ -8,14 +8,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Sparkles, Loader } from "lucide-react";
 import { CATEGORIES } from "@/data/dummy-data";
-import type { Transaction } from "@/lib/types";
+import { Transaction as DummyTransaction } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { useToast } from '@/hooks/use-toast';
 
 interface TransactionsScreenProps {
   q: string;
   setQ: (q: string) => void;
-  filteredTx: Transaction[];
+  filteredTx: DummyTransaction[];
   catFilter: string | null;
   setCatFilter: (cat: string | null) => void;
 }
@@ -109,7 +109,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
         <CardContent className="p-0">
           <ScrollArea className="h-[calc(100dvh-22rem)]">
             <div className="divide-y">
-              {filteredTx.length > 0 ? filteredTx.map((t: Transaction) => (
+              {filteredTx.length > 0 ? filteredTx.map((t: DummyTransaction) => (
                 <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-muted rounded-full">

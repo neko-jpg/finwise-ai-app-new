@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Settings, PiggyBank } from "lucide-react";
+import { Mic, Settings, PiggyBank, Plus } from "lucide-react";
 
-export function AppHeader({ onOpenVoice, onOpenSettings }: { onOpenVoice: () => void; onOpenSettings: () => void }) {
+interface AppHeaderProps {
+  onOpenVoice: () => void;
+  onOpenSettings: () => void;
+  onOpenTransactionForm: () => void;
+}
+
+export function AppHeader({ onOpenVoice, onOpenSettings, onOpenTransactionForm }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <PiggyBank className="h-6 w-6 text-primary" />
@@ -12,6 +18,10 @@ export function AppHeader({ onOpenVoice, onOpenSettings }: { onOpenVoice: () => 
           <Badge variant="outline" className="ml-2 border-primary/50 text-primary">PWA</Badge>
         </div>
         <div className="flex items-center gap-1">
+          <Button onClick={onOpenTransactionForm}>
+            <Plus className="h-4 w-4 mr-2" />
+            取引を追加
+          </Button>
           <Button variant="ghost" size="icon" onClick={onOpenVoice} aria-label="Open voice assistant">
             <Mic className="h-5 w-5" />
           </Button>

@@ -7,11 +7,30 @@ export interface Category {
 }
 
 export interface Transaction {
-  id: number;
-  cat: string;
-  name: string;
+  id: string; // Firestore document ID
+  bookedAt: Date;
   amount: number;
-  date: string;
+  currency: 'JPY' | 'USD' | 'EUR';
+  merchant: string;
+  category: {
+    major: string;
+    minor?: string;
+    confidence?: number;
+  };
+  source: 'manual' | 'voice' | 'ocr' | 'csv';
+  note?: string;
+  attachment?: {
+    filePath: string;
+    mime: string;
+  };
+  recurring?: {
+    interval: 'weekly' | 'monthly' | 'yearly';
+    anchor?: Date;
+  };
+  hash: string;
+  createdAt: Date;
+  updatedAt: Date;
+  clientUpdatedAt: Date;
 }
 
 export interface BudgetItem {
