@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Mic, Receipt, FileUp, Building, LogIn, Plus } from "lucide-react";
 import { AuthDialog } from '@/components/finwise/auth-dialog';
-import { usePathname, useRouter } from 'next-intl/client';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 
 const MethodCard = ({ title, desc, icon, onClick, disabled = false }: { title: string; desc: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; }) => (
@@ -27,6 +28,7 @@ export default function EntryPage() {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('AuthDialog');
 
   return (
     <>
@@ -37,10 +39,7 @@ export default function EntryPage() {
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" onClick={() => setAuthDialogOpen(true)}>
               <LogIn className="mr-2 h-4 w-4" />
-              ログインまたは新規登録
-            </Button>
-             <Button size="lg" variant="secondary" onClick={() => router.replace(pathname, {locale: 'en'})}>
-              Switch to English
+              {t('signin')} / {t('signup')}
             </Button>
           </div>
         </section>

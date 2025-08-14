@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { Skeleton } from "../ui/skeleton";
 import type { Transaction, Budget } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 interface AdviceCardProps {
     transactions: Transaction[];
@@ -17,6 +18,7 @@ interface AdviceCardProps {
 
 
 export function AdviceCard({ transactions, budget }: AdviceCardProps) {
+  const t = useTranslations('AdviceCard');
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [advice, setAdvice] = useState<RealTimeSaverOutput | null>(null);
@@ -48,7 +50,7 @@ export function AdviceCard({ transactions, budget }: AdviceCardProps) {
             <CardHeader className="pb-2">
                 <CardTitle className="font-headline flex items-center gap-2 text-lg text-primary">
                     <Sparkles className="h-5 w-5" />
-                    今日の一手
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -64,26 +66,26 @@ export function AdviceCard({ transactions, budget }: AdviceCardProps) {
       <CardHeader className="pb-2">
         <CardTitle className="font-headline flex items-center gap-2 text-lg text-primary">
           <Sparkles className="h-5 w-5" />
-          今日の一手
+          {t('title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="font-medium text-base">{advice.savingTip}</p>
-          <p className="text-sm text-muted-foreground mt-1">AIが提案する潜在的な節約額: ¥{advice.potentialSavings.toLocaleString()}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('potential_savings', {amount: advice.potentialSavings.toLocaleString()})}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="default" className="gap-1" onClick={handleAction}>
-            実行する
+            {t('perform_action')}
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost">理由を見る</Button>
+                <Button variant="ghost">{t('see_reason')}</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 font-headline"><Info />提案の根拠</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2 font-headline"><Info />{t('rationale_title')}</DialogTitle>
                     <DialogDescription className="pt-4 text-left">
                         {advice.explanation}
                     </DialogDescription>

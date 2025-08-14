@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useToast } from "@/hooks/use-toast";
 import { Globe } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -11,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {useLocale, useTranslations} from 'next-intl';
-import {useRouter, usePathname} from 'next-intl/client';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTransition } from "react";
 
 
