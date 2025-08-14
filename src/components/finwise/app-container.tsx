@@ -68,6 +68,9 @@ export function AppContainer({ children }: AppContainerProps) {
       if (pathname.startsWith('/budget')) return 'budget';
       if (pathname.startsWith('/goals')) return 'goals';
       if (pathname.startsWith('/profile')) return 'profile';
+      if (pathname.startsWith('/subscriptions')) return 'subscriptions';
+      if (pathname.startsWith('/reviews')) return 'reviews';
+      if (pathname.startsWith('/link')) return 'link';
       return 'home';
   }, [pathname]);
 
@@ -78,6 +81,9 @@ export function AppContainer({ children }: AppContainerProps) {
       budget: '/budget',
       goals: '/goals',
       profile: '/profile',
+      subscriptions: '/subscriptions',
+      reviews: '/reviews',
+      link: '/link',
     };
     router.push(pathMap[newTab] || '/');
   };

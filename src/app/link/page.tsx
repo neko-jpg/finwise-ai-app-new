@@ -2,6 +2,7 @@
 
 'use client';
 
+import { AppContainer } from '@/components/finwise/app-container';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, ShieldCheck } from "lucide-react";
@@ -12,7 +13,7 @@ const dummyProviders = [
     { name: "デモ証券", logo: "📈" },
 ];
 
-export default function LinkScreen() {
+export function LinkScreen() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="text-center">
@@ -40,5 +41,14 @@ export default function LinkScreen() {
                 <span>データは安全に暗号化され、読み取り専用で取得されます。</span>
             </div>
         </div>
+    );
+}
+
+
+export default function LinkPage() {
+    return (
+        <AppContainer>
+            <LinkScreen />
+        </AppContainer>
     );
 }

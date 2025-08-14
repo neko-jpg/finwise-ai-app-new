@@ -24,6 +24,15 @@ export function QuickActions({ onOpenGoalForm, setTab }: QuickActionsProps) {
       case 'create_goal':
         onOpenGoalForm();
         break;
+      case 'detect_subscription':
+        setTab('subscriptions');
+        break;
+      case 'review_fixed_costs':
+        setTab('reviews');
+        break;
+      case 'link_bank':
+        setTab('link');
+        break;
       default:
         break;
     }

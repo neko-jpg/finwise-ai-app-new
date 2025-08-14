@@ -1,6 +1,6 @@
 
 import type { Category, QuickActionDefinition, Goal } from '@/lib/types';
-import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet } from "lucide-react";
+import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet, Link } from "lucide-react";
 import React from 'react';
 
 export interface DummyTransaction {
@@ -60,4 +60,7 @@ export const INITIAL_BUDGET = {
 
 export const QUICK_ACTIONS: QuickActionDefinition[] = [
     { key: "create_goal", text: "目標を作成", icon: Target },
+    { key: "detect_subscription", text: "無駄サブスク検知", icon: Bell },
+    { key: "review_fixed_costs", text: "毎週の固定費レビュー", icon: Rocket },
+    { key: "link_bank", text: "銀行・カード連携", icon: Link },
 ];
