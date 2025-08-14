@@ -66,7 +66,6 @@ export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
                 title: "新しい目標を作成しました！",
                 description: `「${values.name}」に向かって頑張りましょう！`,
             });
-
             onOpenChange(false);
         } catch (error) {
             console.error("Error adding document: ", error);
@@ -81,12 +80,12 @@ export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
     };
     
     useEffect(() => {
-        if (open) {
-            form.reset({
-                name: '',
-                target: '' as any,
-                due: undefined,
-            });
+        if (!open) {
+          form.reset({
+            name: '',
+            target: '' as any,
+            due: undefined,
+          });
         }
     }, [open, form]);
 
