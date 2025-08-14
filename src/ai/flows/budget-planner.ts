@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,9 +11,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { DEMO_TRANSACTIONS, INITIAL_BUDGET, DEMO_GOALS } from '@/data/dummy-data';
+import { DEMO_TRANSACTIONS, DEMO_GOALS, CATEGORIES } from '@/data/dummy-data';
 
-const BudgetPlannerInputSchema = z.object({});
+const BudgetPlannerInputSchema = z.object({
+  // In the future, we can pass user's real transactions and goals here
+});
 export type BudgetPlannerInput = z.infer<typeof BudgetPlannerInputSchema>;
 
 const BudgetCategorySchema = z.object({
@@ -28,6 +31,8 @@ export type BudgetPlannerOutput = z.infer<typeof BudgetPlannerOutputSchema>;
 export async function budgetPlanner(input: BudgetPlannerInput): Promise<BudgetPlannerOutput> {
   return budgetPlannerFlow(input);
 }
+
+const validCategories = CATEGORIES.map(c => c.key).join(', ');
 
 const prompt = ai.definePrompt({
   name: 'budgetPlannerPrompt',
@@ -48,7 +53,7 @@ Financial Goals:
 {{{json goals}}}
 \`\`\`
 
-Analyze the data and provide a new budget allocation for the following categories: food, daily, trans, fun, util. Return the result as a structured JSON object.`,
+Analyze the data and provide a new budget allocation for the following categories: ${validCategories}. Return the result as a structured JSON object. The 'key' in the output must be one of the valid categories.`,
 });
 
 const budgetPlannerFlow = ai.defineFlow(
@@ -58,6 +63,8 @@ const budgetPlannerFlow = ai.defineFlow(
     outputSchema: BudgetPlannerOutputSchema,
   },
   async () => {
+    // DEV NOTE: For now, we are using demo data.
+    // In a real application, you would fetch the user's actual transactions and goals from Firestore.
     const {output} = await prompt({
         transactions: DEMO_TRANSACTIONS,
         goals: DEMO_GOALS,

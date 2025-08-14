@@ -1,4 +1,6 @@
+
 import type { LucideIcon } from 'lucide-react';
+import type { Timestamp } from 'firebase/firestore';
 
 export interface Category {
   key: string;
@@ -28,8 +30,8 @@ export interface Transaction {
     anchor?: Date;
   };
   hash: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
   clientUpdatedAt: Date;
 }
 
@@ -39,7 +41,12 @@ export interface BudgetItem {
 }
 
 export interface Budget {
-  [key: string]: BudgetItem;
+  id: string; // YYYY-MM
+  limits: { [categoryKey: string]: number };
+  used: { [categoryKey: string]: number };
+  suggestedByAI?: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 export interface Goal {

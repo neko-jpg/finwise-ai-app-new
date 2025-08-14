@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useState } from "react";
@@ -16,6 +17,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { INITIAL_BUDGET } from "@/data/dummy-data";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
+import { useBudget } from "@/hooks/use-budget";
 
 interface AppContainerProps {
     user: User;
@@ -27,10 +29,10 @@ export function AppContainer({ user }: AppContainerProps) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [offline, setOffline] = useState(false);
-  const [budget, setBudget] = useState<Budget>(INITIAL_BUDGET);
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
-  const { transactions, loading, error } = useTransactions(user.uid);
+  const { transactions, loading: txLoading, error: txError } = useTransactions(user.uid);
+  const { budget, loading: budgetLoading, error: budgetError } = useBudget(user.uid, format(new Date(), 'yyyy-MM'));
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -40,9 +42,12 @@ export function AppContainer({ user }: AppContainerProps) {
       .reduce((a, b) => a + Math.abs(b.amount), 0);
   }, [transactions]);
 
-  // Note: Budget calculation is still based on dummy data. This will be updated later.
-  const monthUsed = useMemo(() => Object.values(budget).reduce((a, b) => a + b.used, 0), [budget]);
-  const monthLimit = useMemo(() => Object.values(budget).reduce((a, b) => a + b.limit, 0), [budget]);
+  const {monthUsed, monthLimit} = useMemo(() => {
+    if (!budget) return { monthUsed: 0, monthLimit: 0 };
+    const used = Object.values(budget.used || {}).reduce((a, b) => a + b, 0);
+    const limit = Object.values(budget.limits || {}).reduce((a, b) => a + b, 0);
+    return { monthUsed: used, monthLimit: limit };
+  }, [budget]);
 
   const filteredTx = useMemo(() => {
     if (!transactions) return [];
@@ -78,11 +83,15 @@ export function AppContainer({ user }: AppContainerProps) {
             filteredTx={filteredTx} 
             catFilter={catFilter} 
             setCatFilter={setCatFilter}
-            loading={loading}
+            loading={txLoading}
           />
         )}
         {tab === "budget" && (
-          <BudgetScreen budget={budget} setBudget={setBudget} />
+          <BudgetScreen 
+            uid={user.uid}
+            budget={budget} 
+            loading={budgetLoading}
+          />
         )}
         {tab === "goals" && (
           <GoalsScreen />
