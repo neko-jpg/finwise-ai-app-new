@@ -44,10 +44,6 @@ export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpe
         </CardHeader>
         <CardContent>
           <div className="text-4xl font-bold font-headline">¥{todaySpend.toLocaleString()}</div>
-          <p className="mt-1 text-sm text-muted-foreground flex items-center">
-            <ArrowDown className="h-4 w-4 mr-1 text-green-500" />
-            昨日比 <span className="text-green-500 font-semibold ml-1">-12%</span>
-          </p>
           <div className="mt-6 flex gap-2">
             <Button onClick={() => setTab("tx")}>明細を見る</Button>
             <Button variant="outline" onClick={() => setTab("budget")}>予算を調整</Button>
