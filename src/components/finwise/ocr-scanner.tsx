@@ -37,6 +37,11 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
                 } catch (error) {
                     console.error('Error accessing camera:', error);
                     setHasCameraPermission(false);
+                    toast({
+                      variant: 'destructive',
+                      title: 'カメラへのアクセスが拒否されました',
+                      description: 'レシートスキャン機能を使用するには、ブラウザの設定でカメラへのアクセスを許可してください。',
+                    });
                 }
             }
         };
@@ -50,7 +55,7 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
             }
         }
 
-    }, [open, hasCameraPermission]);
+    }, [open, hasCameraPermission, toast]);
 
     const handleCapture = useCallback(async () => {
         if (!videoRef.current || !canvasRef.current) return;
