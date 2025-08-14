@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,7 +36,7 @@
     --input: 220 13% 93%;
     --ring: 250 100% 81%;
 
-    --radius: 0.5rem; /* Base radius, can be extended */
+    --radius: 0.75rem;
     
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -43,11 +44,12 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     
-    /* Marketing Page Additions */
-    --mk-accent: 252 98% 77%; /* #8B7CFF - Lavender */
-    --mk-mint: 170 100% 41%; /* #00D1B2 - Mint */
-    --mk-bg-1: 217 60% 8%; /* #0B1220 */
-    --mk-bg-2: 218 44% 11%; /* #111827 */
+    /* Marketing Page Theme (New) */
+    --mk-bg-1-hsl: 167 38% 10%; /* #12211e */
+    --mk-bg-2-hsl: 168 38% 15%; /* #1b322d */
+    --mk-accent-hsl: 169 75% 45%; /* #1dc9a7 */
+    --mk-secondary-hsl: 167 40% 20%; /* #25463f */
+    --mk-text-hsl: 168 25% 75%; /* #95c6bc */
   }
 
   .dark {
@@ -101,5 +103,5 @@
 }
 
 .marketing-body {
-    @apply bg-gradient-to-b from-mk-bg-1 to-mk-bg-2 text-white/90;
+    @apply bg-mk-bg-1 text-white/90;
 }

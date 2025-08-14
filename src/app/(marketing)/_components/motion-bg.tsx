@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useRef } from 'react';
 
@@ -15,12 +16,13 @@ export default function MotionBg() {
       let h = canvas.height = window.innerHeight;
       
       const rootStyle = getComputedStyle(document.documentElement);
-      const color1 = `hsl(${rootStyle.getPropertyValue('--mk-bg-1').trim()})`;
-      const color2 = `hsl(${rootStyle.getPropertyValue('--mk-bg-2').trim()})`;
+      // CSS variables are defined in globals.css for the marketing theme
+      const color1Hsl = rootStyle.getPropertyValue('--mk-bg-1-hsl').trim();
+      const color2Hsl = rootStyle.getPropertyValue('--mk-bg-2-hsl').trim();
       
       const grd = ctx.createLinearGradient(0, 0, w, h);
-      grd.addColorStop(0, color1);
-      grd.addColorStop(1, color2);
+      grd.addColorStop(0, `hsl(${color1Hsl})`);
+      grd.addColorStop(1, `hsl(${color2Hsl})`);
       
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, w, h);

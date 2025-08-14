@@ -1,7 +1,7 @@
 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { Noto_Sans_JP, Plus_Jakarta_Sans } from 'next/font/google';
+import { Noto_Sans_JP, Inter } from 'next/font/google';
 import AnimationProvider from '@/components/animation-provider';
 
 
@@ -11,9 +11,9 @@ const noto = Noto_Sans_JP({
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-jakarta-sans',
+  variable: '--font-inter',
   display: 'swap',
 });
 
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja" className={`${noto.variable} ${jakarta.variable}`}>
+    <html lang="ja" className={`${noto.variable} ${inter.variable}`}>
       <body className="font-body">
            <AnimationProvider>
               {children}
