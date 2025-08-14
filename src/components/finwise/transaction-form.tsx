@@ -10,16 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import SHA256 from 'crypto-js/sha256';
+import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
+import { useDebouncedCallback } from 'use-debounce';
 
 const FormSchema = z.object({
   bookedAt: z.date({
@@ -43,6 +45,7 @@ interface TransactionFormProps {
 export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAiCategorizing, startAiCategorization] = useTransition();
 
     // TODO: Replace with actual user ID from Firebase Auth
     const uid = 'user-123';
@@ -57,6 +60,23 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
             note: '',
         },
     });
+
+    const debouncedCategorize = useDebouncedCallback(() => {
+        const merchant = form.getValues('merchant');
+        const amount = form.getValues('amount');
+        if (merchant && amount) {
+            startAiCategorization(async () => {
+                try {
+                    const result = await categorizeTransaction({ merchant, amount: amount || 0 });
+                    if (result.major && CATEGORIES.some(c => c.key === result.major)) {
+                        form.setValue('categoryMajor', result.major, { shouldValidate: true });
+                    }
+                } catch (e) {
+                    console.warn("AI categorization failed", e);
+                }
+            });
+        }
+    }, 1000);
 
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
@@ -82,8 +102,6 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
                 updatedAt: serverTimestamp(),
             });
 
-            console.log("Document written with ID: ", docRef.id);
-
             toast({
                 title: "取引を登録しました",
                 description: `${values.merchant}: ¥${Math.abs(values.amount).toLocaleString()}`,
@@ -102,6 +120,19 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
             setIsSubmitting(false);
         }
     };
+    
+    // Reset form when dialog closes
+    React.useEffect(() => {
+        if (!open) {
+            form.reset({
+                bookedAt: new Date(),
+                amount: undefined,
+                merchant: '',
+                categoryMajor: '',
+                note: '',
+            });
+        }
+    }, [open, form]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,7 +188,10 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
                                 <FormItem>
                                     <FormLabel>金額 (支出は -500 のように入力)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="-580" {...field} />
+                                        <Input type="number" placeholder="-580" {...field} onChange={(e) => {
+                                            field.onChange(e);
+                                            debouncedCategorize();
+                                        }}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -171,7 +205,10 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
                                 <FormItem>
                                     <FormLabel>店名・メモ</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="スターバックス" {...field} />
+                                        <Input placeholder="スターバックス" {...field} onChange={(e) => {
+                                            field.onChange(e);
+                                            debouncedCategorize();
+                                        }}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -183,8 +220,11 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
                             name="categoryMajor"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>カテゴリ</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                     <FormLabel className="flex items-center gap-2">
+                                        カテゴリ
+                                        {isAiCategorizing && <Sparkles className="h-4 w-4 text-primary animate-pulse" />}
+                                    </FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="カテゴリを選択" />
