@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
 import type { User } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
 
 
 interface BudgetScreenProps {
@@ -23,34 +24,26 @@ interface BudgetScreenProps {
   loading?: boolean;
   transactions?: Transaction[];
   goals?: Goal[];
+  setBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
 }
 
-export function BudgetScreen({ user, budget, loading, transactions = [], goals = [] }: BudgetScreenProps) {
+export function BudgetScreen({ user, budget, loading, transactions = [], goals = [], setBudget }: BudgetScreenProps) {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-  const [currentBudget, setCurrentBudget] = useState<Budget | null>(budget || null);
-
-  useEffect(() => {
-    if (budget) {
-      setCurrentBudget(budget);
-    }
-  }, [budget]);
-
+  const [isAiPending, startAiTransition] = useTransition();
+  const [isSaving, startSavingTransition] = useTransition();
+  
   const handleBudgetChange = (key: string, value: number) => {
-    if (!currentBudget || !user) return;
+    if (!budget || !user) return;
     
     const newLimits = {
-      ...(currentBudget.limits || {}),
+      ...(budget.limits || {}),
       [key]: value,
     };
     
-    setCurrentBudget({
-        ...currentBudget,
-        limits: newLimits
-    });
+    // Optimistic update
+    setBudget(prev => prev ? {...prev, limits: newLimits} : null);
     
-    // Save to Firestore optimistically
-    startTransition(async () => {
+    startSavingTransition(async () => {
         try {
             const period = format(new Date(), 'yyyy-MM');
             const docRef = doc(db, `users/${user.uid}/budgets`, period);
@@ -65,6 +58,7 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
               description: "予算の保存に失敗しました。",
               variant: "destructive",
             });
+            // Revert optimistic update on failure if needed
         }
     });
   };
@@ -78,20 +72,24 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
       });
       return;
     }
-    startTransition(async () => {
+    startAiTransition(async () => {
       if (!user) return;
       try {
         const result = await budgetPlanner({
-            transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
-            goals: goals.map(g => ({...g, due: g.due?.toISOString()})),
+            transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString() })),
+            goals: goals.map(g => ({...g, due: g.due?.toISOString(), createdAt: g.createdAt?.toDate().toISOString(), updatedAt: g.updatedAt?.toDate().toISOString()})),
         });
-        const newLimits = { ...currentBudget?.limits };
+        
+        const newLimits = { ...budget?.limits };
         result.suggestedBudget.forEach(item => {
           if (CATEGORIES.some(c => c.key === item.key)) {
              newLimits[item.key] = item.limit;
           }
         });
-        setCurrentBudget(prev => ({...(prev || {} as Budget), limits: newLimits as any}));
+        
+        // Optimistic update
+        setBudget(prev => prev ? {...prev, limits: newLimits as any} : null);
+
         toast({
           title: "AIが予算を再提案しました",
           description: "支出パターンと目標に合わせて調整しました。",
@@ -115,8 +113,8 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
     });
   };
   
-  const totalLimit = Object.values(currentBudget?.limits || {}).reduce((a, b) => a + b, 0);
-  const totalUsed = Object.values(currentBudget?.used || {}).reduce((a, b) => a + b, 0);
+  const totalLimit = Object.values(budget?.limits || {}).reduce((a, b) => a + b, 0);
+  const totalUsed = Object.values(budget?.used || {}).reduce((a, b) => a + b, 0);
 
   if (loading) {
     return (
@@ -153,8 +151,8 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-headline text-xl">予算管理</CardTitle>
-           <Button variant="outline" onClick={handleAiSuggestion} disabled={isPending}>
-            {isPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}AIに再提案させる
+           <Button variant="outline" onClick={handleAiSuggestion} disabled={isAiPending || isSaving}>
+            {isAiPending ? <Loader className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}AIに再提案させる
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -177,8 +175,8 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {CATEGORIES.map((category) => {
-          const itemLimit = currentBudget?.limits?.[category.key] || 0;
-          const itemUsed = currentBudget?.used?.[category.key] || 0;
+          const itemLimit = budget?.limits?.[category.key] || 0;
+          const itemUsed = budget?.used?.[category.key] || 0;
           
           return (
             <BudgetInput 

@@ -11,35 +11,21 @@ import { useToast } from '@/hooks/use-toast';
 import { detectSubscriptions, DetectSubscriptionsOutput } from '@/ai/flows/detect-subscriptions';
 import type { Transaction } from '@/lib/types';
 import { AppContainer } from '@/components/finwise/app-container';
-import type { Timestamp } from 'firebase/firestore';
 
 interface SubscriptionsScreenProps {
     transactions: Transaction[];
 }
 
-const isTimestamp = (value: any): value is Timestamp => {
-  return value && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number';
-};
-
 const convertTimestampsInObject = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;
-
-    if (Array.isArray(obj)) {
-        return obj.map(item => convertTimestampsInObject(item));
-    }
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(convertTimestampsInObject);
 
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
             const value = obj[key];
-            if (isTimestamp(value)) {
-                newObj[key] = value.toDate().toISOString();
-            } else if (value instanceof Date) {
-                 newObj[key] = value.toISOString();
-            }
-            else {
-                newObj[key] = convertTimestampsInObject(value);
-            }
+            newObj[key] = convertTimestampsInObject(value);
         }
     }
     return newObj;
@@ -73,7 +59,7 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
     useEffect(() => {
         fetchSubscriptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [transactions, toast]);
+    }, [transactions]);
 
     const renderContent = () => {
         if (isPending || !subs) {

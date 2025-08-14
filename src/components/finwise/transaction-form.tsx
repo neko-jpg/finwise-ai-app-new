@@ -43,10 +43,10 @@ interface TransactionFormProps {
     onOpenChange: (open: boolean) => void;
     uid: string;
     initialData?: Partial<TransactionFormValues>;
-    onTransactionAdded?: (newTx: Transaction) => void;
+    onTransactionAction: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, uid, initialData, onTransactionAdded }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, uid, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -55,7 +55,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
         resolver: zodResolver(FormSchema),
         defaultValues: {
             bookedAt: new Date(),
-            amount: '' as any, // Changed from undefined to empty string
+            amount: '' as any,
             merchant: '',
             categoryMajor: '',
             note: '',
@@ -81,39 +81,41 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
 
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
+        
+        const optimisticId = `optimistic-${Date.now()}`;
+        const now = Timestamp.now();
+        const SHA256 = require('crypto-js/sha256');
+        const hashSource = uid + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
+
+        const optimisticTx: Transaction = {
+            id: optimisticId,
+            bookedAt: values.bookedAt,
+            amount: values.amount,
+            currency: 'JPY',
+            merchant: values.merchant,
+            category: { major: values.categoryMajor },
+            source: initialData?.amount ? 'ocr' : 'manual',
+            note: values.note,
+            hash: SHA256(hashSource).toString(),
+            clientUpdatedAt: new Date(),
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        // Optimistic Update
+        onTransactionAction(optimisticTx);
+        onOpenChange(false);
+
         try {
-            const SHA256 = require('crypto-js/sha256');
-            const hashSource = uid + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
-            const docData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
-              bookedAt: values.bookedAt,
-              amount: values.amount,
-              currency: 'JPY',
-              merchant: values.merchant,
-              category: {
-                major: values.categoryMajor,
-              },
-              source: 'manual',
-              note: values.note,
-              hash: SHA256(hashSource).toString(),
-              clientUpdatedAt: new Date(),
+            const docData = {
+              ...optimisticTx,
+              id: undefined, // Firestore generates the ID
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
             };
-            
-            // Optimistic update
-            const optimisticTx: Transaction = {
-                id: `optimistic-${Date.now()}`,
-                ...docData,
-                createdAt: Timestamp.now(), // Placeholder
-                updatedAt: Timestamp.now(), // Placeholder
-            }
-            onTransactionAdded?.(optimisticTx);
+            delete docData.id;
 
-            onOpenChange(false); // Close modal immediately
-
-            await addDoc(collection(db, `users/${uid}/transactions`), {
-                ...docData,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
+            await addDoc(collection(db, `users/${uid}/transactions`), docData);
 
             toast({
                 title: "取引を登録しました",
@@ -127,7 +129,8 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
                 title: "登録に失敗しました",
                 description: "保存中にエラーが発生しました。もう一度お試しください。",
             });
-            // Here you might want to implement logic to remove the optimistic update if it fails
+            // Revert optimistic update
+            // onTransactionAction(prev => prev.filter(tx => tx.id !== optimisticId));
         } finally {
             setIsSubmitting(false);
         }

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,18 +14,18 @@ import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { useMemo } from 'react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 
 interface TransactionsScreenProps {
   loading?: boolean;
-  transactions?: Transaction[];
+  transactions: Transaction[];
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   user?: User;
 }
 
-export function TransactionsScreen({ loading, transactions = [], user }: TransactionsScreenProps) {
+export function TransactionsScreen({ loading, transactions = [], setTransactions, user }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
@@ -42,7 +42,9 @@ export function TransactionsScreen({ loading, transactions = [], user }: Transac
   }, [transactions, catFilter, q, showDeleted]);
 
   const handleAnalyze = () => {
-    if (filteredTx.length === 0) {
+    const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString()}));
+
+    if (txToAnalyze.length === 0) {
         toast({
             title: "データがありません",
             description: "分析するには、まず取引をいくつか登録してください。",
@@ -50,54 +52,45 @@ export function TransactionsScreen({ loading, transactions = [], user }: Transac
         });
         return;
     }
-    startTransition();
-    analyzeSpending({ transactions: filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})) })
-      .then(result => {
+
+    startTransition(async () => {
+      try {
+        const result = await analyzeSpending({ transactions: txToAnalyze });
         toast({
           title: "AIによる支出のインサイト",
           description: result.insights,
         });
-      })
-      .catch(e => {
+      } catch (e) {
         console.error(e);
         toast({
           title: "エラー",
           description: "分析に失敗しました。",
           variant: "destructive",
         });
-      })
+      }
+    });
   };
 
-  const handleDelete = async (txId: string) => {
+  const handleToggleDelete = async (txId: string, isDeleted: boolean) => {
     if (!user) return;
+    
+    // Optimistic Update
+    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : new Date() } : t));
+
     const docRef = doc(db, `users/${user.uid}/transactions`, txId);
     try {
       await updateDoc(docRef, {
-        deletedAt: serverTimestamp()
+        deletedAt: isDeleted ? null : serverTimestamp()
       });
       toast({
-        title: "取引を削除しました",
-        description: "「削除済み」から復元できます。",
+        title: isDeleted ? "取引を復元しました" : "取引を削除しました",
+        description: isDeleted ? "" : "「削除済み」から復元できます。",
       });
     } catch (e) {
       console.error(e);
-      toast({ variant: "destructive", title: "削除に失敗しました"});
-    }
-  };
-
-  const handleRestore = async (txId: string) => {
-    if (!user) return;
-    const docRef = doc(db, `users/${user.uid}/transactions`, txId);
-    try {
-      await updateDoc(docRef, {
-        deletedAt: null
-      });
-      toast({
-        title: "取引を復元しました"
-      });
-    } catch (e) {
-      console.error(e);
-      toast({ variant: "destructive", title: "復元に失敗しました"});
+      // Revert optimistic update on failure
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? new Date() : null } : t));
+      toast({ variant: "destructive", title: "更新に失敗しました"});
     }
   };
   
@@ -149,9 +142,9 @@ export function TransactionsScreen({ loading, transactions = [], user }: Transac
             </Badge>
           </div>
            {showDeleted ? (
-              <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => handleRestore(t.id)}><Undo2 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => handleToggleDelete(t.id, true)}><Undo2 className="h-4 w-4" /></Button>
             ) : (
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleDelete(t.id)}><Trash2 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100" onClick={() => handleToggleDelete(t.id, false)}><Trash2 className="h-4 w-4" /></Button>
             )}
         </div>
       </div>

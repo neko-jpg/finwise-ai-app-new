@@ -5,11 +5,14 @@ import { db } from '@/lib/firebase';
 import type { Transaction } from '@/lib/types';
 
 interface UseTransactionsReturn {
+    transactions: Transaction[];
+    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
     loading: boolean;
     error: FirestoreError | undefined;
 }
 
-export function useTransactions(uid: string, setTransactions: (transactions: Transaction[]) => void): UseTransactionsReturn {
+export function useTransactions(uid: string | undefined): UseTransactionsReturn {
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
@@ -19,30 +22,33 @@ export function useTransactions(uid: string, setTransactions: (transactions: Tra
             setTransactions([]);
             return () => {}; // Return an empty function for cleanup
         }
-
+        
+        setLoading(true);
         const transactionsCollectionRef = collection(db, `users/${uid}/transactions`);
-        // Order by `bookedAt` for display, but you might also want a secondary sort key like `createdAt` for stable ordering
         const q = query(transactionsCollectionRef, orderBy('bookedAt', 'desc'));
 
         const unsubscribe: Unsubscribe = onSnapshot(q, 
             (querySnapshot) => {
-                const transactions = querySnapshot.docs.map(doc => {
+                const fetchedTransactions = querySnapshot.docs.map(doc => {
                     const data = doc.data() as DocumentData;
                     // Firestore Timestamps need to be converted to JS Dates
                     const bookedAt = data.bookedAt?.toDate();
-                    const createdAt = data.createdAt?.toDate();
-                    const updatedAt = data.updatedAt?.toDate();
+                    const createdAt = data.createdAt; // Keep as Timestamp
+                    const updatedAt = data.updatedAt; // Keep as Timestamp
+                    const deletedAt = data.deletedAt?.toDate();
                     const clientUpdatedAt = data.clientUpdatedAt?.toDate();
+
                     return { 
                         id: doc.id,
                         ...data,
                         bookedAt,
                         createdAt,
                         updatedAt,
+                        deletedAt,
                         clientUpdatedAt,
                     } as Transaction;
                 });
-                setTransactions(transactions);
+                setTransactions(fetchedTransactions);
                 setLoading(false);
             },
             (err) => {
@@ -54,7 +60,7 @@ export function useTransactions(uid: string, setTransactions: (transactions: Tra
 
         // Cleanup subscription on unmount
         return () => unsubscribe();
-    }, [uid, setTransactions]);
+    }, [uid]);
 
-    return { loading, error };
+    return { transactions, setTransactions, loading, error };
 }

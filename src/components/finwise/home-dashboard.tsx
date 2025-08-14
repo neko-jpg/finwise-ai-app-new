@@ -10,14 +10,14 @@ import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
 import type { TransactionFormValues } from "./transaction-form";
 import type { Transaction, Budget, Goal } from "@/lib/types";
-import type { User } from 'firebase/auth';
 import { format } from 'date-fns';
+import { Skeleton } from '../ui/skeleton';
 
 interface HomeDashboardProps {
-  user?: User;
   transactions?: Transaction[];
   budget?: Budget | null;
   goals?: Goal[];
+  loading?: boolean;
   setTab?: (t: string) => void;
   onOpenTransactionForm?: (initialData?: Partial<TransactionFormValues>) => void;
   onOpenOcr?: () => void;
@@ -26,7 +26,8 @@ interface HomeDashboardProps {
 
 export function HomeDashboard({ 
     transactions = [], 
-    budget = null, 
+    budget = null,
+    loading,
     setTab = () => {}, 
     onOpenTransactionForm = () => {}, 
     onOpenOcr = () => {},
@@ -37,7 +38,7 @@ export function HomeDashboard({
     if (!transactions) return 0;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     return transactions
-      .filter((t: Transaction) => t.bookedAt && format(t.bookedAt, 'yyyy-MM-dd') === todayStr && t.amount < 0)
+      .filter((t: Transaction) => t.bookedAt && format(t.bookedAt, 'yyyy-MM-dd') === todayStr && t.amount < 0 && !t.deletedAt)
       .reduce((a, b) => a + Math.abs(b.amount), 0);
   }, [transactions]);
 
@@ -51,6 +52,31 @@ export function HomeDashboard({
   const remain = Math.max(0, monthLimit - monthUsed);
   const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
+  if (loading) {
+      return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="md:col-span-3 flex justify-end gap-2 mb-2">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-32" />
+              </div>
+              <Card className="md:col-span-2">
+                  <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
+                  <CardContent><Skeleton className="h-10 w-1/2" /></CardContent>
+              </Card>
+              <Card>
+                  <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
+                  <CardContent className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-full" />
+                  </CardContent>
+              </Card>
+              <div className="md:col-span-3">
+                  <Skeleton className="h-24 w-full" />
+              </div>
+          </div>
+      )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <div className="md:col-span-3 flex justify-end gap-2 mb-2">

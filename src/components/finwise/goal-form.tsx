@@ -17,7 +17,8 @@ import { ja } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import type { Goal } from '@/lib/types';
 
 const FormSchema = z.object({
   name: z.string().min(1, '目標名は必須です。').max(50, '50文字以内で入力してください。'),
@@ -33,9 +34,10 @@ interface GoalFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     uid: string;
+    onGoalAction: (goal: Goal) => void;
 }
 
-export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
+export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,11 +52,29 @@ export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
 
     const onSubmit = async (values: GoalFormValues) => {
         setIsSubmitting(true);
+        
+        const optimisticId = `optimistic-${Date.now()}`;
+        const now = Timestamp.now();
+
+        const optimisticGoal: Goal = {
+            id: optimisticId,
+            name: values.name,
+            target: values.target,
+            saved: 0,
+            due: values.due || null,
+            createdAt: now,
+            updatedAt: now,
+        };
+        
+        // Optimistic Update
+        onGoalAction(optimisticGoal);
+        onOpenChange(false);
+        
         try {
             const docData = {
                 name: values.name,
                 target: values.target,
-                saved: 0, // Initial saved amount is 0
+                saved: 0, 
                 due: values.due || null,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -66,7 +86,8 @@ export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
                 title: "新しい目標を作成しました！",
                 description: `「${values.name}」に向かって頑張りましょう！`,
             });
-            onOpenChange(false);
+            // Here you could update the optimistic goal with the real one if needed,
+            // but onSnapshot in useGoals should handle it.
         } catch (error) {
             console.error("Error adding document: ", error);
             toast({
@@ -74,6 +95,8 @@ export function GoalForm({ open, onOpenChange, uid }: GoalFormProps) {
                 title: "目標の作成に失敗しました",
                 description: "保存中にエラーが発生しました。もう一度お試しください。",
             });
+            // Revert optimistic update
+            // onGoalAction(prev => prev.filter(g => g.id !== optimisticId));
         } finally {
             setIsSubmitting(false);
         }

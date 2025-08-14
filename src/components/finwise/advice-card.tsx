@@ -5,40 +5,30 @@ import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sparkles, ChevronRight, Loader, Info } from "lucide-react";
+import { Sparkles, ChevronRight, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { Skeleton } from "../ui/skeleton";
 import type { Transaction, Budget } from "@/lib/types";
-import type { Timestamp } from 'firebase/firestore';
 
 interface AdviceCardProps {
     transactions: Transaction[];
     budget: Budget | null;
 }
 
-const isTimestamp = (value: any): value is Timestamp => {
-  return value && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number';
-};
-
-const convertTimestampsInObject = (obj: any): any => {
+const convertObjectForServerAction = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;
-
-    if (Array.isArray(obj)) {
-        return obj.map(item => convertTimestampsInObject(item));
-    }
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(convertObjectForServerAction);
 
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
             const value = obj[key];
-            if (isTimestamp(value)) {
+            if (value && typeof value.toDate === 'function') { // Firestore Timestamp
                 newObj[key] = value.toDate().toISOString();
-            } else if (value instanceof Date) {
-                 newObj[key] = value.toISOString();
-            }
-            else {
-                newObj[key] = convertTimestampsInObject(value);
+            } else {
+                newObj[key] = convertObjectForServerAction(value);
             }
         }
     }
@@ -56,9 +46,12 @@ export function AdviceCard({ transactions, budget }: AdviceCardProps) {
     if (!transactions || transactions.length === 0 || !budget) return;
 
     startTransition(async () => {
+        const plainTransactions = convertObjectForServerAction(transactions);
+        const plainBudget = convertObjectForServerAction(budget);
+        
         const result = await realTimeSaver({
-            transactions: convertTimestampsInObject(transactions),
-            budget: convertTimestampsInObject(budget),
+            transactions: plainTransactions,
+            budget: plainBudget,
         });
         setAdvice(result);
     });

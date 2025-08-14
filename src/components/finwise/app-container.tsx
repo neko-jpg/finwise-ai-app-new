@@ -14,13 +14,15 @@ import { useGoals } from "@/hooks/use-goals";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
-import { GoalForm } from "./goal-form";
+import { GoalForm, GoalFormValues } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthDialog } from '@/components/finwise/auth-dialog';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { doc, writeBatch } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface AppContainerProps {
     children: React.ReactNode;
@@ -40,14 +42,12 @@ export function AppContainer({ children }: AppContainerProps) {
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [offline, setOffline] = useState(false);
 
-  const uid = user?.uid || '';
+  const uid = user?.uid;
+  const currentMonth = useMemo(() => format(new Date(), 'yyyy-MM'), []);
   
-  // Directly manage transactions state here to allow for optimistic updates
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const { loading: txLoading, error: txError } = useTransactions(uid, setTransactions);
-
-  const { budget, loading: budgetLoading, error: budgetError } = useBudget(uid, format(new Date(), 'yyyy-MM'));
-  const { goals, loading: goalsLoading, error: goalsError } = useGoals(uid);
+  const { transactions, setTransactions, loading: txLoading } = useTransactions(uid);
+  const { budget, setBudget, loading: budgetLoading } = useBudget(uid, currentMonth);
+  const { goals, setGoals, loading: goalsLoading } = useGoals(uid);
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
@@ -142,11 +142,14 @@ export function AppContainer({ children }: AppContainerProps) {
             transactions: transactions || [],
             budget,
             goals: goals || [],
+            loading: txLoading || budgetLoading || goalsLoading,
             onOpenTransactionForm: handleOpenTransactionForm,
             onOpenOcr: handleOpenOcr,
             onOpenGoalForm: handleOpenGoalForm,
             setTab: handleSetTab,
-            loading: txLoading || budgetLoading || goalsLoading,
+            setTransactions,
+            setBudget,
+            setGoals,
          })}
       </main>
 
@@ -176,7 +179,7 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setTransactionFormOpen}
         uid={user.uid}
         initialData={transactionInitialData}
-        onTransactionAdded={(newTx) => {
+        onTransactionAction={(newTx) => {
             setTransactions(prev => [newTx, ...prev].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
         }}
       />
@@ -184,6 +187,9 @@ export function AppContainer({ children }: AppContainerProps) {
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
         uid={user.uid}
+        onGoalAction={(newGoal) => {
+            setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)));
+        }}
       />
     </div>
   );
