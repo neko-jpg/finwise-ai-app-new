@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -24,29 +25,32 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
 
     useEffect(() => {
         const getCameraPermission = async () => {
-            if (!open || hasCameraPermission) return;
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
+            if (!open || hasCameraPermission === true) return;
+            // Only ask for permission when the dialog opens
+            if (open && hasCameraPermission === null) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                    setHasCameraPermission(true);
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    setHasCameraPermission(false);
                 }
-                setHasCameraPermission(true);
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                setHasCameraPermission(false);
             }
         };
         getCameraPermission();
         
         return () => {
-             // Cleanup: stop video stream when dialog is closed
             if (videoRef.current && videoRef.current.srcObject) {
                 const stream = videoRef.current.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject = null;
             }
         }
 
-    }, [open]);
+    }, [open, hasCameraPermission]);
 
     const handleCapture = useCallback(async () => {
         if (!videoRef.current || !canvasRef.current) return;
@@ -84,9 +88,18 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
         }
 
     }, [onComplete, onOpenChange, toast]);
+    
+    const handleDialogChange = (isOpen: boolean) => {
+        if (!isOpen) {
+            // Reset permission state when dialog is closed, so it can be requested again next time.
+            setHasCameraPermission(null);
+        }
+        onOpenChange(isOpen);
+    }
+
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle className="font-headline flex items-center gap-2"><ScanLine />レシートスキャン</DialogTitle>
