@@ -16,7 +16,7 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-export default async function RootLayout({
+export default function RootLayout({
   children
 }: {
   children: React.ReactNode;
