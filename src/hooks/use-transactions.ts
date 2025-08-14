@@ -1,41 +1,58 @@
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, orderBy, DocumentData, FirestoreError } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, query, orderBy, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Transaction } from '@/lib/types';
-import { useMemo } from 'react';
 
 interface UseTransactionsReturn {
-    transactions: Transaction[] | null;
     loading: boolean;
     error: FirestoreError | undefined;
 }
 
-export function useTransactions(uid: string): UseTransactionsReturn {
-    const transactionsCollectionRef = uid ? collection(db, `users/${uid}/transactions`) : null;
-    const q = transactionsCollectionRef ? query(transactionsCollectionRef, orderBy('bookedAt', 'desc')) : null;
+export function useTransactions(uid: string, setTransactions: (transactions: Transaction[]) => void): UseTransactionsReturn {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
-    const [value, loading, error] = useCollection(q);
+    useEffect(() => {
+        if (!uid) {
+            setLoading(false);
+            setTransactions([]);
+            return;
+        }
 
-    const transactions = useMemo(() => {
-        if (!value) return null;
-        return value.docs.map(doc => {
-            const data = doc.data() as DocumentData;
-            // Firestore Timestamps need to be converted to JS Dates
-            const bookedAt = data.bookedAt?.toDate();
-            const createdAt = data.createdAt?.toDate();
-            const updatedAt = data.updatedAt?.toDate();
-            const clientUpdatedAt = data.clientUpdatedAt?.toDate();
-            return { 
-                id: doc.id,
-                ...data,
-                bookedAt,
-                createdAt,
-                updatedAt,
-                clientUpdatedAt,
-             } as Transaction
-        });
-    }, [value]);
+        const transactionsCollectionRef = collection(db, `users/${uid}/transactions`);
+        const q = query(transactionsCollectionRef, orderBy('bookedAt', 'desc'));
 
+        const unsubscribe: Unsubscribe = onSnapshot(q, 
+            (querySnapshot) => {
+                const transactions = querySnapshot.docs.map(doc => {
+                    const data = doc.data() as DocumentData;
+                    // Firestore Timestamps need to be converted to JS Dates
+                    const bookedAt = data.bookedAt?.toDate();
+                    const createdAt = data.createdAt?.toDate();
+                    const updatedAt = data.updatedAt?.toDate();
+                    const clientUpdatedAt = data.clientUpdatedAt?.toDate();
+                    return { 
+                        id: doc.id,
+                        ...data,
+                        bookedAt,
+                        createdAt,
+                        updatedAt,
+                        clientUpdatedAt,
+                    } as Transaction;
+                });
+                setTransactions(transactions);
+                setLoading(false);
+            },
+            (err) => {
+                console.error("useTransactions error:", err);
+                setError(err);
+                setLoading(false);
+            }
+        );
 
-    return { transactions, loading: loading || !uid, error };
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
+    }, [uid, setTransactions]);
+
+    return { loading, error };
 }

@@ -19,7 +19,7 @@ import { CATEGORIES } from '@/data/dummy-data';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { useDebouncedCallback } from 'use-debounce';
@@ -43,9 +43,10 @@ interface TransactionFormProps {
     onOpenChange: (open: boolean) => void;
     uid: string;
     initialData?: Partial<TransactionFormValues>;
+    onTransactionAdded?: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, uid, initialData }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, uid, initialData, onTransactionAdded }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -96,6 +97,17 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
               hash: SHA256(hashSource).toString(),
               clientUpdatedAt: new Date(),
             };
+            
+            // Optimistic update
+            const optimisticTx: Transaction = {
+                id: `optimistic-${Date.now()}`,
+                ...docData,
+                createdAt: Timestamp.now(), // Placeholder
+                updatedAt: Timestamp.now(), // Placeholder
+            }
+            onTransactionAdded?.(optimisticTx);
+
+            onOpenChange(false); // Close modal immediately
 
             await addDoc(collection(db, `users/${uid}/transactions`), {
                 ...docData,
@@ -108,7 +120,6 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                 description: `${values.merchant}: ¥${Math.abs(values.amount).toLocaleString()}`,
             });
 
-            onOpenChange(false);
         } catch (error) {
             console.error("Error adding document: ", error);
             toast({
@@ -116,6 +127,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData }: Transa
                 title: "登録に失敗しました",
                 description: "保存中にエラーが発生しました。もう一度お試しください。",
             });
+            // Here you might want to implement logic to remove the optimistic update if it fails
         } finally {
             setIsSubmitting(false);
         }

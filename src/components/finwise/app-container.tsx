@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
 import { BottomNav } from './bottom-nav';
@@ -41,7 +41,11 @@ export function AppContainer({ children }: AppContainerProps) {
   const [offline, setOffline] = useState(false);
 
   const uid = user?.uid || '';
-  const { transactions, loading: txLoading, error: txError } = useTransactions(uid);
+  
+  // Directly manage transactions state here to allow for optimistic updates
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { loading: txLoading, error: txError } = useTransactions(uid, setTransactions);
+
   const { budget, loading: budgetLoading, error: budgetError } = useBudget(uid, format(new Date(), 'yyyy-MM'));
   const { goals, loading: goalsLoading, error: goalsError } = useGoals(uid);
 
@@ -172,6 +176,9 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setTransactionFormOpen}
         uid={user.uid}
         initialData={transactionInitialData}
+        onTransactionAdded={(newTx) => {
+            setTransactions(prev => [newTx, ...prev].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
+        }}
       />
       <GoalForm
         open={goalFormOpen}
