@@ -29,11 +29,17 @@ export function EntryPage() {
         setIsSigningIn(true);
         try {
             await signInGuest();
-        } catch (e) {
+        } catch (e: any) {
             console.error("Anonymous sign in failed", e);
+            
+            let description = "もう一度お試しください。";
+            if (e.code === 'auth/configuration-not-found') {
+              description = "Firebaseコンソールで匿名サインインが有効になっていません。プロジェクトの認証設定を確認してください。";
+            }
+
             toast({
                 title: "ログインに失敗しました",
-                description: "もう一度お試しください。",
+                description: description,
                 variant: 'destructive',
             });
             setIsSigningIn(false);
