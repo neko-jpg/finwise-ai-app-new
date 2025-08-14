@@ -6,10 +6,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Mic, Search, Bot, Loader } from "lucide-react";
 import { assistant } from '@/ai/flows/assistant';
+import { speechToTransaction, SpeechToTransactionOutput } from '@/ai/flows/speech-to-transaction';
+import type { TransactionFormValues } from './transaction-form';
+
 
 interface VoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onComplete: (data: Partial<TransactionFormValues>) => void;
 }
 
 const QUICK_QUERIES = [
@@ -19,18 +23,27 @@ const QUICK_QUERIES = [
     "台湾旅行の進捗はどう？",
 ]
 
-export function VoiceDialog({ open, onOpenChange }: VoiceDialogProps) {
+export function VoiceDialog({ open, onOpenChange, onComplete }: VoiceDialogProps) {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (currentQuery: string) => {
     if (!currentQuery) return;
+    setQuery('');
     setResponse('');
     startTransition(async () => {
       try {
-        const result = await assistant({ query: currentQuery });
-        setResponse(result.response);
+        const result = await speechToTransaction({ query: currentQuery });
+        if (result.type === 'transaction') {
+            onComplete({
+                merchant: result.merchant,
+                amount: result.amount,
+            });
+        } else {
+            const assistantResult = await assistant({ query: currentQuery });
+            setResponse(assistantResult.response);
+        }
       } catch (e) {
         console.error(e);
         setResponse('エラーが発生しました。もう一度お試しください。');
@@ -44,11 +57,17 @@ export function VoiceDialog({ open, onOpenChange }: VoiceDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        onOpenChange(isOpen);
+        if (!isOpen) {
+            setQuery('');
+            setResponse('');
+        }
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2"><Mic/>音声アシスタント</DialogTitle>
-          <DialogDescription>例：「今日の支出は？」「食費の予算残額は？」</DialogDescription>
+          <DialogDescription>「カフェで580円」のように話すか、質問を入力してください。</DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-2 rounded-lg border p-2">
           <Input 
@@ -71,7 +90,7 @@ export function VoiceDialog({ open, onOpenChange }: VoiceDialogProps) {
             ))}
         </div>
         
-        {isPending && (
+        {isPending && !response && (
             <div className="mt-4 flex items-center justify-center text-muted-foreground">
                 <Loader className="animate-spin mr-2" />
                 <span>AIが回答を生成中...</span>

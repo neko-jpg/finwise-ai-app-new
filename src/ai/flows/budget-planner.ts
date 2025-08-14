@@ -41,19 +41,20 @@ const prompt = ai.definePrompt({
     goals: z.any(),
   })},
   output: {schema: BudgetPlannerOutputSchema},
-  prompt: `You are a personal finance advisor. Based on the user's past transactions and financial goals, suggest a personalized monthly budget plan.
+  prompt: `あなたはパーソナルファイナンスのアドバイザーです。ユーザーの過去の取引と財務目標に基づき、パーソナライズされた月次予算計画を提案してください。
 
-Transactions:
+取引履歴:
 \`\`\`json
 {{{json transactions}}}
 \`\`\`
 
-Financial Goals:
+財務目標:
 \`\`\`json
 {{{json goals}}}
 \`\`\`
 
-Analyze the data and provide a new budget allocation for the following categories: ${validCategories}. Return the result as a structured JSON object. The 'key' in the output must be one of the valid categories.`,
+データを分析し、以下のカテゴリに新しい予算配分を提案してください: ${validCategories}。
+結果は構造化されたJSONオブジェクトとして日本語で返してください。出力の 'key' は有効なカテゴリのいずれかでなければなりません。`,
 });
 
 const budgetPlannerFlow = ai.defineFlow(

@@ -33,21 +33,21 @@ const realTimeSaverPrompt = ai.definePrompt({
     budget: z.any(),
   })},
   output: {schema: RealTimeSaverOutputSchema},
-  prompt: `You are a personal finance advisor providing real-time saving tips. The current date is 2025-08-13.
+  prompt: `あなたはリアルタイムで節約のヒントを提供するパーソナルファイナンスアドバイザーです。現在の日付は2025-08-13です。
 
-  Analyze the user's recent transactions and budget status to identify a potential savings opportunity. Provide a specific and actionable saving tip, a detailed explanation for it, and the potential savings amount.
+  ユーザーの最近の取引と予算の状況を分析し、潜在的な節約の機会を特定してください。具体的で実行可能な節約のヒント、その詳細な説明、および潜在的な節約額を日本語で提供してください。
 
-  Transactions (today is 2025-08-13):
+  取引履歴 (今日は2025-08-13):
   \`\`\`json
   {{{json transactions}}}
   \`\`\`
 
-  Budget:
+  予算:
   \`\`\`json
   {{{json budget}}}
   \`\`\`
 
-  Focus on suggesting realistic and easily achievable saving tips based on the provided data. The tip should be concise and impactful.`,
+  提供されたデータに基づいて、現実的で達成しやすい節約のヒントを提案することに焦点を当ててください。ヒントは簡潔でインパクトのあるものにしてください。`,
 });
 
 const realTimeSaverFlow = ai.defineFlow(

@@ -11,7 +11,7 @@ import { GoalsScreen } from './goals-screen';
 import { ProfileScreen } from './profile-screen';
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
-import { TransactionForm } from './transaction-form';
+import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
 import { INITIAL_BUDGET } from "@/data/dummy-data";
@@ -28,6 +28,7 @@ export function AppContainer({ user }: AppContainerProps) {
   const [q, setQ] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
+  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
   const [offline, setOffline] = useState(false);
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
@@ -57,10 +58,19 @@ export function AppContainer({ user }: AppContainerProps) {
     );
   }, [transactions, catFilter, q]);
 
+  const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
+    setTransactionInitialData(initialData);
+    setTransactionFormOpen(true);
+  };
+
+  const handleOpenVoice = () => {
+      setVoiceOpen(true);
+  }
+
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
       <AppHeader 
-        onOpenVoice={() => setVoiceOpen(true)} 
+        onOpenVoice={handleOpenVoice}
         onOpenSettings={() => setTab("profile")}
       />
 
@@ -73,7 +83,7 @@ export function AppContainer({ user }: AppContainerProps) {
             monthUsed={monthUsed} 
             monthLimit={monthLimit} 
             setTab={setTab}
-            onOpenTransactionForm={() => setTransactionFormOpen(true)}
+            onOpenTransactionForm={handleOpenTransactionForm}
           />
         )}
         {tab === "tx" && (
@@ -101,10 +111,22 @@ export function AppContainer({ user }: AppContainerProps) {
         )}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} onMic={() => setVoiceOpen(true)} />
+      <BottomNav tab={tab} setTab={setTab} onMic={handleOpenVoice} />
 
-      <VoiceDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
-      <TransactionForm open={transactionFormOpen} onOpenChange={setTransactionFormOpen} uid={user.uid} />
+      <VoiceDialog 
+        open={voiceOpen} 
+        onOpenChange={setVoiceOpen} 
+        onComplete={(data) => {
+            setVoiceOpen(false);
+            handleOpenTransactionForm(data);
+        }}
+      />
+      <TransactionForm 
+        open={transactionFormOpen} 
+        onOpenChange={setTransactionFormOpen}
+        uid={user.uid}
+        initialData={transactionInitialData}
+      />
     </div>
   );
 }

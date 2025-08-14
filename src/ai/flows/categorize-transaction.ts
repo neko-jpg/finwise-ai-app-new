@@ -43,18 +43,18 @@ const prompt = ai.definePrompt({
   name: 'categorizeTransactionPrompt',
   input: { schema: CategorizeTransactionInputSchema },
   output: { schema: CategorizeTransactionOutputSchema },
-  prompt: `You are an expert accountant assistant for personal finance. Your task is to categorize a transaction based on the provided details.
+  prompt: `あなたは個人の財務管理を専門とする会計アシスタントです。あなたのタスクは、提供された詳細情報に基づいて取引を分類することです。
 
-Analyze the input (merchant name, amount, note) and determine the most appropriate category.
-The major category MUST be one of the following: food, daily, trans, fun, util, income, other.
-An income is represented by a positive amount.
+入力（店名、金額、メモ）を分析し、最も適切なカテゴリを判断してください。
+主要カテゴリは必ず以下のいずれかである必要があります: food, daily, trans, fun, util, income, other。
+収入は正の金額で表されます。
 
-Input:
-- Merchant: {{{merchant}}}
-- Amount: {{{amount}}}
-{{#if note}}- Note: {{{note}}}{{/if}}
+入力:
+- 店名: {{{merchant}}}
+- 金額: {{{amount}}}
+{{#if note}}- メモ: {{{note}}}{{/if}}
 
-Output only the structured JSON object with the suggested category.`,
+出力は、提案されたカテゴリを含む構造化されたJSONオブジェクトのみとしてください。`,
 });
 
 

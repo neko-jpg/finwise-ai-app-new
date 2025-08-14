@@ -28,32 +28,37 @@ export async function assistant(input: AssistantInput): Promise<AssistantOutput>
 
 const prompt = ai.definePrompt({
   name: 'assistantPrompt',
-  input: {schema: AssistantInputSchema},
+  input: {schema: z.object({
+      query: z.string(),
+      transactions: z.any(),
+      budget: z.any(),
+      goals: z.any(),
+  })},
   output: {schema: AssistantOutputSchema},
-  prompt: `You are a friendly and helpful financial assistant. Your goal is to answer the user's questions based on their financial data.
+  prompt: `あなたはフレンドリーで有能なファイナンシャルアシスタントです。あなたの目標は、ユーザーの財務データに基づいて質問に答えることです。
 
-Here is the user's financial data:
+ユーザーの財務データは以下の通りです:
 
-**Transactions (today is 2025-08-13):**
+**取引履歴 (今日は2025-08-13):**
 \`\`\`json
 {{{json transactions}}}
 \`\`\`
 
-**Budget:**
+**予算:**
 \`\`\`json
 {{{json budget}}}
 \`\`\`
 
-**Goals:**
+**目標:**
 \`\`\`json
 {{{json goals}}}
 \`\`\`
 
-Current Date: 2025-08-13
+現在の日付: 2025-08-13
 
-Based on the data above, please answer the following user question. Be concise and helpful.
+上記のデータに基づき、以下のユーザーの質問に日本語で、簡潔かつ丁寧にお答えください。
 
-User Question: {{{query}}}
+ユーザーの質問: {{{query}}}
 `,
 });
 

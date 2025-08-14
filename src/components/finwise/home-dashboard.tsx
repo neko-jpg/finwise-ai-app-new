@@ -6,13 +6,14 @@ import { Progress } from "@/components/ui/progress";
 import { Wallet, PiggyBank, ArrowDown, Plus } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
+import { TransactionFormValues } from "./transaction-form";
 
 interface HomeDashboardProps {
   todaySpend: number;
   monthUsed: number;
   monthLimit: number;
   setTab: (t: string) => void;
-  onOpenTransactionForm: () => void;
+  onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
 }
 
 export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm }: HomeDashboardProps) {
@@ -22,7 +23,7 @@ export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpe
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <div className="md:col-span-3 flex justify-end mb-2">
-         <Button onClick={onOpenTransactionForm}>
+         <Button onClick={() => onOpenTransactionForm()}>
             <Plus className="h-4 w-4 mr-2" />
             取引を追加
           </Button>

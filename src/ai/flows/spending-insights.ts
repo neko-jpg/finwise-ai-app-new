@@ -32,14 +32,14 @@ const prompt = ai.definePrompt({
     transactions: z.any(),
   })},
   output: {schema: AnalyzeSpendingOutputSchema},
-  prompt: `You are a personal finance advisor. Analyze the following transactions and provide a short, personalized insight (under 150 characters) to help the user understand their financial habits.
+  prompt: `あなたはパーソナルファイナンスアドバイザーです。以下の取引を分析し、ユーザーが自身の財務習慣を理解するのに役立つ、短くパーソナライズされたインサイト（150文字未満）を日本語で提供してください。
 
-  Transactions:
+  取引履歴:
   \`\`\`json
   {{{json transactions}}}
   \`\`\`
 
-  Insight:`,
+  インサイト:`,
 });
 
 const analyzeSpendingFlow = ai.defineFlow(

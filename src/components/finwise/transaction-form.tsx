@@ -34,15 +34,16 @@ const FormSchema = z.object({
   note: z.string().max(200).optional(),
 });
 
-type TransactionFormValues = z.infer<typeof FormSchema>;
+export type TransactionFormValues = z.infer<typeof FormSchema>;
 
 interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     uid: string;
+    initialData?: Partial<TransactionFormValues>;
 }
 
-export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, uid, initialData }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -61,7 +62,7 @@ export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProp
     const debouncedCategorize = useDebouncedCallback(() => {
         const merchant = form.getValues('merchant');
         const amount = form.getValues('amount');
-        if (merchant && amount) {
+        if (merchant && amount && !form.getValues('categoryMajor')) {
             startAiCategorization(async () => {
                 try {
                     const result = await categorizeTransaction({ merchant, amount: amount || 0 });
@@ -119,16 +120,20 @@ export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProp
     };
     
     useEffect(() => {
-        if (!open) {
+        if (open) {
             form.reset({
-                bookedAt: new Date(),
-                amount: undefined,
-                merchant: '',
-                categoryMajor: '',
-                note: '',
+                bookedAt: initialData?.bookedAt || new Date(),
+                amount: initialData?.amount,
+                merchant: initialData?.merchant || '',
+                categoryMajor: initialData?.categoryMajor || '',
+                note: initialData?.note || '',
             });
+
+            if (initialData?.amount && initialData?.merchant) {
+                debouncedCategorize();
+            }
         }
-    }, [open, form]);
+    }, [open, initialData, form]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
