@@ -11,7 +11,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-noto-sans-jp)', 'sans-serif'],
-        headline: ['var(--font-plus-jakarta-sans)', 'sans-serif'],
+        headline: ['var(--font-inter)', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -56,6 +56,10 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        'mk-accent': 'hsl(var(--mk-accent))',
+        'mk-mint': 'hsl(var(--mk-mint))',
+        'mk-bg-1': 'hsl(var(--mk-bg-1))',
+        'mk-bg-2': 'hsl(var(--mk-bg-2))',
       },
       borderRadius: {
         lg: '1rem',

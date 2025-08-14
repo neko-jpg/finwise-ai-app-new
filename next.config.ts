@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         destination: '/:path*',
         permanent: true,
       },
+       {
+        source: '/app',
+        destination: '/',
+        permanent: false, // Should only happen if user is not logged in
+      },
     ];
   },
   // This is to allow the Next.js dev server to be proxied in the Studio IDE

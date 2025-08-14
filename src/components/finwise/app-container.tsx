@@ -14,15 +14,10 @@ import { useGoals } from "@/hooks/use-goals";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
-import { GoalForm, GoalFormValues } from "./goal-form";
+import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AuthDialog } from '@/components/finwise/auth-dialog';
-import { LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { doc, writeBatch } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 interface AppContainerProps {
     children: React.ReactNode;
@@ -33,7 +28,13 @@ export function AppContainer({ children }: AppContainerProps) {
   const pathname = usePathname();
   
   const { user, loading: authLoading } = useAuthState();
-  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/entry');
+    }
+  }, [user, authLoading, router]);
+
 
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
@@ -67,32 +68,32 @@ export function AppContainer({ children }: AppContainerProps) {
   }
 
   const tab = useMemo(() => {
-      if (pathname === '/') return 'home';
-      if (pathname.startsWith('/transactions')) return 'tx';
-      if (pathname.startsWith('/budget')) return 'budget';
-      if (pathname.startsWith('/goals')) return 'goals';
-      if (pathname.startsWith('/profile')) return 'profile';
-      if (pathname.startsWith('/subscriptions')) return 'subscriptions';
-      if (pathname.startsWith('/reviews')) return 'reviews';
-      if (pathname.startsWith('/link')) return 'link';
+      if (pathname === '/app') return 'home';
+      if (pathname.startsWith('/app/transactions')) return 'tx';
+      if (pathname.startsWith('/app/budget')) return 'budget';
+      if (pathname.startsWith('/app/goals')) return 'goals';
+      if (pathname.startsWith('/app/profile')) return 'profile';
+      if (pathname.startsWith('/app/subscriptions')) return 'subscriptions';
+      if (pathname.startsWith('/app/reviews')) return 'reviews';
+      if (pathname.startsWith('/app/link')) return 'link';
       return 'home';
   }, [pathname]);
 
   const handleSetTab = (newTab: string) => {
     const pathMap: { [key: string]: string } = {
-      home: '/',
-      tx: '/transactions',
-      budget: '/budget',
-      goals: '/goals',
-      profile: '/profile',
-      subscriptions: '/subscriptions',
-      reviews: '/reviews',
-      link: '/link',
+      home: '/app',
+      tx: '/app/transactions',
+      budget: '/app/budget',
+      goals: '/app/goals',
+      profile: '/app/profile',
+      subscriptions: '/app/subscriptions',
+      reviews: '/app/reviews',
+      link: '/app/link',
     };
-    router.push(pathMap[newTab] || '/');
+    router.push(pathMap[newTab] || '/app');
   };
   
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -104,26 +105,6 @@ export function AppContainer({ children }: AppContainerProps) {
         </div>
       </div>
     );
-  }
-  
-  if (!user) {
-      return (
-          <>
-            <main className="min-h-dvh bg-gradient-to-b from-[#0B1220] to-[#111827] text-white flex items-center justify-center">
-              <div className="mx-auto max-w-4xl px-6 py-14 text-center">
-                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">家計、話して、見える。</h1>
-                <p className="mt-3 text-white/80">AIがあなたの支出を整理し、今日の一手を提案します。</p>
-                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button size="lg" onClick={() => setAuthDialogOpen(true)}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    ログイン / 新規登録
-                  </Button>
-                </div>
-              </div>
-            </main>
-            <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} onSignin={() => {}}/>
-          </>
-      )
   }
 
 
@@ -180,6 +161,7 @@ export function AppContainer({ children }: AppContainerProps) {
         uid={user.uid}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
+            if (!transactions) return;
             setTransactions(prev => [newTx, ...prev].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
         }}
       />
@@ -188,7 +170,8 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setGoalFormOpen}
         uid={user.uid}
         onGoalAction={(newGoal) => {
-            setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)));
+            if (!goals) return;
+            setGoals(prev => [newGoal, ...prev].sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)));
         }}
       />
     </div>

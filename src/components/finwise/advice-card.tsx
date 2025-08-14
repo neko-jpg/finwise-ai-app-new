@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { Skeleton } from "../ui/skeleton";
 import type { Transaction, Budget } from "@/lib/types";
+import { Timestamp } from "firebase/firestore";
 
 interface AdviceCardProps {
     transactions: Transaction[];
@@ -18,7 +19,7 @@ interface AdviceCardProps {
 
 const convertObjectForServerAction = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;
-    if (obj instanceof Date) return obj.toISOString();
+    if (obj instanceof Date || obj instanceof Timestamp) return obj.toString();
     if (Array.isArray(obj)) return obj.map(convertObjectForServerAction);
 
     const newObj: { [key: string]: any } = {};
@@ -42,18 +43,22 @@ export function AdviceCard({ transactions, budget }: AdviceCardProps) {
   const [advice, setAdvice] = useState<RealTimeSaverOutput | null>(null);
 
   useEffect(() => {
-    // Prevent calling AI if there is no data
     if (!transactions || transactions.length === 0 || !budget) return;
 
     startTransition(async () => {
         const plainTransactions = convertObjectForServerAction(transactions);
         const plainBudget = convertObjectForServerAction(budget);
         
-        const result = await realTimeSaver({
-            transactions: plainTransactions,
-            budget: plainBudget,
-        });
-        setAdvice(result);
+        try {
+            const result = await realTimeSaver({
+                transactions: plainTransactions,
+                budget: plainBudget,
+            });
+            setAdvice(result);
+        } catch (error) {
+            console.error("AI insight generation failed", error);
+            // Optionally show a toast, but might be too noisy.
+        }
     });
   }, [transactions, budget]);
 

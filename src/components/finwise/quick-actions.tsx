@@ -10,7 +10,7 @@ interface QuickActionsProps {
 
 function QAButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void; }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/90 hover:bg-white/10 active:scale-[0.98] transition-transform">
+    <button onClick={onClick} className="flex items-center gap-2 rounded-xl border border-border/80 bg-secondary/50 px-4 py-3 text-sm text-foreground/90 hover:bg-secondary active:scale-[0.98] transition-transform">
       <span className="opacity-80">{icon}</span>
       <span>{label}</span>
     </button>

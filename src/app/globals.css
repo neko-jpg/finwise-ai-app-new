@@ -42,6 +42,12 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Marketing Page Additions */
+    --mk-accent: 252 98% 77%; /* #8B7CFF - Lavender */
+    --mk-mint: 170 100% 41%; /* #00D1B2 - Mint */
+    --mk-bg-1: 217 60% 8%; /* #0B1220 */
+    --mk-bg-2: 218 44% 11%; /* #111827 */
   }
 
   .dark {
@@ -92,4 +98,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.marketing-body {
+    @apply bg-gradient-to-b from-mk-bg-1 to-mk-bg-2 text-white/90;
 }

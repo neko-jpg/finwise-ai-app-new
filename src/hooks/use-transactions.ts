@@ -20,7 +20,7 @@ export function useTransactions(uid: string | undefined): UseTransactionsReturn 
         if (!uid) {
             setLoading(false);
             setTransactions([]);
-            return () => {}; // Return an empty function for cleanup
+            return;
         }
         
         setLoading(true);
