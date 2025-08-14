@@ -12,7 +12,6 @@ export default {
       fontFamily: {
         body: ['var(--font-noto-sans-jp)', 'sans-serif'],
         headline: ['var(--font-plus-jakarta-sans)', 'sans-serif'],
-        code: ['Source Code Pro', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
