@@ -1,12 +1,20 @@
 
 'use client';
 
-import { Button } from "@/components/ui/button";
 import { QUICK_ACTIONS } from "@/data/dummy-data";
 import { useToast } from "@/hooks/use-toast";
 
 interface QuickActionsProps {
     onOpenGoalForm: () => void;
+}
+
+function QAButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void; }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/90 hover:bg-white/10 active:scale-[0.98] transition-transform">
+      <span className="opacity-80">{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
 }
 
 
@@ -36,15 +44,12 @@ export function QuickActions({ onOpenGoalForm }: QuickActionsProps) {
         <h2 className="font-headline text-lg font-semibold mb-3">クイックアクション</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {QUICK_ACTIONS.map((action) => (
-            <Button 
-                key={action.key} 
-                variant="secondary" 
-                className="justify-start gap-2 h-12 text-left"
+            <QAButton
+                key={action.key}
+                icon={<action.icon className="h-4 w-4" />}
+                label={action.text}
                 onClick={() => handleActionClick(action.key)}
-            >
-                <action.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-normal">{action.text}</span>
-            </Button>
+            />
         ))}
         </div>
     </div>

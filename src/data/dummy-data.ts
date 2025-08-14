@@ -60,7 +60,7 @@ export const INITIAL_BUDGET = {
 
 export const QUICK_ACTIONS: QuickActionDefinition[] = [
     { key: "detect_subscription", text: "無駄サブスク検知", icon: Bell },
-    { key: "review_fixed_costs", text: "毎週の固定費レビュー", icon: Rocket },
+    { key: "review_fixed_costs", text: "固定費レビュー", icon: Rocket },
     { key: "create_goal", text: "目標を作成", icon: Target },
-    { key: "link_bank", text: "銀行口座を連携", icon: Wallet },
+    { key: "link_bank", text: "口座を連携", icon: Wallet },
 ];
