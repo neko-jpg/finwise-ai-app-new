@@ -10,11 +10,40 @@ import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { Skeleton } from "../ui/skeleton";
 import type { Transaction, Budget } from "@/lib/types";
+import type { Timestamp } from 'firebase/firestore';
 
 interface AdviceCardProps {
     transactions: Transaction[];
     budget: Budget | null;
 }
+
+const isTimestamp = (value: any): value is Timestamp => {
+  return value && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number';
+};
+
+const convertTimestampsInObject = (obj: any): any => {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    if (Array.isArray(obj)) {
+        return obj.map(item => convertTimestampsInObject(item));
+    }
+
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
+            if (isTimestamp(value)) {
+                newObj[key] = value.toDate().toISOString();
+            } else if (value instanceof Date) {
+                 newObj[key] = value.toISOString();
+            }
+            else {
+                newObj[key] = convertTimestampsInObject(value);
+            }
+        }
+    }
+    return newObj;
+};
 
 
 export function AdviceCard({ transactions, budget }: AdviceCardProps) {
@@ -28,8 +57,8 @@ export function AdviceCard({ transactions, budget }: AdviceCardProps) {
 
     startTransition(async () => {
         const result = await realTimeSaver({
-            transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString()})),
-            budget,
+            transactions: convertTimestampsInObject(transactions),
+            budget: convertTimestampsInObject(budget),
         });
         setAdvice(result);
     });
