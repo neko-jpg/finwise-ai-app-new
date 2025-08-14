@@ -19,6 +19,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/ja',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/ja/:path*',
+        destination: '/:path*',
+        permanent: true,
+      },
+    ];
+  },
   // This is to allow the Next.js dev server to be proxied in the Studio IDE
   allowedDevOrigins: ["*.cluster-cd3bsnf6r5bemwki2bxljme5as.cloudworkstations.dev"],
 };
