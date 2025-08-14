@@ -9,6 +9,9 @@ import { TransactionsScreen } from './transactions-screen';
 import { BudgetScreen } from './budget-screen';
 import { GoalsScreen } from './goals-screen';
 import { ProfileScreen } from './profile-screen';
+import { SubscriptionsScreen } from '@/app/subscriptions/page';
+import { ReviewsScreen } from '@/app/reviews/page';
+import { LinkScreen } from '@/app/link/page';
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
@@ -81,6 +84,57 @@ export function AppContainer({ user }: AppContainerProps) {
       setOcrOpen(true);
   }
 
+  const renderContent = () => {
+    switch (tab) {
+      case 'home':
+        return <HomeDashboard 
+          todaySpend={todaySpend} 
+          monthUsed={monthUsed} 
+          monthLimit={monthLimit} 
+          setTab={setTab}
+          onOpenTransactionForm={handleOpenTransactionForm}
+          onOpenOcr={handleOpenOcr}
+          onOpenGoalForm={handleOpenGoalForm}
+          transactions={transactions || []}
+          budget={budget}
+        />;
+      case 'tx':
+        return <TransactionsScreen 
+          q={q} 
+          setQ={setQ} 
+          filteredTx={filteredTx} 
+          catFilter={catFilter} 
+          setCatFilter={setCatFilter}
+          loading={txLoading}
+        />;
+      case 'budget':
+        return <BudgetScreen 
+          uid={user.uid}
+          budget={budget} 
+          loading={budgetLoading}
+          transactions={transactions || []}
+          goals={goals || []}
+        />;
+      case 'goals':
+        return <GoalsScreen 
+          uid={user.uid}
+          goals={goals || []}
+          loading={goalsLoading}
+          onOpenGoalForm={handleOpenGoalForm}
+        />;
+      case 'profile':
+        return <ProfileScreen offline={offline} setOffline={setOffline} user={user} />;
+      case 'subscriptions':
+        return <SubscriptionsScreen />;
+      case 'reviews':
+        return <ReviewsScreen />;
+      case 'link':
+        return <LinkScreen />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
       <AppHeader 
@@ -91,49 +145,7 @@ export function AppContainer({ user }: AppContainerProps) {
       {offline && <OfflineBanner />}
 
       <main className="mx-auto max-w-5xl px-4 pb-28 pt-4">
-        {tab === "home" && (
-          <HomeDashboard 
-            todaySpend={todaySpend} 
-            monthUsed={monthUsed} 
-            monthLimit={monthLimit} 
-            setTab={setTab}
-            onOpenTransactionForm={handleOpenTransactionForm}
-            onOpenOcr={handleOpenOcr}
-            onOpenGoalForm={handleOpenGoalForm}
-            transactions={transactions || []}
-            budget={budget}
-          />
-        )}
-        {tab === "tx" && (
-          <TransactionsScreen 
-            q={q} 
-            setQ={setQ} 
-            filteredTx={filteredTx} 
-            catFilter={catFilter} 
-            setCatFilter={setCatFilter}
-            loading={txLoading}
-          />
-        )}
-        {tab === "budget" && (
-          <BudgetScreen 
-            uid={user.uid}
-            budget={budget} 
-            loading={budgetLoading}
-            transactions={transactions || []}
-            goals={goals || []}
-          />
-        )}
-        {tab === "goals" && (
-          <GoalsScreen 
-            uid={user.uid}
-            goals={goals || []}
-            loading={goalsLoading}
-            onOpenGoalForm={handleOpenGoalForm}
-          />
-        )}
-        {tab === "profile" && (
-          <ProfileScreen offline={offline} setOffline={setOffline} user={user} />
-        )}
+        {renderContent()}
       </main>
 
       <BottomNav tab={tab} setTab={setTab} onMic={handleOpenVoice} />

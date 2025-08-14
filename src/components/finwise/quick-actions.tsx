@@ -2,10 +2,10 @@
 'use client';
 
 import { QUICK_ACTIONS } from "@/data/dummy-data";
-import { useToast } from "@/hooks/use-toast";
 
 interface QuickActionsProps {
     onOpenGoalForm: () => void;
+    setTab: (tab: string) => void;
 }
 
 function QAButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void; }) {
@@ -18,8 +18,7 @@ function QAButton({ icon, label, onClick }: { icon: React.ReactNode; label: stri
 }
 
 
-export function QuickActions({ onOpenGoalForm }: QuickActionsProps) {
-  const { toast } = useToast();
+export function QuickActions({ onOpenGoalForm, setTab }: QuickActionsProps) {
 
   const handleActionClick = (actionKey: string) => {
     switch (actionKey) {
@@ -27,12 +26,13 @@ export function QuickActions({ onOpenGoalForm }: QuickActionsProps) {
         onOpenGoalForm();
         break;
       case 'detect_subscription':
-      case 'link_bank':
+        setTab('subscriptions');
+        break;
       case 'review_fixed_costs':
-        toast({
-          title: "機能は現在開発中です",
-          description: "今後のアップデートにご期待ください！",
-        });
+        setTab('reviews');
+        break;
+      case 'link_bank':
+        setTab('link');
         break;
       default:
         break;

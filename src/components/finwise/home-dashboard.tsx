@@ -71,7 +71,7 @@ export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpe
 
       <AdviceCard transactions={transactions} budget={budget} />
 
-      <QuickActions onOpenGoalForm={onOpenGoalForm} />
+      <QuickActions onOpenGoalForm={onOpenGoalForm} setTab={setTab} />
     </div>
   );
 }
