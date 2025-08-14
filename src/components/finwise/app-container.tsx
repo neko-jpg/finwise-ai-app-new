@@ -15,9 +15,13 @@ import type { Budget, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
 import { INITIAL_BUDGET } from "@/data/dummy-data";
 import { format } from "date-fns";
+import type { User } from 'firebase/auth';
 
+interface AppContainerProps {
+    user: User;
+}
 
-export function AppContainer() {
+export function AppContainer({ user }: AppContainerProps) {
   const [tab, setTab] = useState("home");
   const [q, setQ] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -26,9 +30,7 @@ export function AppContainer() {
   const [budget, setBudget] = useState<Budget>(INITIAL_BUDGET);
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
-  // TODO: Replace with actual user ID from Firebase Auth
-  const uid = 'user-123';
-  const { transactions, loading, error } = useTransactions(uid);
+  const { transactions, loading, error } = useTransactions(user.uid);
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -55,14 +57,19 @@ export function AppContainer() {
       <AppHeader 
         onOpenVoice={() => setVoiceOpen(true)} 
         onOpenSettings={() => setTab("profile")}
-        onOpenTransactionForm={() => setTransactionFormOpen(true)}
       />
 
       {offline && <OfflineBanner />}
 
       <main className="mx-auto max-w-5xl px-4 pb-28 pt-4">
         {tab === "home" && (
-          <HomeDashboard todaySpend={todaySpend} monthUsed={monthUsed} monthLimit={monthLimit} setTab={setTab} />
+          <HomeDashboard 
+            todaySpend={todaySpend} 
+            monthUsed={monthUsed} 
+            monthLimit={monthLimit} 
+            setTab={setTab}
+            onOpenTransactionForm={() => setTransactionFormOpen(true)}
+          />
         )}
         {tab === "tx" && (
           <TransactionsScreen 
@@ -81,14 +88,14 @@ export function AppContainer() {
           <GoalsScreen />
         )}
         {tab === "profile" && (
-          <ProfileScreen offline={offline} setOffline={setOffline} />
+          <ProfileScreen offline={offline} setOffline={setOffline} user={user} />
         )}
       </main>
 
       <BottomNav tab={tab} setTab={setTab} onMic={() => setVoiceOpen(true)} />
 
       <VoiceDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
-      <TransactionForm open={transactionFormOpen} onOpenChange={setTransactionFormOpen} />
+      <TransactionForm open={transactionFormOpen} onOpenChange={setTransactionFormOpen} uid={user.uid} />
     </div>
   );
 }

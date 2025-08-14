@@ -1,16 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, PiggyBank, ArrowDown } from "lucide-react";
+import { Wallet, PiggyBank, ArrowDown, Plus } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
 
-export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab }: { todaySpend: number; monthUsed: number; monthLimit: number; setTab: (t: string) => void }) {
+interface HomeDashboardProps {
+  todaySpend: number;
+  monthUsed: number;
+  monthLimit: number;
+  setTab: (t: string) => void;
+  onOpenTransactionForm: () => void;
+}
+
+export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm }: HomeDashboardProps) {
   const remain = Math.max(0, monthLimit - monthUsed);
   const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="md:col-span-3 flex justify-end mb-2">
+         <Button onClick={onOpenTransactionForm}>
+            <Plus className="h-4 w-4 mr-2" />
+            取引を追加
+          </Button>
+      </div>
       <Card className="md:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="font-headline flex items-center gap-2 text-lg"><Wallet className="h-5 w-5 text-muted-foreground" />本日の支出</CardTitle>

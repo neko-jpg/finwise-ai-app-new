@@ -2,19 +2,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ChevronRight } from "lucide-react";
+import type { User } from 'firebase/auth';
 
 interface ProfileScreenProps {
   offline: boolean;
   setOffline: (v: boolean) => void;
+  user: User;
 }
 
-export function ProfileScreen({ offline, setOffline }: ProfileScreenProps) {
+export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps) {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
           <h2 className="text-2xl font-bold font-headline">設定</h2>
           <p className="text-muted-foreground">アカウントとアプリの管理</p>
       </div>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>アカウント</CardTitle>
+            <CardDescription>
+                {user.isAnonymous ? "現在匿名で利用中です。データを引き継ぐにはログインしてください。" : `ログイン中: ${user.email || 'メールアドレス未設定'}`}
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {user.isAnonymous ? (
+                <Button>Googleアカウントでログイン</Button>
+            ) : (
+                <Button variant="destructive">ログアウト</Button>
+            )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

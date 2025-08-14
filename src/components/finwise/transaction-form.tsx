@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import React, { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -39,15 +39,13 @@ type TransactionFormValues = z.infer<typeof FormSchema>;
 interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    uid: string;
 }
 
-export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, uid }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
-
-    // TODO: Replace with actual user ID from Firebase Auth
-    const uid = 'user-123';
 
     const form = useForm<TransactionFormValues>({
         resolver: zodResolver(FormSchema),
@@ -108,7 +106,6 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
             });
 
             onOpenChange(false);
-            form.reset();
         } catch (error) {
             console.error("Error adding document: ", error);
             toast({
