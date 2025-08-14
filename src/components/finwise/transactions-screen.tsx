@@ -1,14 +1,16 @@
 'use client';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Sparkles, Loader } from "lucide-react";
 import { CATEGORIES } from "@/data/dummy-data";
 import type { Transaction } from "@/lib/types";
+import { analyzeSpending } from '@/ai/flows/spending-insights';
+import { useToast } from '@/hooks/use-toast';
 
 interface TransactionsScreenProps {
   q: string;
@@ -20,12 +22,39 @@ interface TransactionsScreenProps {
 
 export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilter }: TransactionsScreenProps) {
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+
+  const handleAnalyze = () => {
+    startTransition(async () => {
+        try {
+            const result = await analyzeSpending({});
+            toast({
+                title: "AIによる支出のインサイト",
+                description: result.insights,
+            });
+        } catch (e) {
+            console.error(e);
+            toast({
+                title: "エラー",
+                description: "分析に失敗しました。",
+                variant: "destructive",
+            });
+        }
+    });
+  };
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-            <CardTitle className="font-headline text-xl">取引明細</CardTitle>
+            <div className="flex justify-between items-center">
+                <CardTitle className="font-headline text-xl">取引明細</CardTitle>
+                <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending}>
+                    {isPending ? <Loader className="animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    AIで分析
+                </Button>
+            </div>
         </CardHeader>
         <CardContent>
             <div className="flex items-center gap-2">
@@ -78,7 +107,7 @@ export function TransactionsScreen({ q, setQ, filteredTx, catFilter, setCatFilte
       
       <Card>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100dvh-20rem)]">
+          <ScrollArea className="h-[calc(100dvh-22rem)]">
             <div className="divide-y">
               {filteredTx.length > 0 ? filteredTx.map((t: Transaction) => (
                 <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50">

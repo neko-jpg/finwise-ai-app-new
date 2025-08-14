@@ -1,4 +1,3 @@
-// budget-planner.ts
 'use server';
 
 /**
@@ -11,16 +10,18 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { DEMO_TRANSACTIONS, INITIAL_BUDGET, DEMO_GOALS } from '@/data/dummy-data';
 
-const BudgetPlannerInputSchema = z.object({
-  spendingHabits: z.string().describe('A description of the user\'s spending habits.'),
-  financialGoals: z.string().describe('A description of the user\'s financial goals.'),
-  currentBudget: z.string().optional().describe('The user\'s current budget, if any.'),
-});
+const BudgetPlannerInputSchema = z.object({});
 export type BudgetPlannerInput = z.infer<typeof BudgetPlannerInputSchema>;
 
+const BudgetCategorySchema = z.object({
+    key: z.string().describe("The category key."),
+    limit: z.number().describe("The suggested budget limit for this category."),
+});
+
 const BudgetPlannerOutputSchema = z.object({
-  suggestedBudget: z.string().describe('A personalized monthly budget plan based on the user\'s spending habits and financial goals.'),
+  suggestedBudget: z.array(BudgetCategorySchema).describe('A personalized monthly budget plan based on the user\'s spending habits and financial goals.'),
 });
 export type BudgetPlannerOutput = z.infer<typeof BudgetPlannerOutputSchema>;
 
@@ -30,15 +31,24 @@ export async function budgetPlanner(input: BudgetPlannerInput): Promise<BudgetPl
 
 const prompt = ai.definePrompt({
   name: 'budgetPlannerPrompt',
-  input: {schema: BudgetPlannerInputSchema},
+  input: {schema: z.object({
+    transactions: z.any(),
+    goals: z.any(),
+  })},
   output: {schema: BudgetPlannerOutputSchema},
-  prompt: `You are a personal finance advisor. Based on the user's spending habits and financial goals, suggest a personalized monthly budget plan.
+  prompt: `You are a personal finance advisor. Based on the user's past transactions and financial goals, suggest a personalized monthly budget plan.
 
-Spending Habits: {{{spendingHabits}}}
-Financial Goals: {{{financialGoals}}}
-Current Budget: {{{currentBudget}}}
+Transactions:
+\`\`\`json
+{{{json transactions}}}
+\`\`\`
 
-Suggested Budget Plan:`,    
+Financial Goals:
+\`\`\`json
+{{{json goals}}}
+\`\`\`
+
+Analyze the data and provide a new budget allocation for the following categories: food, daily, trans, fun, util. Return the result as a structured JSON object.`,
 });
 
 const budgetPlannerFlow = ai.defineFlow(
@@ -47,8 +57,11 @@ const budgetPlannerFlow = ai.defineFlow(
     inputSchema: BudgetPlannerInputSchema,
     outputSchema: BudgetPlannerOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async () => {
+    const {output} = await prompt({
+        transactions: DEMO_TRANSACTIONS,
+        goals: DEMO_GOALS,
+    });
     return output!;
   }
 );

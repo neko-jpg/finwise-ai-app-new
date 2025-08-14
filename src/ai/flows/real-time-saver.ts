@@ -10,17 +10,14 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { DEMO_TRANSACTIONS, INITIAL_BUDGET } from '@/data/dummy-data';
 
-const RealTimeSaverInputSchema = z.object({
-  spendingData: z.string().describe('A JSON string containing the user\'s recent spending data, including categories and amounts.'),
-  currentBalance: z.number().describe('The user\'s current account balance.'),
-  monthlyBudget: z.number().describe('The user\'s monthly budget.'),
-});
+const RealTimeSaverInputSchema = z.object({});
 export type RealTimeSaverInput = z.infer<typeof RealTimeSaverInputSchema>;
 
 const RealTimeSaverOutputSchema = z.object({
   savingTip: z.string().describe('A personalized saving tip based on the user\'s spending data.'),
-  tipCategory: z.string().describe('The category the saving tip belongs to (e.g., food, transportation).'),
+  explanation: z.string().describe('A detailed explanation of why this tip is being suggested, based on recent spending patterns and budget progress.'),
   potentialSavings: z.number().describe('The potential savings amount if the tip is followed.'),
 });
 export type RealTimeSaverOutput = z.infer<typeof RealTimeSaverOutputSchema>;
@@ -31,17 +28,26 @@ export async function realTimeSaver(input: RealTimeSaverInput): Promise<RealTime
 
 const realTimeSaverPrompt = ai.definePrompt({
   name: 'realTimeSaverPrompt',
-  input: {schema: RealTimeSaverInputSchema},
+  input: {schema: z.object({
+    transactions: z.any(),
+    budget: z.any(),
+  })},
   output: {schema: RealTimeSaverOutputSchema},
-  prompt: `You are a personal finance advisor providing real-time saving tips.
+  prompt: `You are a personal finance advisor providing real-time saving tips. The current date is 2025-08-13.
 
-  Analyze the user's spending data to identify potential savings opportunities. Provide a specific and actionable saving tip, the category it belongs to, and the potential savings amount.
+  Analyze the user's recent transactions and budget status to identify a potential savings opportunity. Provide a specific and actionable saving tip, a detailed explanation for it, and the potential savings amount.
 
-  Spending Data: {{{spendingData}}}
-  Current Balance: {{{currentBalance}}}
-  Monthly Budget: {{{monthlyBudget}}}
+  Transactions (today is 2025-08-13):
+  \`\`\`json
+  {{{json transactions}}}
+  \`\`\`
 
-  Focus on suggesting realistic and easily achievable saving tips based on the provided data.`,
+  Budget:
+  \`\`\`json
+  {{{json budget}}}
+  \`\`\`
+
+  Focus on suggesting realistic and easily achievable saving tips based on the provided data. The tip should be concise and impactful.`,
 });
 
 const realTimeSaverFlow = ai.defineFlow(
@@ -50,8 +56,11 @@ const realTimeSaverFlow = ai.defineFlow(
     inputSchema: RealTimeSaverInputSchema,
     outputSchema: RealTimeSaverOutputSchema,
   },
-  async input => {
-    const {output} = await realTimeSaverPrompt(input);
+  async () => {
+    const {output} = await realTimeSaverPrompt({
+        transactions: DEMO_TRANSACTIONS,
+        budget: INITIAL_BUDGET,
+    });
     return output!;
   }
 );

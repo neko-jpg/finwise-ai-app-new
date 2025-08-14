@@ -1,4 +1,3 @@
-// spending-insights.ts
 'use server';
 
 /**
@@ -11,15 +10,14 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { DEMO_TRANSACTIONS } from '@/data/dummy-data';
 
-const AnalyzeSpendingInputSchema = z.object({
-  transactions: z.string().describe('A list of transactions in JSON format.'),
-});
+const AnalyzeSpendingInputSchema = z.object({});
 
 export type AnalyzeSpendingInput = z.infer<typeof AnalyzeSpendingInputSchema>;
 
 const AnalyzeSpendingOutputSchema = z.object({
-  insights: z.string().describe('Personalized insights based on spending patterns.'),
+  insights: z.string().describe('A concise, personalized insight based on spending patterns.'),
 });
 
 export type AnalyzeSpendingOutput = z.infer<typeof AnalyzeSpendingOutputSchema>;
@@ -30,9 +28,18 @@ export async function analyzeSpending(input: AnalyzeSpendingInput): Promise<Anal
 
 const prompt = ai.definePrompt({
   name: 'analyzeSpendingPrompt',
-  input: {schema: AnalyzeSpendingInputSchema},
+  input: {schema: z.object({
+    transactions: z.any(),
+  })},
   output: {schema: AnalyzeSpendingOutputSchema},
-  prompt: `You are a personal finance advisor. Analyze the following transactions and provide personalized insights to help the user understand their financial habits.\n\nTransactions: {{{transactions}}}\n\nInsights:`,
+  prompt: `You are a personal finance advisor. Analyze the following transactions and provide a short, personalized insight (under 150 characters) to help the user understand their financial habits.
+
+  Transactions:
+  \`\`\`json
+  {{{json transactions}}}
+  \`\`\`
+
+  Insight:`,
 });
 
 const analyzeSpendingFlow = ai.defineFlow(
@@ -41,8 +48,10 @@ const analyzeSpendingFlow = ai.defineFlow(
     inputSchema: AnalyzeSpendingInputSchema,
     outputSchema: AnalyzeSpendingOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async () => {
+    const {output} = await prompt({
+        transactions: DEMO_TRANSACTIONS,
+    });
     return output!;
   }
 );

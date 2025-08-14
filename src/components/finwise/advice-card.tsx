@@ -1,8 +1,51 @@
+'use client';
+
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sparkles, ChevronRight, Loader, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
+import { Skeleton } from "../ui/skeleton";
 
 export function AdviceCard() {
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const [advice, setAdvice] = useState<RealTimeSaverOutput | null>(null);
+
+  useEffect(() => {
+    startTransition(async () => {
+        const result = await realTimeSaver({});
+        setAdvice(result);
+    });
+  }, []);
+
+
+  const handleAction = () => {
+    toast({
+      title: "アクションを記録しました",
+      description: "目標達成に向けて素晴らしい一歩です！",
+    });
+  };
+
+  if (!advice) {
+    return (
+        <Card className="md:col-span-3 bg-primary/5 border-primary/20">
+            <CardHeader className="pb-2">
+                <CardTitle className="font-headline flex items-center gap-2 text-lg text-primary">
+                    <Sparkles className="h-5 w-5" />
+                    今日の一手
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card className="md:col-span-3 bg-primary/5 border-primary/20">
       <CardHeader className="pb-2">
@@ -13,15 +56,27 @@ export function AdviceCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="font-medium text-base">「カフェ」を2回減らすと今週 +¥1,200 貯まります</p>
-          <p className="text-sm text-muted-foreground mt-1">最近の支出パターンと予算進捗からのAI提案です</p>
+          <p className="font-medium text-base">{advice.savingTip}</p>
+          <p className="text-sm text-muted-foreground mt-1">AIが提案する潜在的な節約額: ¥{advice.potentialSavings.toLocaleString()}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="default" className="gap-1">
+          <Button variant="default" className="gap-1" onClick={handleAction}>
             実行する
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost">理由を見る</Button>
+          <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="ghost">理由を見る</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 font-headline"><Info />提案の根拠</DialogTitle>
+                    <DialogDescription className="pt-4 text-left">
+                        {advice.explanation}
+                    </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>

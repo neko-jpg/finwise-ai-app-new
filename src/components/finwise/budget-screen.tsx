@@ -1,10 +1,14 @@
 'use client';
+import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { CATEGORIES } from "@/data/dummy-data";
 import { Progress } from "@/components/ui/progress";
 import type { Budget, BudgetItem } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { budgetPlanner } from '@/ai/flows/budget-planner';
+import { Loader } from 'lucide-react';
 
 interface BudgetScreenProps {
   budget: Budget;
@@ -21,9 +25,44 @@ function impactText(row: BudgetItem) {
 }
 
 export function BudgetScreen({ budget, setBudget }: BudgetScreenProps) {
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const keys = Object.keys(budget);
   const totalLimit = keys.reduce((a, k) => a + budget[k].limit, 0);
   const totalUsed = keys.reduce((a, k) => a + budget[k].used, 0);
+
+  const handleSave = () => {
+    toast({
+      title: "予算を保存しました",
+      description: "新しい予算設定が適用されました。",
+    });
+  };
+
+  const handleAiSuggestion = () => {
+    startTransition(async () => {
+      try {
+        const result = await budgetPlanner({});
+        const newBudget = { ...budget };
+        result.suggestedBudget.forEach(item => {
+          if (newBudget[item.key]) {
+            newBudget[item.key] = { ...newBudget[item.key], limit: item.limit };
+          }
+        });
+        setBudget(newBudget);
+        toast({
+          title: "AIが予算を再提案しました",
+          description: "支出パターンと目標に合わせて調整しました。",
+        });
+      } catch (e) {
+        console.error(e);
+        toast({
+          title: "エラー",
+          description: "AIによる提案の取得に失敗しました。",
+          variant: "destructive",
+        });
+      }
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -73,9 +112,9 @@ export function BudgetScreen({ budget, setBudget }: BudgetScreenProps) {
                 </div>
                 <Progress value={usageRate} className="h-2" />
                 <Slider 
-                    defaultValue={[itemBudget.limit]} 
+                    value={[itemBudget.limit]} 
                     min={0} 
-                    max={50000} 
+                    max={Math.max(itemBudget.limit * 2, 50000)}
                     step={1000} 
                     onValueChange={(v) => setBudget((b: Budget) => ({ ...b, [k]: { ...b[k], limit: v[0] } }))} 
                     className="mt-4" 
@@ -88,8 +127,10 @@ export function BudgetScreen({ budget, setBudget }: BudgetScreenProps) {
       </div>
 
       <div className="flex items-center justify-end rounded-lg p-3 space-x-2 sticky bottom-20 bg-background/80 backdrop-blur-sm">
-          <Button variant="outline">AIに再提案させる</Button>
-          <Button>変更を保存</Button>
+          <Button variant="outline" onClick={handleAiSuggestion} disabled={isPending}>
+            {isPending ? <Loader className="animate-spin" /> : 'AIに再提案させる'}
+          </Button>
+          <Button onClick={handleSave}>変更を保存</Button>
       </div>
     </div>
   );
