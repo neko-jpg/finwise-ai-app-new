@@ -1,19 +1,20 @@
 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { Noto_Sans_JP, Inter } from 'next/font/google';
+import { Inter, Noto_Sans_JP } from 'next/font/google';
 import AnimationProvider from '@/components/animation-provider';
 
-
-const noto = Noto_Sans_JP({
-  subsets: ['latin'],
-  variable: '--font-noto-sans-jp',
-  display: 'swap',
-});
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const noto = Noto_Sans_JP({
+  weight: ['400', '500', '700', '900'],
+  subsets: ['latin'],
+  variable: '--font-noto-sans-jp',
   display: 'swap',
 });
 
@@ -24,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja" className={`${noto.variable} ${inter.variable}`}>
+    <html lang="ja" className={`${inter.variable} ${noto.variable}`}>
       <body className="font-body">
            <AnimationProvider>
               {children}

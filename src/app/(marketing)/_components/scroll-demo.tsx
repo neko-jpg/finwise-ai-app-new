@@ -20,7 +20,7 @@ const demos = [
 
 export function ScrollDemo() {
   return (
-    <section id="demo" className="py-24 sm:py-32 scroll-mt-20">
+    <section id="demo" className="py-24 sm:py-32 scroll-mt-20 bg-mk-bg-2">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <m.div
                 initial={{ opacity: 0, y: 20 }}
@@ -30,7 +30,7 @@ export function ScrollDemo() {
                 className="text-center"
             >
                 <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">See FinAI in Action</h2>
-                <p className="mt-6 text-lg leading-8 text-white/70">
+                <p className="mt-6 text-lg leading-8 text-mk-text">
                     Discover how our intuitive interface makes financial management a breeze.
                 </p>
             </m.div>
@@ -44,7 +44,7 @@ export function ScrollDemo() {
                         viewport={{ once: true, amount: 0.3 }}
                         transition={{ duration: 0.5, delay: i * 0.15 }}
                      >
-                        <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-mk-bg-2/50 border border-mk-secondary/20 hover:scale-105 transition-transform duration-300">
+                        <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-mk-bg-1/50 border border-mk-secondary hover:scale-105 transition-transform duration-300">
                            <Image 
                                 src={demo.imgSrc} 
                                 alt={`FinAI Demo Screenshot ${i+1}`} 

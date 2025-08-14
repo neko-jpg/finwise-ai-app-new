@@ -5,9 +5,9 @@ import { MarketingFooter } from './_components/footer';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="marketing-body font-headline">
+    <div className="marketing-body font-headline bg-mk-bg-1 text-mk-text">
         <MarketingHeader />
-        {children}
+        <main>{children}</main>
         <MarketingFooter />
     </div>
   );

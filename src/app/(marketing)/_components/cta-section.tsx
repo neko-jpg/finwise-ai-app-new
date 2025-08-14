@@ -4,6 +4,7 @@ import { m } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Check } from 'lucide-react';
 
 const faqs = [
     {
@@ -22,19 +23,19 @@ const faqs = [
 
 export function CtaSection() {
   return (
-    <section className="py-24 sm:py-32" id="pricing">
+    <section className="py-24 sm:py-32 bg-mk-bg-1" id="pricing">
         <m.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5 }}
-            className="mx-auto max-w-4xl px-6"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8 }}
+            className="mx-auto max-w-7xl px-6"
         >
             <div className="text-center">
                 <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
                     Ready to Unlock Financial Clarity?
                 </h2>
-                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/70">
+                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-mk-text">
                     Choose the plan that’s right for you and start your journey towards smarter money management today.
                 </p>
             </div>
@@ -67,13 +68,13 @@ export function CtaSection() {
                 />
             </div>
 
-            <div className="mt-24 max-w-2xl mx-auto">
+            <div className="mt-24 max-w-3xl mx-auto">
                 <h3 className="text-2xl font-bold text-center text-white">Frequently Asked Questions</h3>
                  <Accordion type="single" collapsible className="w-full mt-8">
                     {faqs.map((faq, i) => (
-                        <AccordionItem key={i} value={`item-${i}`}>
-                            <AccordionTrigger className="text-white text-lg hover:no-underline">{faq.q}</AccordionTrigger>
-                            <AccordionContent className="text-base text-white/70">
+                        <AccordionItem key={i} value={`item-${i}`} className="border-mk-secondary">
+                            <AccordionTrigger className="text-white text-lg hover:no-underline hover:text-mk-accent">{faq.q}</AccordionTrigger>
+                            <AccordionContent className="text-base text-mk-text">
                                {faq.a}
                             </AccordionContent>
                         </AccordionItem>
@@ -86,15 +87,6 @@ export function CtaSection() {
   );
 }
 
-
-function CheckIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
-            <path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path>
-        </svg>
-    )
-}
-
 function PricingCard({ plan, price, description, features, cta, isPopular = false, planKey }: {
     plan: string;
     price: string;
@@ -105,24 +97,22 @@ function PricingCard({ plan, price, description, features, cta, isPopular = fals
     planKey: string;
 }) {
     return (
-        <div className={`flex flex-1 flex-col gap-6 rounded-xl border-solid p-6 transition-all duration-300 ${isPopular ? 'border-2 border-mk-accent' : 'border border-mk-secondary' } bg-mk-bg-2 hover:border-mk-accent hover:-translate-y-2`}>
+        <div className={`relative flex flex-col gap-6 rounded-xl border p-6 transition-all duration-300 ${isPopular ? 'border-mk-accent' : 'border-mk-secondary' } bg-mk-bg-2 hover:border-mk-accent hover:-translate-y-2`}>
+            {isPopular && <p className="absolute -top-3 right-6 text-mk-bg-1 text-xs font-semibold leading-normal tracking-wide rounded-full bg-mk-accent px-3 py-1 text-center">Most Popular</p>}
             <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-white text-xl font-bold leading-tight">{plan}</h3>
-                    {isPopular && <p className="text-mk-bg-1 text-xs font-medium leading-normal tracking-[0.015em] rounded-full bg-mk-accent px-3 py-1 text-center">Most Popular</p>}
-                </div>
-                 <p className="flex items-baseline gap-1 text-white">
+                <h3 className="text-white text-xl font-bold leading-tight">{plan}</h3>
+                <p className="flex items-baseline gap-1 text-white">
                     <span className="text-white text-4xl font-black leading-tight tracking-[-0.033em]">{price}</span>
                     <span className="text-white/80 text-base font-bold leading-tight">/month</span>
                   </p>
             </div>
-             <Button asChild className={`w-full ${!isPopular && 'bg-mk-secondary hover:bg-mk-accent/20'}`}>
+             <Button asChild size="lg" className={`w-full font-bold ${isPopular ? 'bg-mk-accent text-mk-bg-1 hover:bg-mk-accent/90' : 'bg-mk-secondary hover:bg-mk-accent/20'}`}>
                 <Link href={`/entry?plan=${planKey}`}>{cta}</Link>
              </Button>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 pt-3 border-t border-mk-secondary">
                 {features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-3 text-white/90 text-sm">
-                        <div className="text-mk-accent"><CheckIcon /></div>
+                        <Check className="h-4 w-4 text-mk-accent" />
                         {feature}
                     </div>
                 ))}

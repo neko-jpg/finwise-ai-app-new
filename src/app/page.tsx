@@ -5,13 +5,11 @@ import { useAuthState } from "@/hooks/use-auth-state";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader } from "lucide-react";
-import { MarketingFooter } from './(marketing)/_components/footer';
-import { MarketingHeader } from './(marketing)/_components/header';
 import { Hero } from './(marketing)/_components/hero';
 import { ValueCards } from './(marketing)/_components/value-cards';
 import { ScrollDemo } from './(marketing)/_components/scroll-demo';
-import { SocialProof } from './(marketing)/_components/social-proof';
 import { CtaSection } from './(marketing)/_components/cta-section';
+import { SocialProof } from "./(marketing)/_components/social-proof";
 
 export default function LandingPage() {
   const { user, loading } = useAuthState();
@@ -34,24 +32,18 @@ export default function LandingPage() {
     );
   }
 
-  // If user is not logged in, show the marketing page.
-  // The CTA buttons will lead to /entry.
   if (!user) {
     return (
-       <div className="marketing-body font-headline">
-        <MarketingHeader />
+      <>
         <Hero />
         <ValueCards />
         <ScrollDemo />
         <SocialProof />
         <CtaSection />
-        <MarketingFooter />
-      </div>
+      </>
     );
   }
 
-  // This case should ideally not be reached if the redirect works,
-  // but as a fallback, we show a loader.
   return (
       <div className="flex h-screen w-screen items-center justify-center bg-background dark">
           <div className="flex flex-col items-center gap-4">
