@@ -11,6 +11,7 @@ import { GoalsScreen } from './goals-screen';
 import { ProfileScreen } from './profile-screen';
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
+import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -27,6 +28,7 @@ export function AppContainer({ user }: AppContainerProps) {
   const [tab, setTab] = useState("home");
   const [q, setQ] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [ocrOpen, setOcrOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
   const [offline, setOffline] = useState(false);
@@ -66,6 +68,10 @@ export function AppContainer({ user }: AppContainerProps) {
   const handleOpenVoice = () => {
       setVoiceOpen(true);
   }
+  
+  const handleOpenOcr = () => {
+      setOcrOpen(true);
+  }
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
@@ -84,6 +90,7 @@ export function AppContainer({ user }: AppContainerProps) {
             monthLimit={monthLimit} 
             setTab={setTab}
             onOpenTransactionForm={handleOpenTransactionForm}
+            onOpenOcr={handleOpenOcr}
           />
         )}
         {tab === "tx" && (
@@ -118,6 +125,14 @@ export function AppContainer({ user }: AppContainerProps) {
         onOpenChange={setVoiceOpen} 
         onComplete={(data) => {
             setVoiceOpen(false);
+            handleOpenTransactionForm(data);
+        }}
+      />
+      <OcrScanner
+        open={ocrOpen}
+        onOpenChange={setOcrOpen}
+        onComplete={(data) => {
+            setOcrOpen(false);
             handleOpenTransactionForm(data);
         }}
       />

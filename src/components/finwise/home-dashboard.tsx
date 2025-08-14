@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, PiggyBank, ArrowDown, Plus } from "lucide-react";
+import { Wallet, PiggyBank, ArrowDown, Plus, ScanLine } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
 import { TransactionFormValues } from "./transaction-form";
@@ -14,18 +14,23 @@ interface HomeDashboardProps {
   monthLimit: number;
   setTab: (t: string) => void;
   onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
+  onOpenOcr: () => void;
 }
 
-export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm }: HomeDashboardProps) {
+export function HomeDashboard({ todaySpend, monthUsed, monthLimit, setTab, onOpenTransactionForm, onOpenOcr }: HomeDashboardProps) {
   const remain = Math.max(0, monthLimit - monthUsed);
   const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div className="md:col-span-3 flex justify-end mb-2">
-         <Button onClick={() => onOpenTransactionForm()}>
+      <div className="md:col-span-3 flex justify-end gap-2 mb-2">
+         <Button onClick={() => onOpenTransactionForm()} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
-            取引を追加
+            手入力
+          </Button>
+          <Button onClick={onOpenOcr}>
+            <ScanLine className="h-4 w-4 mr-2" />
+            レシート読取
           </Button>
       </div>
       <Card className="md:col-span-2">
