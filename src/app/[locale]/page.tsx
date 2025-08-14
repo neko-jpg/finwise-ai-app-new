@@ -1,19 +1,24 @@
 'use client';
 
-import {useTranslations} from 'next-intl';
-import { AppContainer } from '@/components/finwise/app-container';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
+import { AppContainer } from '@/components/finwise/app-container';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useRouter } from 'next/navigation';
-import { AuthDialog } from '@/components/finwise/auth-dialog';
-import { useState } from 'react';
-
 
 export default function Page() {
   const { user, loading } = useAuthState();
   const router = useRouter();
+  const pathname = usePathname();
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      const locale = pathname.split('/')[1] || 'ja';
+      router.push(`/${locale}/entry`);
+    }
+  }, [user, loading, router, pathname]);
+
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -25,12 +30,6 @@ export default function Page() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    // Redirect to a dedicated entry page, assuming it exists at /[locale]/entry
-    router.push('/entry');
-    return null; // or a loading spinner
   }
 
   return <AppContainer user={user} />;
