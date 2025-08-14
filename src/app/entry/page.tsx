@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, Receipt, FileUp, Building, Loader } from "lucide-react";
+import { Mic, Receipt, FileUp, Building, Loader, Plus } from "lucide-react";
 import { signInGuest } from '@/lib/auth';
 import { useToast } from "@/hooks/use-toast";
 
@@ -74,7 +74,7 @@ export function EntryPage() {
 
       <section className="mx-auto max-w-5xl px-6 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MethodCard title="手入力で試す" desc="最短30秒で1件登録" icon={<Mic />} onClick={handleStart} />
+          <MethodCard title="手入力で試す" desc="最短30秒で1件登録" icon={<Plus />} onClick={handleStart} />
           <MethodCard title="レシートOCR" desc="写真から自動読取" icon={<Receipt />} onClick={handleSoon} />
           <MethodCard title="CSVインポート" desc="銀行・カード明細を一括" icon={<FileUp />} onClick={handleSoon} />
           <MethodCard title="口座連携" desc="自動で取り込み（将来）" icon={<Building />} disabled />
