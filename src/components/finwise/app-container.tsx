@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from "react";
-import { DEMO_TRANSACTIONS, INITIAL_BUDGET, DummyTransaction } from '@/data/dummy-data';
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
 import { HomeDashboard } from './home-dashboard';
@@ -12,7 +11,10 @@ import { ProfileScreen } from './profile-screen';
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { TransactionForm } from './transaction-form';
-import type { Budget } from "@/lib/types";
+import type { Budget, Transaction } from "@/lib/types";
+import { useTransactions } from "@/hooks/use-transactions";
+import { INITIAL_BUDGET } from "@/data/dummy-data";
+import { format } from "date-fns";
 
 
 export default function AppContainer() {
@@ -24,11 +26,29 @@ export default function AppContainer() {
   const [budget, setBudget] = useState<Budget>(INITIAL_BUDGET);
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
-  const todaySpend = useMemo(() => DEMO_TRANSACTIONS.filter((t: DummyTransaction) => t.date === "2025-08-13").reduce((a, b) => a + Math.abs(b.amount), 0), []);
+  // TODO: Replace with actual user ID from Firebase Auth
+  const uid = 'user-123';
+  const { transactions, loading, error } = useTransactions(uid);
+
+  const todaySpend = useMemo(() => {
+    if (!transactions) return 0;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return transactions
+      .filter((t: Transaction) => format(t.bookedAt, 'yyyy-MM-dd') === todayStr)
+      .reduce((a, b) => a + Math.abs(b.amount), 0);
+  }, [transactions]);
+
+  // Note: Budget calculation is still based on dummy data. This will be updated later.
   const monthUsed = useMemo(() => Object.values(budget).reduce((a, b) => a + b.used, 0), [budget]);
   const monthLimit = useMemo(() => Object.values(budget).reduce((a, b) => a + b.limit, 0), [budget]);
 
-  const filteredTx = useMemo(() => DEMO_TRANSACTIONS.filter((t: DummyTransaction) => (catFilter ? t.cat === catFilter : true) && (q ? t.name.toLowerCase().includes(q.toLowerCase()) : true)), [catFilter, q]);
+  const filteredTx = useMemo(() => {
+    if (!transactions) return [];
+    return transactions.filter((t: Transaction) => 
+      (catFilter ? t.category.major === catFilter : true) && 
+      (q ? t.merchant.toLowerCase().includes(q.toLowerCase()) : true)
+    );
+  }, [transactions, catFilter, q]);
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
@@ -45,7 +65,14 @@ export default function AppContainer() {
           <HomeDashboard todaySpend={todaySpend} monthUsed={monthUsed} monthLimit={monthLimit} setTab={setTab} />
         )}
         {tab === "tx" && (
-          <TransactionsScreen q={q} setQ={setQ} filteredTx={filteredTx} catFilter={catFilter} setCatFilter={setCatFilter} />
+          <TransactionsScreen 
+            q={q} 
+            setQ={setQ} 
+            filteredTx={filteredTx} 
+            catFilter={catFilter} 
+            setCatFilter={setCatFilter}
+            loading={loading}
+          />
         )}
         {tab === "budget" && (
           <BudgetScreen budget={budget} setBudget={setBudget} />
