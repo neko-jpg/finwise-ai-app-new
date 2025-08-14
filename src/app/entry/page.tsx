@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, Receipt, FileUp, Building, Loader, Plus } from "lucide-react";
+import { Mic, Receipt, FileUp, Building, Loader, Plus, LogIn } from "lucide-react";
 import { signInGuest } from '@/lib/auth';
 import { useToast } from "@/hooks/use-toast";
 
@@ -68,7 +68,10 @@ export function EntryPage() {
             {isSigningIn && <Loader className="mr-2 h-4 w-4 animate-spin" />}
             はじめる（匿名で試す）
           </Button>
-          <Button size="lg" variant="secondary" onClick={handleSoon}>サンプルを見る</Button>
+          <Button size="lg" variant="secondary" onClick={handleSoon}>
+            <LogIn className="mr-2 h-4 w-4" />
+            Googleでログイン
+          </Button>
         </div>
       </section>
 

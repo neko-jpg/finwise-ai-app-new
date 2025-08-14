@@ -1,8 +1,13 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LogIn, LogOut } from "lucide-react";
 import type { User } from 'firebase/auth';
+import { useToast } from "@/hooks/use-toast";
+import { signOut, linkToGoogle } from "@/lib/auth";
+import { useState } from "react";
 
 interface ProfileScreenProps {
   offline: boolean;
@@ -11,6 +16,29 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps) {
+  const { toast } = useToast();
+  const [isLinking, setIsLinking] = useState(false);
+  
+  const handleLink = async () => {
+    setIsLinking(true);
+    try {
+      await linkToGoogle();
+      toast({
+        title: "アカウントを連携しました",
+        description: "Googleアカウントでログインできるようになりました。",
+      });
+    } catch(e: any) {
+      console.error(e);
+      toast({
+        title: "連携に失敗しました",
+        description: "時間をおいて再度お試しください。",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLinking(false);
+    }
+  };
+  
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
@@ -27,9 +55,15 @@ export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps)
         </CardHeader>
         <CardContent>
             {user.isAnonymous ? (
-                <Button>Googleアカウントでログイン</Button>
+                <Button onClick={handleLink} disabled={isLinking}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  {isLinking ? '連携中...' : 'Googleアカウントと連携'}
+                </Button>
             ) : (
-                <Button variant="destructive">ログアウト</Button>
+                <Button variant="destructive" onClick={() => signOut()}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  ログアウト
+                </Button>
             )}
         </CardContent>
       </Card>
