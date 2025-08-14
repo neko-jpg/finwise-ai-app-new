@@ -1,13 +1,18 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronRight, LogIn, LogOut } from "lucide-react";
+import { ChevronRight, LogIn, LogOut, Upload, Loader } from "lucide-react";
 import type { User } from 'firebase/auth';
 import { useToast } from "@/hooks/use-toast";
 import { signOut, linkToGoogle } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useRef, ChangeEvent } from "react";
+import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
+import { format, parse } from 'date-fns';
 
 interface ProfileScreenProps {
   offline: boolean;
@@ -18,6 +23,8 @@ interface ProfileScreenProps {
 export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps) {
   const { toast } = useToast();
   const [isLinking, setIsLinking] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleLink = async () => {
     setIsLinking(true);
@@ -43,6 +50,69 @@ export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps)
     } finally {
       setIsLinking(false);
     }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const text = e.target?.result as string;
+        // Basic CSV parsing. Assumes format: Date (YYYY/M/D), Merchant, Amount
+        const lines = text.split('\n').slice(1); // Skip header
+        let importedCount = 0;
+        const SHA256 = require('crypto-js/sha256');
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+                const [dateStr, merchant, amountStr] = line.split(',');
+                const amount = parseFloat(amountStr);
+                if (!dateStr || !merchant || isNaN(amount)) {
+                    console.warn("Skipping invalid line:", line);
+                    continue;
+                }
+                const bookedAt = parse(dateStr, 'yyyy/M/d', new Date());
+
+                const hashSource = user.uid + format(bookedAt, 'yyyyMMdd') + amount + merchant;
+                const docData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
+                    bookedAt,
+                    amount,
+                    currency: 'JPY',
+                    merchant: merchant.trim(),
+                    category: { major: 'other' }, // Default category, user can re-categorize
+                    source: 'csv',
+                    hash: SHA256(hashSource).toString(),
+                    clientUpdatedAt: new Date(),
+                };
+
+                await addDoc(collection(db, `users/${user.uid}/transactions`), {
+                    ...docData,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+                importedCount++;
+
+            } catch (err) {
+                console.error("Failed to import line:", line, err);
+            }
+        }
+        
+        toast({
+            title: "インポート完了",
+            description: `${importedCount}件の取引をインポートしました。`,
+        });
+        setIsImporting(false);
+    };
+    reader.readAsText(file, 'sjis'); // Shift_JIS a.k.a. SJIS
+    // Reset file input to allow re-uploading the same file
+    event.target.value = '';
   };
   
   return (
@@ -110,7 +180,11 @@ export function ProfileScreen({ offline, setOffline, user }: ProfileScreenProps)
           <CardDescription>取引データのインポート・エクスポート</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Button variant="secondary">CSVをインポート</Button>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
+            <Button variant="secondary" onClick={handleImportClick} disabled={isImporting}>
+                {isImporting ? <Loader className="animate-spin mr-2"/> : <Upload className="mr-2"/>}
+                CSVをインポート
+            </Button>
           <Button variant="outline">データをエクスポート</Button>
           <Button variant="destructive">全データを削除</Button>
         </CardContent>
