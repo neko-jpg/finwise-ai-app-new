@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/lib/auth';
-import { Loader, LogIn } from 'lucide-react';
+import { Loader } from 'lucide-react';
 
 interface AuthDialogProps {
   open: boolean;
@@ -30,8 +30,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
         description = "Firebaseコンソールで認証プロバイダが有効になっていません。プロジェクト設定を確認してください。";
         break;
       case 'auth/network-request-failed':
-        description = "ネットワーク接続を確認できませんでした。";
+        description = "ネットワーク接続を確認できませんでした。インターネット接続を確認するか、時間をおいて再度お試しください。";
         break;
+      case 'auth/unauthorized-domain':
+          description = "このドメインからのログインは許可されていません。FirebaseコンソールのAuthentication設定で、このアプリのドメインを承認済みドメインに追加してください。";
+          break;
       case 'auth/popup-blocked':
         description = "ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。";
         break;
@@ -45,6 +48,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
         description = "パスワードは6文字以上で入力してください。";
         break;
       case 'auth/user-not-found':
+      case 'auth/invalid-credential':
       case 'auth/wrong-password':
         description = "メールアドレスまたはパスワードが正しくありません。";
         break;
