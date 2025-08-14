@@ -1,6 +1,7 @@
+
 'use client';
 
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseApp } from './firebase';
 
 export const auth = getAuth(firebaseApp);
@@ -12,6 +13,14 @@ export function signInGuest(): Promise<any> {
 export async function signInWithGoogle(){
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
+}
+
+export async function signUpWithEmail(email: string, password: string): Promise<any> {
+    return createUserWithEmailAndPassword(auth, email, password);
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<any> {
+    return signInWithEmailAndPassword(auth, email, password);
 }
 
 export function linkToGoogle(): Promise<any> {
