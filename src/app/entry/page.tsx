@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -29,12 +30,15 @@ export function EntryPage() {
         setIsSigningIn(true);
         try {
             await signInGuest();
+            // The useAuthState hook in the parent component will handle the redirect
         } catch (e: any) {
             console.error("Anonymous sign in failed", e);
             
             let description = "もう一度お試しください。";
             if (e.code === 'auth/configuration-not-found') {
               description = "Firebaseコンソールで匿名サインインが有効になっていません。プロジェクトの認証設定を確認してください。";
+            } else if (e.code === 'auth/network-request-failed') {
+                description = "ネットワーク接続を確認できませんでした。インターネット接続を確認して、もう一度お試しください。"
             }
 
             toast({
@@ -42,6 +46,7 @@ export function EntryPage() {
                 description: description,
                 variant: 'destructive',
             });
+        } finally {
             setIsSigningIn(false);
         }
     }

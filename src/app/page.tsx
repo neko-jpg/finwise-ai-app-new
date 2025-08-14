@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuthState } from './hooks/use-auth-state';
@@ -10,7 +11,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="h-12 w-12 rounded-full" />
           <div className="space-y-2">
