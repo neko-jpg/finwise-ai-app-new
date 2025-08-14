@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CATEGORIES } from '@/data/dummy-data';
 import { format } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Lottie from 'lottie-react';
 import voiceAnimation from './lottie/voice-wave.json';
 
