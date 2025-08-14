@@ -3,17 +3,16 @@
 import { m } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import dynamic from 'next/dynamic';
+
+const MotionBg = dynamic(() => import('./motion-bg'), { ssr: false });
 
 export function Hero() {
   return (
     <section 
         className="relative flex h-screen min-h-[700px] items-center justify-center text-center overflow-hidden"
-        style={{
-            backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://images.unsplash.com/photo-1554224155-8d04421cd6e2?q=80&w=2940&auto=format&fit=crop")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-        }}
     >
+        <MotionBg />
       <div className="relative z-10 px-6">
         <m.h1 
             initial={{ opacity: 0, y: 20 }} 
@@ -31,7 +30,7 @@ export function Hero() {
             className="mt-6 max-w-2xl mx-auto text-lg text-white/80"
         >
             Experience the future of personal finance with our AI-powered app. Effortlessly manage your money, gain insights, and achieve your financial goals.
-        </p>
+        </m.p>
         <m.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 

@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -56,17 +57,18 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
-        'mk-accent': 'hsl(var(--mk-accent))',
-        'mk-mint': 'hsl(var(--mk-mint))',
-        'mk-bg-1': 'hsl(var(--mk-bg-1))',
-        'mk-bg-2': 'hsl(var(--mk-bg-2))',
+        'mk-bg-1': 'hsl(var(--mk-bg-1-hsl))',
+        'mk-bg-2': 'hsl(var(--mk-bg-2-hsl))',
+        'mk-accent': 'hsl(var(--mk-accent-hsl))',
+        'mk-secondary': 'hsl(var(--mk-secondary-hsl))',
+        'mk-text': 'hsl(var(--mk-text-hsl))',
       },
       borderRadius: {
-        lg: '1rem',
-        md: 'calc(1rem - 2px)',
-        sm: 'calc(1rem - 4px)',
-        xl: '1rem',
-        '2xl': '1.25rem',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)',
+        '2xl': 'calc(var(--radius) + 8px)',
       },
       keyframes: {
         'accordion-down': {
@@ -92,5 +94,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require('tailwindcss-animate'), require('@tailwindcss/container-queries')],
 } satisfies Config;
