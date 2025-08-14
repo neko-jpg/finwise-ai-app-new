@@ -3,10 +3,10 @@ import { Home, List, PiggyBank, Target, Mic } from "lucide-react";
 
 export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: string) => void; onMic: () => void }) {
   const navItems = [
-    { key: "home", label: "ホーム", Icon: Home, path: '/' },
-    { key: "tx", label: "明細", Icon: List, path: '/transactions' },
-    { key: "budget", label: "予算", Icon: PiggyBank, path: '/budget' },
-    { key: "goals", label: "目標", Icon: Target, path: '/goals' },
+    { key: "home", label: "ホーム", Icon: Home },
+    { key: "tx", label: "明細", Icon: List },
+    { key: "budget", label: "予算", Icon: PiggyBank },
+    { key: "goals", label: "目標", Icon: Target },
   ];
 
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (
@@ -28,7 +28,7 @@ export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: str
         <div className="flex-shrink-0">
             <Button
                 onClick={onMic}
-                aria-label="Open voice assistant"
+                aria-label="音声アシスタントを開く"
                 className="relative -top-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
                 <Mic className="h-7 w-7" />
