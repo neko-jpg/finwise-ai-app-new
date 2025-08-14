@@ -18,12 +18,12 @@ export type SpeechToTransactionInput = z.infer<typeof SpeechToTransactionInputSc
 
 const SpeechToTransactionOutputSchema = z.union([
   z.object({
-    type: z.literal('transaction').describe('Indicates a transaction was parsed.'),
+    type: z.enum(['transaction']).describe('Indicates a transaction was parsed.'),
     amount: z.number().describe('The transaction amount. Expenditures should be negative.'),
     merchant: z.string().describe('The merchant or a description of the transaction.'),
   }),
   z.object({
-    type: z.literal('query').describe('Indicates the input is a general query, not a transaction.'),
+    type: z.enum(['query']).describe('Indicates the input is a general query, not a transaction.'),
   }),
 ]);
 export type SpeechToTransactionOutput = z.infer<typeof SpeechToTransactionOutputSchema>;
