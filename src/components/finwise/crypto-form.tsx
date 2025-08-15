@@ -17,10 +17,11 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
-import { Combobox } from '@/components/ui/combobox'; // Assuming a combobox component exists
+// import { Combobox } from '@/components/ui/combobox'; // Assuming a combobox component exists
 
 const functions = getFunctions();
-const getCoinListFn = httpsCallable(functions, 'getCoinList');
+// const getCoinListFn = httpsCallable(functions, 'getCoinList');
+const getCoinListFn = () => Promise.resolve({ data: [] }); // Mock function
 
 interface CryptoFormProps {
   open: boolean;
@@ -112,15 +113,20 @@ export function CryptoForm({ open, onOpenChange, user, familyId }: CryptoFormPro
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="coin" className="text-right">銘柄</Label>
-            {/* This assumes a combobox component exists at "@/components/ui/combobox" */}
-            <Combobox
-              options={comboboxOptions}
-              value={selectedCoin?.id}
-              onChange={(value) => {
-                const coin = coinList.find(c => c.id === value);
-                setSelectedCoin(coin || null);
-              }}
-              placeholder="コインを検索..."
+            {/* <Combobox
+                options={comboboxOptions}
+                value={selectedCoin?.id}
+                onChange={(value) => {
+                  const coin = coinList.find(c => c.id === value);
+                  setSelectedCoin(coin || null);
+                }}
+                placeholder="コインを検索..."
+                className="col-span-3"
+              /> */}
+            <Input
+              id="coin-disabled"
+              defaultValue="コイン選択は現在無効です"
+              disabled
               className="col-span-3"
             />
           </div>
