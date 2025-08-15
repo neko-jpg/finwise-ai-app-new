@@ -8,11 +8,11 @@ export interface Category {
 }
 
 export interface Transaction {
-  id: string; // Firestore document ID
+  id: string;
   bookedAt: Date;
-  amount: number; // Value in the user's primary currency (e.g., JPY)
+  amount: number;
   originalAmount: number;
-  originalCurrency: string; // 3-letter currency code (e.g., 'USD')
+  originalCurrency: string;
   merchant: string;
   category: {
     major: string;
@@ -33,39 +33,47 @@ export interface Transaction {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   clientUpdatedAt: Date;
-  deletedAt?: Timestamp | null; // For soft deletes
-  // For family sharing
+  deletedAt?: Timestamp | null;
   familyId: string;
   scope?: 'personal' | 'shared';
-  createdBy?: string; // UID of the user who created the transaction
-  // For tax purposes
-  taxTag?: string; // e.g., 'medical', 'donation'
-  // For bank linking
+  createdBy?: string;
+  taxTag?: string;
   plaidTransactionId?: string;
   plaidAccountId?: string;
 }
 
+// 修正点: `targetAmount`を`target`に、`currentAmount`を`saved`に修正しました
 export interface Goal {
-  id: string; // Firestore document ID
+  id: string;
   familyId: string;
   name: string;
   target: number;
   saved: number;
-  due?: Timestamp;
-  scope?: 'personal' | 'shared';
+  due: Date | null; // TimestampからDateに変更
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
+  scope: 'personal' | 'shared';
 }
 
 export interface Budget {
-    id: string; // YYYY-MM format
+    id: string;
     familyId: string;
     year: number;
     month: number;
-    totalBudget: number;
-    categories: { [key: string]: number }; // e.g., { 'food': 50000, 'transport': 10000 }
+    limits: { [key: string]: number };
+    used: { [key: string]: number };
+    scope: 'personal' | 'shared';
+    createdBy: string;
+    createdAt: Timestamp;
     updatedAt: Timestamp;
+}
+
+// ... (残りの型定義は変更なし)
+export interface QuickActionDefinition {
+    key: string;
+    text: string;
+    icon: LucideIcon;
 }
 
 export interface UserProfile {
@@ -73,7 +81,7 @@ export interface UserProfile {
     email: string | null;
     displayName: string | null;
     photoURL: string | null;
-    primaryCurrency: string; // e.g., 'JPY'
+    primaryCurrency: string;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
@@ -81,23 +89,23 @@ export interface UserProfile {
 export interface Family {
     id: string;
     name: string;
-    members: string[]; // array of UIDs
-    admins: string[]; // array of UIDs
+    members: string[];
+    admins: string[];
     createdAt: Timestamp;
 }
 
 export interface PlaidItem {
-    id: string; // Firestore document ID, same as Plaid item_id
+    id: string;
     familyId: string;
     userId: string;
-    accessToken: string; // Encrypted
+    accessToken: string;
     institutionId: string;
     institutionName: string;
     updatedAt: Timestamp;
 }
 
 export interface Account {
-    id: string; // Firestore document ID, same as Plaid account_id
+    id: string;
     familyId: string;
     plaidItemId: string;
     name: string;
@@ -109,34 +117,32 @@ export interface Account {
 }
 
 export interface Holding {
-    id: string; // Firestore document ID
+    id: string;
     familyId: string;
-    userId: string; // User who owns this holding
-    securityId: string; // Links to the Security document
+    userId: string;
+    securityId: string;
     quantity: number;
-    // For stocks from Plaid
     plaidAccountId?: string;
     institutionValue?: number;
     costBasis?: number | null;
-    // For manual entries
     notes?: string;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
 
 export interface Security {
-    id:string; // For stocks: Plaid security_id. For crypto: CoinGecko coin_id (e.g., 'bitcoin')
+    id:string;
     assetType: 'stock' | 'crypto';
     name: string | null;
-    tickerSymbol: string | null; // e.g., 'AAPL', 'BTC'
-    securityType?: string | null; // For stocks: 'equity', 'etf'.
-    closePrice: number | null; // Last known price
-    logoUrl?: string; // For crypto logos
+    tickerSymbol: string | null;
+    securityType?: string | null;
+    closePrice: number | null;
+    logoUrl?: string;
     updatedAt: Timestamp;
 }
 
 export interface Dividend {
-  id: string; // Firestore document ID
+  id: string;
   familyId: string;
   securityId: string;
   exDate: Timestamp;
@@ -147,33 +153,44 @@ export interface Dividend {
 }
 
 export interface Rule {
-  id: string; // Firestore document ID
-  name: string; // e.g., "Starbucks Coffee"
-  priority: number; // To determine execution order, lower numbers first
-
+  id: string;
+  name: string;
+  priority: number;
   trigger: {
-    field: 'merchant' | 'amount'; // Field to check on the transaction
-    operator: 'contains' | 'equals' | 'greater_than' | 'less_than'; // The comparison to make
-    value: string | number; // The value to compare against
+    field: 'merchant' | 'amount';
+    operator: 'contains' | 'equals' | 'greater_than' | 'less_than';
+    value: string | number;
   };
-
   action: {
-    type: 'categorize' | 'set_scope' | 'add_tax_tag'; // The action to perform
-    value: string; // The value for the action (e.g., category key, 'shared', tax tag key)
+    field: 'category'; // Changed from 'type' for clarity
+    value: string;
   };
-
-  uid: string; // User ID
+  uid: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  deletedAt: Timestamp | null;
 }
 
 export interface Notification {
-  id: string; // Firestore document ID
+  id: string;
   familyId: string;
-  userId?: string; // UID of the user if notification is personal
+  userId?: string;
   type: 'overspending_alert' | 'bill_reminder' | 'generic';
   message: string;
   isRead: boolean;
   createdAt: Timestamp;
-  link?: string; // Optional link to a relevant page (e.g., /budget)
+  link?: string;
+}
+
+export type WidgetId = 'todaySpend' | 'monthlyBudget' | 'advice' | 'quickActions' | 'goals' | 'recentTransactions';
+
+export interface WidgetConfig {
+    id: WidgetId;
+    order: number;
+    size: 'full' | 'half' | 'third';
+}
+
+export interface DashboardLayout {
+    id: string; // Should be user's UID
+    widgets: WidgetConfig[];
 }
