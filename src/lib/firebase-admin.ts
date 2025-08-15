@@ -12,11 +12,12 @@ function getServiceAccount(): ServiceAccount | null {
     }
 
     try {
-        const serviceAccount = JSON.parse(serviceAccountJson);
-        // Vercel/other environments might escape newlines
-        if (serviceAccount.private_key) {
-            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-        }
+        // Vercelなどの環境では、改行が '\\n' としてエスケープされることがあるため、これを実際の改行文字 '\n' に置換します。
+        const privateKeyFixed = JSON.parse(serviceAccountJson).private_key.replace(/\\n/g, '\n');
+        const serviceAccount = {
+            ...JSON.parse(serviceAccountJson),
+            private_key: privateKeyFixed
+        };
         return serviceAccount;
     } catch (e: any) {
         console.error('[Server] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
