@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/lib/auth';
+import { getAdditionalUserInfo } from 'firebase/auth';
+import { createUserProfile } from '@/lib/user';
 import { Loader } from 'lucide-react';
 
 interface AuthDialogProps {
@@ -68,7 +70,11 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     setIsLoading('google');
     try {
       const result = await signInWithGoogle();
-      if (result) {
+      if (result?.user) {
+        const additionalInfo = getAdditionalUserInfo(result);
+        if (additionalInfo?.isNewUser) {
+          await createUserProfile(result.user);
+        }
         onOpenChange(false);
         onSignin();
       }
@@ -83,7 +89,14 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     e.preventDefault();
     setIsLoading('email');
     try {
-      await signUpWithEmail(email, password);
+      const result = await signUpWithEmail(email, password);
+      // NOTE: A new user via email/pass is always a new user, but we check anyway for consistency.
+      if (result?.user) {
+        const additionalInfo = getAdditionalUserInfo(result);
+        if (additionalInfo?.isNewUser) {
+          await createUserProfile(result.user);
+        }
+      }
       onOpenChange(false);
       onSignin();
       toast({ title: "登録が完了しました", description: "確認メールは送信されません（開発モード）。" });
@@ -111,7 +124,13 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
   const handleAnonymousSignIn = async () => {
     setIsLoading('anonymous');
     try {
-      await signInGuest();
+      const result = await signInGuest();
+      if (result?.user) {
+        const additionalInfo = getAdditionalUserInfo(result);
+        if (additionalInfo?.isNewUser) {
+          await createUserProfile(result.user);
+        }
+      }
       onOpenChange(false);
       onSignin();
     } catch (e) {

@@ -11,6 +11,7 @@ import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Goal, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
@@ -44,11 +45,14 @@ export function AppContainer({ children }: AppContainerProps) {
   const [offline, setOffline] = useState(false);
 
   const uid = user?.uid;
+  const { userProfile, loading: profileLoading } = useUserProfile(uid);
+  const familyId = userProfile?.familyId;
+
   const currentMonth = useMemo(() => format(new Date(), 'yyyy-MM'), []);
   
-  const { transactions, setTransactions, loading: txLoading } = useTransactions(uid);
-  const { budget, setBudget, loading: budgetLoading } = useBudget(uid, currentMonth);
-  const { goals, setGoals, loading: goalsLoading } = useGoals(uid);
+  const { transactions, setTransactions, loading: txLoading } = useTransactions(familyId);
+  const { budget, setBudget, loading: budgetLoading } = useBudget(familyId, currentMonth);
+  const { goals, setGoals, loading: goalsLoading } = useGoals(familyId);
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
