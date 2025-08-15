@@ -27,6 +27,10 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     console.error("Auth failed", e);
     let description = "もう一度お試しください。";
     switch (e.code) {
+      case 'auth/operation-not-allowed':
+      case 'auth/admin-restricted-operation':
+        description = "このログイン方法は現在許可されていません。Firebaseコンソールで匿名認証またはGoogle認証が有効になっているか確認してください。";
+        break;
       case 'auth/configuration-not-found':
         description = "Firebaseコンソールで認証プロバイダが有効になっていません。プロジェクト設定を確認してください。";
         break;
@@ -40,8 +44,8 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
         description = "ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。";
         break;
       case 'auth/popup-closed-by-user':
-        description = "認証ウィンドウが閉じられました。";
-        break;
+        // This is handled gracefully now, so no toast is needed.
+        return; 
       case 'auth/email-already-in-use':
         description = "このメールアドレスは既に使用されています。ログインするか、別のメールアドレスをお使いください。";
         break;
@@ -63,9 +67,11 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
   const handleGoogleSignIn = async () => {
     setIsLoading('google');
     try {
-      await signInWithGoogle();
-      onOpenChange(false); // Success will be handled by auth state listener
-      onSignin();
+      const result = await signInWithGoogle();
+      if (result) {
+        onOpenChange(false);
+        onSignin();
+      }
     } catch (e) {
       handleAuthError(e);
     } finally {

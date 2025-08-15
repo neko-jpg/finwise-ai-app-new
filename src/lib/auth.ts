@@ -12,7 +12,17 @@ export function signInGuest(): Promise<any> {
 
 export async function signInWithGoogle(){
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    try {
+        return await signInWithPopup(auth, provider);
+    } catch (e: any) {
+        if (e.code === 'auth/popup-closed-by-user') {
+            // User closed the popup, this is not a critical error.
+            // We can resolve the promise without a user object.
+            return Promise.resolve(null);
+        }
+        // Re-throw other errors to be handled by the caller.
+        throw e;
+    }
 }
 
 export async function signUpWithEmail(email: string, password: string): Promise<any> {
