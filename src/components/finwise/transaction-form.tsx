@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Sparkles } from 'lucide-react';
@@ -34,6 +35,7 @@ const FormSchema = z.object({
   merchant: z.string().min(1, '店名・メモは必須です。'),
   categoryMajor: z.string().min(1, 'カテゴリは必須です。'),
   note: z.string().max(200).optional(),
+  scope: z.enum(['shared', 'personal']),
 });
 
 export type TransactionFormValues = z.infer<typeof FormSchema>;
@@ -42,11 +44,12 @@ interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     familyId: string | undefined;
+    user: User | null;
     initialData?: Partial<TransactionFormValues>;
     onTransactionAction: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, familyId, initialData, onTransactionAction }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, familyId, user, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -59,6 +62,7 @@ export function TransactionForm({ open, onOpenChange, familyId, initialData, onT
             merchant: '',
             categoryMajor: '',
             note: '',
+            scope: 'shared',
         },
     });
 
@@ -80,7 +84,7 @@ export function TransactionForm({ open, onOpenChange, familyId, initialData, onT
     }, 1000);
 
     const onSubmit = async (values: TransactionFormValues) => {
-        if (!familyId) {
+        if (!familyId || !user) {
             toast({
                 variant: 'destructive',
                 title: "エラー",
@@ -109,6 +113,8 @@ export function TransactionForm({ open, onOpenChange, familyId, initialData, onT
             clientUpdatedAt: new Date(),
             createdAt: now,
             updatedAt: now,
+            scope: values.scope,
+            createdBy: user.uid,
         };
 
         // Optimistic Update
@@ -270,6 +276,41 @@ export function TransactionForm({ open, onOpenChange, familyId, initialData, onT
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="scope"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>公開範囲</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex space-x-4"
+                                    >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="shared" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        家族で共有
+                                        </FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="personal" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        自分のみ
+                                        </FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
                                 </FormItem>
                             )}
                         />

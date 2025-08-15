@@ -34,6 +34,9 @@ export interface Transaction {
   updatedAt: Timestamp;
   clientUpdatedAt: Date;
   deletedAt?: Timestamp | null; // For soft deletes
+  // For family sharing
+  scope?: 'personal' | 'shared';
+  createdBy?: string; // UID of the user who created the transaction
 }
 
 export interface BudgetItem {
@@ -58,6 +61,9 @@ export interface Goal {
     due: Date | null;
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    // For family sharing
+    scope?: 'personal' | 'shared';
+    createdBy?: string; // UID of the user who created the goal
 }
 
 export interface QuickActionDefinition {

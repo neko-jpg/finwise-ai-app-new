@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle } from "lucide-react";
@@ -29,6 +30,7 @@ interface TransactionsScreenProps {
 
 export function TransactionsScreen({ loading, transactions = [], setTransactions, user }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'shared' | 'personal'>('all');
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -38,12 +40,17 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   const { toast } = useToast();
 
   const filteredTx = useMemo(() => {
-    return transactions.filter((t: Transaction) => 
-      (showDeleted ? t.deletedAt : !t.deletedAt) &&
-      (catFilter ? t.category.major === catFilter : true) && 
-      (q ? t.merchant.toLowerCase().includes(q.toLowerCase()) : true)
-    );
-  }, [transactions, catFilter, q, showDeleted]);
+    return transactions.filter((t: Transaction) => {
+      const scopeMatch = scopeFilter === 'all'
+        || (scopeFilter === 'shared' && t.scope === 'shared')
+        || (scopeFilter === 'personal' && t.scope === 'personal' && t.createdBy === user?.uid);
+
+      return (showDeleted ? t.deletedAt : !t.deletedAt) &&
+        (catFilter ? t.category.major === catFilter : true) &&
+        (q ? t.merchant.toLowerCase().includes(q.toLowerCase()) : true) &&
+        scopeMatch;
+    });
+  }, [transactions, catFilter, q, showDeleted, scopeFilter, user?.uid]);
 
   const handleAnalyze = () => {
     const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString()}));
@@ -207,7 +214,10 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
             {CATEGORIES.find(c => c.key === t.category.major)?.icon || <div className="h-4 w-4"/>}
           </div>
           <div>
-              <div className="font-medium">{t.merchant}</div>
+              <div className="font-medium flex items-center gap-2">
+                {t.merchant}
+                {t.scope === 'personal' && <Badge variant="secondary">個人</Badge>}
+              </div>
               <div className="text-xs text-muted-foreground">{t.bookedAt ? format(t.bookedAt, 'yyyy-MM-dd') : ''}</div>
           </div>
         </div>
@@ -253,6 +263,13 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
             </div>
         </CardHeader>
         <CardContent>
+            <Tabs value={scopeFilter} onValueChange={(v) => setScopeFilter(v as any)} className="mb-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="all">すべて</TabsTrigger>
+                <TabsTrigger value="shared">共有</TabsTrigger>
+                <TabsTrigger value="personal">個人</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

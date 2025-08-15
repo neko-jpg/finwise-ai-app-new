@@ -34,9 +34,20 @@ service cloud.firestore {
 
       // Rules for all subcollections under a family (transactions, budgets, goals, etc.)
       match /{subcollection}/{docId} {
-        // A user can read/write/create/delete documents in a family's subcollection
-        // if their own familyId (from their user profile) matches the familyId of the document they are trying to access.
-        allow read, write, create, delete: if getUserFamilyId(request.auth.uid) == familyId;
+        // Allow creation if the user is part of the family.
+        // The document must correctly list the creator's UID.
+        allow create: if getUserFamilyId(request.auth.uid) == familyId
+                      && request.resource.data.createdBy == request.auth.uid;
+
+        // Allow read if the document is shared and user is in the family,
+        // OR if the document is personal and the user is the creator.
+        allow read: if getUserFamilyId(request.auth.uid) == familyId
+                    && (request.resource.data.scope == 'shared' || request.resource.data.createdBy == request.auth.uid);
+
+        // Allow update/delete only if the user is the original creator.
+        // This is the safest default. We can relax this for shared items later if needed.
+        allow update, delete: if getUserFamilyId(request.auth.uid) == familyId
+                              && resource.data.createdBy == request.auth.uid;
       }
     }
   }
