@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -20,6 +19,7 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { Goal } from '@/lib/types';
+import type { User } from 'firebase/auth';
 
 const FormSchema = z.object({
   name: z.string().min(1, '目標名は必須です。').max(50, '50文字以内で入力してください。'),
@@ -55,6 +55,7 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
     });
 
     const onSubmit = async (values: GoalFormValues) => {
+        // 修正点: userとfamilyIdが存在しない場合に処理を中断するガード句を追加
         if (!familyId || !user) {
             toast({
                 variant: 'destructive',
@@ -65,35 +66,17 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
         }
         setIsSubmitting(true);
         
-        const optimisticId = `optimistic-${Date.now()}`;
-        const now = Timestamp.now();
-
-        const optimisticGoal: Goal = {
-            id: optimisticId,
-            name: values.name,
-            target: values.target,
-            saved: 0,
-            due: values.due || null,
-            createdAt: now,
-            updatedAt: now,
-            scope: values.scope,
-            createdBy: user.uid,
-        };
-        
-        // Optimistic Update
-        onGoalAction(optimisticGoal);
-        onOpenChange(false);
-        
         try {
             const docData = {
                 name: values.name,
                 target: values.target,
                 saved: 0, 
-                due: values.due || null,
+                due: values.due ? Timestamp.fromDate(values.due) : null,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 scope: values.scope,
                 createdBy: user.uid,
+                familyId: familyId,
             };
 
             await addDoc(collection(db, `families/${familyId}/goals`), docData);
@@ -102,8 +85,7 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
                 title: "新しい目標を作成しました！",
                 description: `「${values.name}」に向かって頑張りましょう！`,
             });
-            // Here you could update the optimistic goal with the real one if needed,
-            // but onSnapshot in useGoals should handle it.
+            onOpenChange(false);
         } catch (error) {
             console.error("Error adding document: ", error);
             toast({
@@ -111,8 +93,6 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
                 title: "目標の作成に失敗しました",
                 description: "保存中にエラーが発生しました。もう一度お試しください。",
             });
-            // Revert optimistic update
-            // onGoalAction(prev => prev.filter(g => g.id !== optimisticId));
         } finally {
             setIsSubmitting(false);
         }
@@ -124,6 +104,7 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
             name: '',
             target: '' as any,
             due: undefined,
+            scope: 'shared',
           });
         }
     }, [open, form]);
