@@ -93,7 +93,7 @@
   * {
     @apply border-border;
   }
-  body {
+  body, .marketing-body {
     @apply bg-background text-foreground;
   }
   .font-headline {
@@ -101,5 +101,8 @@
   }
   .font-body {
     font-family: var(--font-noto-sans-jp), sans-serif;
+  }
+  .marketing-body {
+    @apply bg-mk-bg-1 text-mk-text;
   }
 }
