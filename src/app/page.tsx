@@ -14,7 +14,7 @@ async function getUser() {
   }
 
   const auth = getAuth(app);
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session')?.value;
 
   if (!sessionCookie) {
@@ -27,7 +27,9 @@ async function getUser() {
   } catch (error) {
     // セッションクッキーが無効な場合
     console.error('Session cookie verification failed:', error);
-    cookies().set('session', '', { expires: new Date(0) });
+    // This is a write operation, so we need to get the store again or use the existing one.
+    // As it's a separate branch, it's safer to just get it again.
+    (await cookies()).set('session', '', { expires: new Date(0) });
     return null;
   }
 }
