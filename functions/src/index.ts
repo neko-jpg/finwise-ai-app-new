@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
-import type { Budget, Transaction } from "../../src/lib/types";
+import type { Budget, Notification, Transaction } from "../../src/lib/types";
 
 // admin.initializeApp()は一度だけでOKです
 if (admin.apps.length === 0) {
@@ -11,16 +11,7 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 
 // 型定義をより安全にするため、anyではなく具体的な型を指定します
-// (クライアント側の`src/lib/types.ts`にもNotificationの型定義が必要です)
-interface NotificationData {
-  familyId: string;
-  userId?: string;
-  type: 'overspending_alert' | 'bill_reminder' | 'generic';
-  message: string;
-  link?: string;
-}
-
-const createNotification = async (notification: NotificationData) => {
+const createNotification = async (notification: Omit<Notification, "id" | "createdAt" | "isRead">) => {
   return db.collection("notifications").add({
     ...notification,
     userId: notification.userId || null,
