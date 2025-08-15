@@ -38,6 +38,8 @@ export interface Transaction {
   // For family sharing
   scope?: 'personal' | 'shared';
   createdBy?: string; // UID of the user who created the transaction
+  // For tax purposes
+  taxTag?: string; // e.g., 'medical', 'donation'
 }
 
 export interface BudgetItem {

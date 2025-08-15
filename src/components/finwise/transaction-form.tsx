@@ -25,6 +25,7 @@ import type { Transaction } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
 import { useDebouncedCallback } from 'use-debounce';
+import { TAX_TAGS } from '@/data/dummy-data';
 
 const FormSchema = z.object({
   bookedAt: z.date({
@@ -38,6 +39,7 @@ const FormSchema = z.object({
   categoryMajor: z.string().min(1, 'カテゴリは必須です。'),
   note: z.string().max(200).optional(),
   scope: z.enum(['shared', 'personal']),
+  taxTag: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof FormSchema>;
@@ -67,6 +69,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
             categoryMajor: '',
             note: '',
             scope: 'shared',
+            taxTag: '',
         },
     });
 
@@ -122,6 +125,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 updatedAt: serverTimestamp() as Timestamp,
                 scope: values.scope,
                 createdBy: user.uid,
+                taxTag: values.taxTag || undefined,
             };
 
             const optimisticTx: Transaction = {
@@ -343,6 +347,32 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                                     </RadioGroup>
                                 </FormControl>
                                 <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="taxTag"
+                            render={({ field }) => (
+                                <FormItem>
+                                     <FormLabel>税金関連タグ (任意)</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="タグを選択..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="">タグなし</SelectItem>
+                                            {TAX_TAGS.map(t => (
+                                                <SelectItem key={t.key} value={t.key}>
+                                                    {t.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

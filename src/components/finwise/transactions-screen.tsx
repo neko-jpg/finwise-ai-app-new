@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle } from "lucide-react";
-import { CATEGORIES } from "@/data/dummy-data";
+import { CATEGORIES, TAX_TAGS } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
 import { useToast } from '@/hooks/use-toast';
@@ -232,9 +232,16 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
                     (約 ¥{Math.abs(Math.round(t.amount)).toLocaleString()})
                 </div>
             )}
-            <Badge variant="outline" className="mt-1 font-normal">
-                {CATEGORIES.find(c => c.key === t.category.major)?.label || t.category.major}
-            </Badge>
+            <div className="flex gap-1 mt-1">
+                <Badge variant="outline" className="font-normal">
+                    {CATEGORIES.find(c => c.key === t.category.major)?.label || t.category.major}
+                </Badge>
+                {t.taxTag && (
+                    <Badge variant="destructive" className="font-normal">
+                        {TAX_TAGS.find(tag => tag.key === t.taxTag)?.label || t.taxTag}
+                    </Badge>
+                )}
+            </div>
           </div>
            {showDeleted ? (
               <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => handleToggleDelete(t.id, true)}><Undo2 className="h-4 w-4" /></Button>
