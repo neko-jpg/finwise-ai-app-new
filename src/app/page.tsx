@@ -14,7 +14,8 @@ async function getUser() {
   }
 
   const auth = getAuth(app);
-  const sessionCookie = cookies().get('session')?.value;
+  const cookieStore = cookies();
+  const sessionCookie = cookieStore.get('session')?.value;
 
   if (!sessionCookie) {
     return null;
