@@ -38,6 +38,20 @@ export function AppContainer({ children }: AppContainerProps) {
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
+  const [isOffline, setIsOffline] = useState(typeof window !== 'undefined' ? !window.navigator.onLine : false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;
@@ -100,7 +114,7 @@ export function AppContainer({ children }: AppContainerProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader user={user} onOcr={() => setOcrOpen(true)} notifications={notifications} />
-      <OfflineBanner />
+      {isOffline && <OfflineBanner />}
       <main className="flex-1 pb-24 pt-16">
         {React.Children.map(children, child =>
             React.isValidElement(child)
