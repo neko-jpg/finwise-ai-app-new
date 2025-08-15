@@ -12,6 +12,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRules } from "@/hooks/use-rules";
+import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
@@ -44,8 +45,9 @@ export function AppContainer({ children }: AppContainerProps) {
   const { goals, loading: goalsLoading } = useGoals(familyId);
   const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date());
   const { rules, loading: rulesLoading } = useRules(user?.uid);
+  const { plaidAccounts, loading: accountsLoading } = useInvestmentPortfolio(familyId, user?.uid);
 
-  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading;
+  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -106,6 +108,7 @@ export function AppContainer({ children }: AppContainerProps) {
                   transactions,
                   goals,
                   rules,
+                  accounts: plaidAccounts,
                   personalBudget,
                   sharedBudget,
                   setPersonalBudget,
