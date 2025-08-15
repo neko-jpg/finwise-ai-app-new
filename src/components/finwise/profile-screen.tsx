@@ -4,9 +4,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronRight, LogIn, LogOut, Upload, Loader, Users } from "lucide-react";
+import { ChevronRight, LogIn, LogOut, Upload, Loader, Users, ShieldCheck } from "lucide-react";
 import type { User } from 'firebase/auth';
 import Link from 'next/link';
+import { TwoFactorAuthSetupDialog } from './two-factor-auth-setup-dialog';
 import { useToast } from "@/hooks/use-toast";
 import { signOut, linkToGoogle } from "@/lib/auth";
 import { useState, useRef, ChangeEvent } from "react";
@@ -25,6 +26,7 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
   const { toast } = useToast();
   const [isLinking, setIsLinking] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [is2faDialogOpen, setIs2faDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!user) {
@@ -198,6 +200,21 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
 
       <Card>
         <CardHeader>
+          <CardTitle>セキュリティ</CardTitle>
+          <CardDescription>
+            2段階認証を設定してアカウントを保護します。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Button onClick={() => setIs2faDialogOpen(true)}>
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              2段階認証を設定
+            </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="font-headline text-lg">データ管理</CardTitle>
           <CardDescription>取引データのインポート・エクスポート</CardDescription>
         </CardHeader>
@@ -211,6 +228,8 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
           <Button variant="destructive">全データを削除</Button>
         </CardContent>
       </Card>
+
+      <TwoFactorAuthSetupDialog open={is2faDialogOpen} onOpenChange={setIs2faDialogOpen} />
     </div>
   );
 }
