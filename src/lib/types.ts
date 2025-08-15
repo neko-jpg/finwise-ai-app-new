@@ -108,22 +108,29 @@ export interface Account {
 }
 
 export interface Holding {
-    id: string; // Firestore document ID, composite key like ${accountId}-${securityId}
+    id: string; // Firestore document ID
     familyId: string;
-    plaidAccountId: string;
-    securityId: string;
+    userId: string; // User who owns this holding
+    securityId: string; // Links to the Security document
     quantity: number;
-    institutionValue: number;
-    costBasis: number | null;
+    // For stocks from Plaid
+    plaidAccountId?: string;
+    institutionValue?: number;
+    costBasis?: number | null;
+    // For manual entries
+    notes?: string;
+    createdAt: Timestamp;
     updatedAt: Timestamp;
 }
 
 export interface Security {
-    id: string; // Firestore document ID, same as Plaid security_id
+    id:string; // For stocks: Plaid security_id. For crypto: CoinGecko coin_id (e.g., 'bitcoin')
+    assetType: 'stock' | 'crypto';
     name: string | null;
-    tickerSymbol: string | null;
-    type: string | null;
-    closePrice: number | null;
+    tickerSymbol: string | null; // e.g., 'AAPL', 'BTC'
+    securityType?: string | null; // For stocks: 'equity', 'etf'.
+    closePrice: number | null; // Last known price
+    logoUrl?: string; // For crypto logos
     updatedAt: Timestamp;
 }
 
