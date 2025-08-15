@@ -20,35 +20,42 @@ const createNotification = async (notification: Omit<Notification, "id" | "creat
  * A scheduled function that runs once every 24 hours to check for
  * budget overspending and upcoming recurring bills.
  */
+import { format } from "date-fns";
+
 export const dailyFinancialCheck = functions.pubsub
   .schedule("every 24 hours")
   .onRun(async (context) => {
     functions.logger.info("Starting daily financial check...");
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
+    const budgetPeriod = format(now, 'yyyy-MM');
 
     // --- 1. Check for Budget Overspending ---
     try {
-        const budgetsSnapshot = await db.collection("budgets")
-            .where("year", "==", year)
-            .where("month", "==", month)
+        // Use a collection group query to get all budgets for the current period.
+        const budgetsSnapshot = await db.collectionGroup("budgets")
+            .where("id", "==", budgetPeriod) // Assuming ID is still YYYY-MM based on original code
             .get();
 
         for (const budgetDoc of budgetsSnapshot.docs) {
-            const budget = budgetDoc.data() as Budget;
-            const spent = Object.entries(budget.categoriesSpent || {});
+            const budget = budgetDoc.data();
+            const familyId = budgetDoc.ref.parent.parent?.id; // budgets are in a subcollection of family
 
-            for (const [category, amountSpent] of spent) {
-                const limit = budget.categories[category] || 0;
-                if (limit > 0 && (amountSpent / limit) >= 0.8) {
-                    await createNotification({
-                        familyId: budget.familyId,
-                        userId: budget.scope === 'personal' ? budget.createdBy : undefined,
-                        type: 'overspending_alert',
-                        message: `「${category}」の予算の80%以上を使用しました。(¥${amountSpent.toLocaleString()} / ¥${limit.toLocaleString()})`,
-                        link: '/budget',
-                    });
+            if (!familyId) continue;
+
+            if (budget && budget.limits && budget.used) {
+                for (const category in budget.limits) {
+                    const limit = budget.limits[category] || 0;
+                    const used = budget.used[category] || 0;
+                    if (limit > 0 && (used / limit) >= 0.8) {
+                        await createNotification({
+                            familyId: familyId,
+                            // Note: We can't easily distinguish personal vs shared here.
+                            // Sending a family-wide notification is a safe default.
+                            type: 'overspending_alert',
+                            message: `「${category}」の予算の80%以上を使用しました。(¥${used.toLocaleString()} / ¥${limit.toLocaleString()})`,
+                            link: '/budget',
+                        });
+                    }
                 }
             }
         }

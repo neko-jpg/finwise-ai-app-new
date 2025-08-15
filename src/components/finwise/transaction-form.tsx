@@ -148,11 +148,11 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 deletedAt: null,
             };
 
-            // Apply rules before creating hash and saving
+            // Generate hash from original data
+            const hash = createTransactionHash(newTxData, user.uid);
+
+            // Apply rules
             const finalTxData = applyRules(newTxData, rules);
-            
-            // Generate hash
-            const hash = createTransactionHash(finalTxData);
             
             const docRef = await addDoc(collection(db, `families/${familyId}/transactions`), {
                 ...finalTxData,
