@@ -49,9 +49,10 @@ export interface Goal {
   id: string; // Firestore document ID
   familyId: string;
   name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline?: Timestamp;
+  target: number;
+  saved: number;
+  due?: Timestamp;
+  scope?: 'personal' | 'shared';
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
