@@ -22,6 +22,7 @@ import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { Transaction, Rule } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
+import { getExchangeRate } from '@/ai/flows/exchange-rate';
 import { applyRules } from '@/lib/rule-engine';
 import type { User } from 'firebase/auth';
 import { createTransactionHash } from '@/lib/utils';
@@ -48,10 +49,13 @@ interface TransactionFormProps {
     onTransactionAction: (tx: Transaction) => void;
 }
 
+const SUPPORTED_CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD'];
+
 export function TransactionForm({ open, onOpenChange, familyId, user, primaryCurrency, rules, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
+    const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
 
     const form = useForm<TransactionFormValues>({
         resolver: zodResolver(formSchema),
@@ -117,10 +121,19 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
         try {
+            let finalAmount = values.amount;
+            // Handle currency conversion if necessary
+            if (selectedCurrency !== primaryCurrency) {
+                toast({ title: '為替レートを取得中...' });
+                const rate = await getExchangeRate({ base: selectedCurrency, target: primaryCurrency });
+                finalAmount = values.amount * rate;
+                toast({ title: 'レート取得完了', description: `1 ${selectedCurrency} = ${rate.toFixed(2)} ${primaryCurrency}` });
+            }
+
             const newTxData = {
-                amount: values.amount,
+                amount: finalAmount,
                 originalAmount: values.amount,
-                originalCurrency: primaryCurrency,
+                originalCurrency: selectedCurrency,
                 merchant: values.merchant,
                 bookedAt: Timestamp.fromDate(values.bookedAt),
                 category: { major: values.categoryMajor },
@@ -160,7 +173,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
 
             toast({
                 title: '取引が保存されました',
-                description: `${values.merchant}への${values.amount}円の支出を記録しました。`,
+                description: `${values.merchant}への${values.amount.toLocaleString()} ${selectedCurrency}の支出を記録しました。`,
             });
             onOpenChange(false);
             form.reset();
@@ -187,19 +200,38 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>金額</FormLabel>
+                        <div className="flex items-end gap-2">
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem className="flex-grow">
+                                        <FormLabel>金額</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="例: 3000" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormItem>
+                                <FormLabel>通貨</FormLabel>
+                                <Select onValueChange={setSelectedCurrency} value={selectedCurrency}>
                                     <FormControl>
-                                        <Input type="number" placeholder="例: 3000" {...field} />
+                                        <SelectTrigger className="w-[90px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
                                     </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                    <SelectContent>
+                                        {SUPPORTED_CURRENCIES.map(c => (
+                                            <SelectItem key={c} value={c}>
+                                                {c}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        </div>
                         <FormField
                             control={form.control}
                             name="merchant"
