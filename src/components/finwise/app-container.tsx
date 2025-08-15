@@ -13,6 +13,7 @@ import { useGoals } from "@/hooks/use-goals";
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRules } from "@/hooks/use-rules";
 import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
+import { useNotifications } from '@/hooks/use-notifications';
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
@@ -46,8 +47,9 @@ export function AppContainer({ children }: AppContainerProps) {
   const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date());
   const { rules, loading: rulesLoading } = useRules(user?.uid);
   const { plaidAccounts, loading: accountsLoading } = useInvestmentPortfolio(familyId, user?.uid);
+  const { notifications, loading: notificationsLoading } = useNotifications(familyId, user?.uid);
 
-  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading;
+  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -97,7 +99,7 @@ export function AppContainer({ children }: AppContainerProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader user={user} onOcr={() => setOcrOpen(true)} />
+      <AppHeader user={user} onOcr={() => setOcrOpen(true)} notifications={notifications} />
       <OfflineBanner />
       <main className="flex-1 pb-24 pt-16">
         {React.Children.map(children, child =>

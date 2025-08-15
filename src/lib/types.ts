@@ -165,3 +165,14 @@ export interface Rule {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export interface Notification {
+  id: string; // Firestore document ID
+  familyId: string;
+  userId?: string; // UID of the user if notification is personal
+  type: 'overspending_alert' | 'bill_reminder' | 'generic';
+  message: string;
+  isRead: boolean;
+  createdAt: Timestamp;
+  link?: string; // Optional link to a relevant page (e.g., /budget)
+}
