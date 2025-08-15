@@ -18,6 +18,11 @@ import {
   Twitter,
 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+
+import analyticsJpg from '/hero/analytics.jpg';
+import budgetJpg from '/hero/budget.jpg';
+import mobileJpg from '/hero/mobile.jpg';
 
 // Logo Component
 const Logo = () => (
@@ -52,12 +57,9 @@ const MarketingHeader = () => {
             ))}
         </nav>
         <div className="flex items-center gap-2">
-            <Link
-                href="/entry"
-                className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-accent text-mk-bg-1 text-sm font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90"
-            >
-                <span className="truncate">Get Started</span>
-            </Link>
+            <Button asChild className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-accent text-mk-bg-1 text-sm font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90">
+                <Link href="/entry">Get Started</Link>
+            </Button>
         </div>
     </header>
   );
@@ -84,9 +86,9 @@ const HeroSection = () => {
                   </h2>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                  <Link href="/entry" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-accent text-mk-bg-1 text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90">
-                      <span className="truncate">Get Started Free</span>
-                  </Link>
+                  <Button asChild className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-accent text-mk-bg-1 text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90">
+                    <Link href="/entry">Get Started Free</Link>
+                  </Button>
                   <a href="#demo" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-secondary text-white text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-secondary/80">
                       <span className="truncate">Watch Demo</span>
                   </a>
@@ -146,6 +148,7 @@ const DemoSection = () => (
             src="/hero/analytics.jpg"
             alt="Dashboard analytics"
             fill
+            unoptimized
             sizes="(max-width: 640px) 100vw, 33vw"
             className="object-cover"
           />
@@ -155,6 +158,7 @@ const DemoSection = () => (
             src="/hero/budget.jpg"
             alt="Budgeting app interface"
             fill
+            unoptimized
             sizes="(max-width: 640px) 100vw, 33vw"
             className="object-cover"
           />
@@ -164,6 +168,7 @@ const DemoSection = () => (
             src="/hero/mobile.jpg"
             alt="Mobile finance app"
             fill
+            unoptimized
             sizes="(max-width: 640px) 100vw, 33vw"
             className="object-cover"
           />
@@ -186,9 +191,9 @@ const PricingCard = ({ plan, price, popular, features }: { plan:string, price:st
                 <span className="text-base font-bold leading-tight">/month</span>
             </p>
         </div>
-        <Link href="/entry" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-secondary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-mk-secondary/80 transition-colors">
-            <span className="truncate">Get Started</span>
-        </Link>
+        <Button asChild className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-secondary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-mk-secondary/80 transition-colors">
+          <Link href="/entry">Get Started</Link>
+        </Button>
         <div className="flex flex-col gap-2">
             {features.map((feature, i) => (
                 <div key={i} className="flex gap-3 text-sm font-normal leading-normal text-white">
@@ -280,5 +285,3 @@ export default function MarketingPage() {
         </div>
     );
 }
-
-    
