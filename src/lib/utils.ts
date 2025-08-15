@@ -1,28 +1,26 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-
-import { createHash } from 'crypto';
 import type { Transaction } from './types';
+import { SHA256 } from 'crypto-js';
+import { format } from 'date-fns';
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 /**
- * Creates a consistent hash for a transaction object to detect duplicates.
- * The hash is based on the user ID, date, amount, and merchant name.
+ * Creates a SHA256 hash from transaction details to identify potential duplicates.
+ * @param tx The transaction object (without id or existing hash).
+ * @returns A SHA256 hash string.
  */
-export function createTransactionHash(tx: Partial<Transaction>, userId: string): string {
-  const date = tx.bookedAt ? new Date(tx.bookedAt) : new Date();
-  const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
-
-  const data = [
-    userId,
-    dateString,
-    (tx.originalAmount || tx.amount)?.toFixed(2),
-    tx.originalCurrency,
-    tx.merchant?.trim().toLowerCase(),
-  ].join('-');
-
-  return createHash('sha256').update(data).digest('hex');
+export function createTransactionHash(tx: Omit<Transaction, 'id' | 'hash' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' | 'deletedAt' | 'recurring' | 'attachment' | 'plaidTransactionId' | 'plaidAccountId'>): string {
+  // Use a consistent date format to ensure the hash is the same regardless of timezones.
+  const dateString = format(tx.bookedAt, 'yyyy-MM-dd');
+  
+  // Create a consistent string from the core details of the transaction.
+  // This helps identify duplicates even if they are entered seconds apart.
+  const sourceString = `${dateString}-${tx.merchant}-${tx.amount}-${tx.originalCurrency}`;
+  
+  return SHA256(sourceString).toString();
 }
