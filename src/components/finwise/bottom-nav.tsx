@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, PiggyBank, Target, Mic } from "lucide-react";
+import { Home, List, PiggyBank, Target, Mic, ClipboardList } from "lucide-react";
 
 export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: string) => void; onMic: () => void }) {
   const navItems = [
@@ -7,6 +7,7 @@ export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: str
     { key: "tx", label: "明細", Icon: List },
     { key: "budget", label: "予算", Icon: PiggyBank },
     { key: "goals", label: "目標", Icon: Target },
+    { key: "rules", label: "ルール", Icon: ClipboardList },
   ];
 
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (
