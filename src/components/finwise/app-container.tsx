@@ -15,6 +15,7 @@ import { useRules } from "@/hooks/use-rules";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
+import React from 'react';
 import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
@@ -36,12 +37,12 @@ export function AppContainer({ children }: AppContainerProps) {
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
 
-  const familyId = 'family-dummy-id'; // This should come from user's profile or context
-
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
+
   const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId);
   const { goals, loading: goalsLoading } = useGoals(familyId);
-  const { budget, loading: budgetLoading } = useBudget(familyId, new Date().getFullYear(), new Date().getMonth() + 1);
+  const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date());
   const { rules, loading: rulesLoading } = useRules(user?.uid);
 
   const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading;
@@ -97,7 +98,23 @@ export function AppContainer({ children }: AppContainerProps) {
       <AppHeader user={user} onOcr={() => setOcrOpen(true)} />
       <OfflineBanner />
       <main className="flex-1 pb-24 pt-16">
-        {children}
+        {React.Children.map(children, child =>
+            React.isValidElement(child)
+              ? React.cloneElement(child, {
+                  user,
+                  familyId,
+                  transactions,
+                  goals,
+                  rules,
+                  personalBudget,
+                  sharedBudget,
+                  setPersonalBudget,
+                  setSharedBudget,
+                  loading,
+                  onOpenTransactionForm: handleOpenTransactionForm,
+                } as any)
+              : child
+          )}
       </main>
       <BottomNav
         tab={activeTab}
@@ -112,7 +129,7 @@ export function AppContainer({ children }: AppContainerProps) {
             handleOpenTransactionForm(data);
         }}
         transactions={transactions || []}
-        budget={budget}
+        budget={personalBudget}
         goals={goals || []}
       />
       <OcrScanner
