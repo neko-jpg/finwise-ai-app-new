@@ -4,7 +4,7 @@ import { getApp, getApps, initializeApp, type ServiceAccount } from 'firebase-ad
 function getServiceAccount(): ServiceAccount | null {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-    if (!serviceAccountJson) {
+    if (!serviceAccountJson || serviceAccountJson.trim() === '') {
         console.warn(
             '[Server] FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin SDK will not be initialized. Some server-side features may not work.'
         );
@@ -12,12 +12,19 @@ function getServiceAccount(): ServiceAccount | null {
     }
 
     try {
+        // Defensively trim whitespace and remove potential outer quotes if they exist
+        let cleanedJson = serviceAccountJson.trim();
+        if ((cleanedJson.startsWith("'") && cleanedJson.endsWith("'")) || (cleanedJson.startsWith('"') && cleanedJson.endsWith('"'))) {
+            cleanedJson = cleanedJson.substring(1, cleanedJson.length - 1);
+        }
+        
+        const serviceAccount = JSON.parse(cleanedJson);
+        
         // Vercelなどの環境では、改行が '\\n' としてエスケープされることがあるため、これを実際の改行文字 '\n' に置換します。
-        const privateKeyFixed = JSON.parse(serviceAccountJson).private_key.replace(/\\n/g, '\n');
-        const serviceAccount = {
-            ...JSON.parse(serviceAccountJson),
-            private_key: privateKeyFixed
-        };
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+        
         return serviceAccount;
     } catch (e: any) {
         console.error('[Server] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
