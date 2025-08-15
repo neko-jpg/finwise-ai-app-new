@@ -75,6 +75,7 @@ export function AppContainer({ children }: AppContainerProps) {
       if (pathname === '/app') return 'home';
       if (pathname.startsWith('/app/transactions')) return 'tx';
       if (pathname.startsWith('/app/budget')) return 'budget';
+      if (pathname.startsWith('/app/reports')) return 'reports';
       if (pathname.startsWith('/app/goals')) return 'goals';
       if (pathname.startsWith('/app/profile')) return 'profile';
       if (pathname.startsWith('/app/subscriptions')) return 'subscriptions';
@@ -88,6 +89,7 @@ export function AppContainer({ children }: AppContainerProps) {
       home: '/app',
       tx: '/app/transactions',
       budget: '/app/budget',
+      reports: '/app/reports',
       goals: '/app/goals',
       profile: '/app/profile',
       subscriptions: '/app/subscriptions',
