@@ -11,6 +11,12 @@ import { Loader } from 'lucide-react';
 
 async function getUser() {
   const app = getFirebaseAdminApp();
+  if (!app) {
+    // If admin app isn't initialized, we can't verify session, assume no user.
+    console.log("Admin App not initialized, cannot verify session cookie.");
+    return null;
+  }
+
   const auth = getAuth(app);
   const sessionCookie = cookies().get('session')?.value;
 
@@ -23,6 +29,8 @@ async function getUser() {
     return decodedIdToken;
   } catch (error) {
     console.error('Session cookie verification failed:', error);
+    // Clear the potentially invalid cookie
+    cookies().set('session', '', { expires: new Date(0) });
     return null;
   }
 }
@@ -35,15 +43,4 @@ export default async function RootPage() {
   } else {
     redirect('/marketing');
   }
-
-  // This part is conceptually unreachable due to redirects,
-  // but it's good practice to return a fallback UI.
-  return (
-    <div className="flex h-screen w-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <Loader className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground">読み込み中...</p>
-      </div>
-    </div>
-  );
 }

@@ -2,7 +2,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import {
-  Bank,
+  Landmark,
   Check,
   ChartLine,
   Facebook,
@@ -112,7 +112,7 @@ const FeaturesSection = () => {
     const features = [
         { icon: <Mic size={24} />, title: 'Voice-Activated Transactions', description: 'Record transactions with simple voice commands, making expense tracking effortless.' },
         { icon: <Receipt size={24} />, title: 'Receipt Scanning & Auto-Fill', description: 'Snap photos of receipts to automatically extract and categorize transaction details.' },
-        { icon: <Bank size={24} />, title: 'Seamless Bank Integration', description: 'Connect your bank accounts for real-time balance updates and transaction history.' },
+        { icon: <Landmark size={24} />, title: 'Seamless Bank Integration', description: 'Connect your bank accounts for real-time balance updates and transaction history.' },
         { icon: <ChartLine size={24} />, title: 'AI-Powered Budgeting', description: 'Let AI create and optimize your budget based on your spending patterns and goals.' },
         { icon: <Lightbulb size={24} />, title: 'Daily Financial Insights', description: 'Receive daily personalized tips and insights to improve your financial well-being.' },
         { icon: <PiggyBank size={24} />, title: 'Automated Goal Saving', description: 'Set financial goals and let our AI help you save towards them automatically.' },
