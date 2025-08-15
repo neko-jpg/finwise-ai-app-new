@@ -1,14 +1,16 @@
-import { format } from "date-fns";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { addDays, addMonths, addWeeks, addYears } from "date-fns";
+// 修正点: date-fnsから必要な関数をインポートします
+import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
 import type { Budget, Transaction } from "../../src/lib/types";
 
 admin.initializeApp();
 
 const db = admin.firestore();
 
-const createNotification = async (notification: Omit<Notification, "id" | "createdAt" | "isRead">) => {
+// この関数は型定義がないため、anyで受け取ります
+// In a real project, you'd define the Notification type here as well.
+const createNotification = async (notification: any) => {
     return db.collection("notifications").add({
         ...notification,
         userId: notification.userId || null, // Ensure null is written, not undefined
@@ -38,10 +40,10 @@ export const dailyFinancialCheck = functions.pubsub
 
         for (const budgetDoc of budgetsSnapshot.docs) {
             const budget = budgetDoc.data() as Budget;
-            const spent = Object.entries(budget.categoriesSpent || {});
+            const spent = Object.entries(budget.used || {});
 
             for (const [category, amountSpent] of spent) {
-                const limit = budget.categories[category] || 0;
+                const limit = budget.limits[category] || 0;
                 if (limit > 0 && (amountSpent / limit) >= 0.8) {
                     await createNotification({
                         familyId: budget.familyId,
@@ -64,9 +66,10 @@ export const dailyFinancialCheck = functions.pubsub
 
         for (const txDoc of recurringTxSnapshot.docs) {
             const tx = txDoc.data() as Transaction;
-            if (!tx.recurring) continue;
+            if (!tx.recurring || !tx.bookedAt) continue;
 
             let nextDueDate: Date;
+            // FirestoreのTimestampをJavaScriptのDateオブジェクトに変換します
             const lastDate = tx.bookedAt.toDate();
 
             switch (tx.recurring.interval) {
