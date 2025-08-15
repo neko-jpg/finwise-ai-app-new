@@ -23,7 +23,7 @@ import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firesto
 import type { Transaction, Rule } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
-import { applyRules } from '@/lib/rule-engine';
+import { applyRulesToTransaction } from '@/lib/rule-engine';
 import type { User } from 'firebase/auth';
 import { createTransactionHash } from '@/lib/utils';
 
@@ -87,6 +87,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
 
     const handleAiCategorize = () => {
         const merchant = form.getValues('merchant');
+        const amount = form.getValues('amount');
         if (!merchant) {
             toast({
                 title: 'お店やサービス名が必要です',
@@ -97,12 +98,12 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
         }
         startAiCategorization(async () => {
             try {
-                const result = await categorizeTransaction(merchant);
-                if (result.category) {
-                    form.setValue('categoryMajor', result.category, { shouldValidate: true });
+                const result = await categorizeTransaction({merchant, amount: amount || 0});
+                if (result.major) {
+                    form.setValue('categoryMajor', result.major, { shouldValidate: true });
                     toast({
                         title: 'AIがカテゴリを分類しました',
-                        description: `「${merchant}」を「${CATEGORIES.find(c => c.key === result.category)?.label}」に分類しました。`,
+                        description: `「${merchant}」を「${CATEGORIES.find(c => c.key === result.major)?.label}」に分類しました。`,
                     });
                 } else {
                     throw new Error('AIによるカテゴリ分類に失敗しました。');
@@ -122,7 +123,6 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
         setIsSubmitting(true);
         try {
             let finalAmount = values.amount;
-            // Handle currency conversion if necessary
             if (selectedCurrency !== primaryCurrency) {
                 toast({ title: '為替レートを取得中...' });
                 const rate = await getExchangeRate({ base: selectedCurrency, target: primaryCurrency });
@@ -130,41 +130,42 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 toast({ title: 'レート取得完了', description: `1 ${selectedCurrency} = ${rate.toFixed(2)} ${primaryCurrency}` });
             }
 
-            const newTxData = {
+            const newTxData: Omit<Transaction, 'id' | 'hash' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' | 'deletedAt'> = {
                 amount: finalAmount,
                 originalAmount: values.amount,
                 originalCurrency: selectedCurrency,
                 merchant: values.merchant,
-                bookedAt: Timestamp.fromDate(values.bookedAt),
+                bookedAt: values.bookedAt,
                 category: { major: values.categoryMajor },
                 source: 'manual',
                 scope: values.scope,
                 taxTag: values.taxTag || '',
                 familyId: familyId,
                 createdBy: user.uid,
+            };
+
+            // 修正点: 保存する前にルールを適用します
+            const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
+            
+            const hash = createTransactionHash(ruledTxData);
+            
+            const docData = {
+                ...ruledTxData,
+                bookedAt: Timestamp.fromDate(ruledTxData.bookedAt),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 clientUpdatedAt: serverTimestamp(),
                 deletedAt: null,
+                hash,
             };
 
-            // Generate hash from original data
-            const hash = createTransactionHash(newTxData, user.uid);
-
-            // Apply rules
-            const finalTxData = applyRules(newTxData, rules);
-            
-            const docRef = await addDoc(collection(db, `families/${familyId}/transactions`), {
-                ...finalTxData,
-                hash,
-            });
+            const docRef = await addDoc(collection(db, `families/${familyId}/transactions`), docData);
 
             const createdTx: Transaction = {
                 id: docRef.id,
-                ...finalTxData,
-                bookedAt: values.bookedAt, // Convert back to Date for client-side state
-                createdAt: Timestamp.now(), // Approximate value
-                updatedAt: Timestamp.now(), // Approximate value
+                ...ruledTxData,
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
                 clientUpdatedAt: new Date(),
                 hash,
             };
