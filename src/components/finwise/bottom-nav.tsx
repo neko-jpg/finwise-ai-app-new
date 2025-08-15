@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, PiggyBank, Target, Mic } from "lucide-react";
+import { Home, List, PiggyBank, Target, Mic, Bell } from "lucide-react";
 
 export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: string) => void; onMic: () => void }) {
   const navItems = [
     { key: "home", label: "ホーム", Icon: Home },
     { key: "tx", label: "明細", Icon: List },
     { key: "budget", label: "予算", Icon: PiggyBank },
+    { key: "subscriptions", label: "サブスク", Icon: Bell },
     { key: "goals", label: "目標", Icon: Target },
   ];
 

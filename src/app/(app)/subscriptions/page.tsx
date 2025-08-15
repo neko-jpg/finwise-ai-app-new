@@ -34,6 +34,15 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     const [subs, setSubs] = useState<DetectSubscriptionsOutput['subscriptions'] | null>(null);
+    const [dismissedSubs, setDismissedSubs] = useState<string[]>([]);
+
+    const handleDismiss = (name: string) => {
+        setDismissedSubs(prev => [...prev, name]);
+        toast({
+            title: `「${name}」を非表示にしました`,
+            description: "「無視した項目を管理」から元に戻せます。",
+        });
+    };
 
      const fetchSubscriptions = () => {
         if (transactions.length > 0) {
@@ -96,7 +105,7 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
                     <CardDescription>AIがあなたの取引履歴から定期的な支払いと判断した項目です。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {subs.sort((a,b) => b.wasteScore - a.wasteScore).map((sub, i) => (
+                    {subs.filter(s => !dismissedSubs.includes(s.name)).sort((a,b) => b.wasteScore - a.wasteScore).map((sub, i) => (
                         <Card key={i} className={`p-4 flex flex-col md:flex-row md:items-center gap-4 ${sub.wasteScore > 0.7 ? 'border-amber-500/50 bg-amber-500/5' : ''}`}>
                            {sub.wasteScore > 0.7 && (
                              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 shrink-0">
@@ -112,9 +121,26 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
                                     次回支払見込: {sub.nextDate}
                                 </p>
                             </div>
+                            <div className="flex-grow">
+                                <p className="font-semibold">{sub.name} <Badge variant="outline" className="ml-2">{sub.category}</Badge></p>
+                                <p className="text-sm text-muted-foreground">
+                                    約 {sub.amount.toLocaleString()}円 / {sub.interval}
+                                    <span className="mx-2">|</span>
+                                    次回支払見込: {sub.nextDate}
+                                </p>
+                                <p className="text-sm mt-2 p-2 bg-muted rounded-md">{sub.suggestion}</p>
+                            </div>
                             <div className="flex items-center gap-2 self-end">
-                                <Button variant="ghost" size="sm">理由を見る</Button>
-                                <Button variant="destructive" size="sm" className="gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleDismiss(sub.name)}>
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    無視
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="gap-1"
+                                    onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(sub.name + ' 解約方法')}`, '_blank')}
+                                >
                                     解約する
                                     <ChevronRight className="h-4 w-4"/>
                                 </Button>
