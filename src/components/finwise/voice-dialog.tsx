@@ -50,12 +50,12 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
       recognition.continuous = false;
 
       recognition.onstart = () => setMicStatus('listening');
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
         handleSubmit(transcript);
       };
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error', event.error);
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           toast({

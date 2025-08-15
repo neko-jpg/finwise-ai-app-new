@@ -7,14 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Sparkles, Loader, Trash2, Undo2 } from "lucide-react";
+import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle } from "lucide-react";
 import { CATEGORIES } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
+import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
+import { DuplicateReviewCard } from './DuplicateReviewCard';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 
@@ -31,6 +33,8 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   const [showDeleted, setShowDeleted] = useState(false);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [potentialDuplicates, setPotentialDuplicates] = useState<DetectDuplicatesOutput['potentialDuplicates']>([]);
   const { toast } = useToast();
 
   const filteredTx = useMemo(() => {
@@ -71,11 +75,48 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     });
   };
 
+  const handleDetectDuplicates = async () => {
+    setIsDetecting(true);
+    setPotentialDuplicates([]);
+    try {
+      const transactionsForAI = transactions
+        .filter(t => !t.deletedAt)
+        .map(t => ({
+          id: t.id,
+          merchant: t.merchant,
+          amount: t.amount,
+          bookedAt: t.bookedAt.toISOString(),
+        }));
+
+      if (transactionsForAI.length < 2) {
+        toast({ title: "取引が少なすぎます", description: "重複チェックには、少なくとも2つの取引が必要です。" });
+        return;
+      }
+
+      const result = await detectDuplicates({ transactions: transactionsForAI });
+
+      if (result.potentialDuplicates.length === 0) {
+        toast({ title: "重複は見つかりませんでした", description: "システムがチェックしましたが、重複の可能性が高い取引はありませんでした。" });
+      } else {
+        setPotentialDuplicates(result.potentialDuplicates);
+        toast({
+          title: `${result.potentialDuplicates.length}件の重複の可能性があります`,
+          description: "以下のカードを確認し、取引を統合するかどうかを判断してください。",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "重複チェックに失敗しました" });
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
   const handleToggleDelete = async (txId: string, isDeleted: boolean) => {
     if (!user) return;
     
     // Optimistic Update
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : new Date() } : t));
+    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : Timestamp.fromDate(new Date()) } : t));
 
     const docRef = doc(db, `users/${user.uid}/transactions`, txId);
     try {
@@ -89,11 +130,49 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     } catch (e) {
       console.error(e);
       // Revert optimistic update on failure
-      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? new Date() : null } : t));
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? Timestamp.fromDate(new Date()) : null } : t));
       toast({ variant: "destructive", title: "更新に失敗しました"});
     }
   };
   
+  const handleMerge = async (winnerId: string, loserId: string) => {
+    if (!user) return;
+
+    // For V1, merging is simply soft-deleting the "loser" transaction.
+    // A more advanced implementation could merge details from the loser into the winner.
+
+    // We can reuse the handleToggleDelete logic, but we need to call it directly
+    // to avoid optimistic UI issues when merging multiple items.
+    const docRef = doc(db, `users/${user.uid}/transactions`, loserId);
+    try {
+      await updateDoc(docRef, {
+        deletedAt: serverTimestamp()
+      });
+
+      // Update local state by removing the loser
+      setTransactions(prev => prev.filter(t => t.id !== loserId));
+
+      toast({
+        title: "取引を統合しました",
+        description: `取引 ${loserId.substring(0, 6)} は削除済みとしてマークされました。`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "統合に失敗しました"});
+      // Don't revert UI state here as it could be complex if multiple merges are happening.
+      // A full refresh might be a safer, albeit less ideal, recovery strategy.
+    }
+
+    // Finally, dismiss the card from the review UI
+    handleDismiss(winnerId, loserId);
+  };
+
+  const handleDismiss = (tx1Id: string, tx2Id: string) => {
+    setPotentialDuplicates(prev => prev.filter(p =>
+        !((p.tx1_id === tx1Id && p.tx2_id === tx2Id) || (p.tx1_id === tx2Id && p.tx2_id === tx1Id))
+    ));
+  };
+
   const renderList = () => {
     if (loading) {
       return Array.from({ length: 5 }).map((_, i) => (
@@ -162,6 +241,10 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
                    <Button variant="ghost" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
                     {showDeleted ? "一覧に戻る" : "削除済みを表示"}
                   </Button>
+                   <Button variant="outline" size="sm" onClick={handleDetectDuplicates} disabled={isDetecting || loading}>
+                      {isDetecting ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <AlertCircle className="mr-2 h-4 w-4" />}
+                      重複をチェック
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
                       {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
                       AIで分析
@@ -218,9 +301,30 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         </CardContent>
       </Card>
       
+      {potentialDuplicates.length > 0 && (
+        <div className="space-y-4">
+            <h3 className="font-bold text-lg">重複の可能性がある取引の確認</h3>
+            {potentialDuplicates.map((p) => {
+                const tx1 = transactions.find(t => t.id === p.tx1_id);
+                const tx2 = transactions.find(t => t.id === p.tx2_id);
+                if (!tx1 || !tx2) return null;
+                return (
+                    <DuplicateReviewCard
+                        key={`${p.tx1_id}-${p.tx2_id}`}
+                        tx1={tx1}
+                        tx2={tx2}
+                        reason={p.reason}
+                        onMerge={handleMerge}
+                        onDismiss={handleDismiss}
+                    />
+                );
+            })}
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100dvh-22rem)]">
+          <ScrollArea className="h-[calc(100dvh-32rem)]">
             <div className="divide-y">
               {renderList()}
             </div>
