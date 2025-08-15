@@ -6,14 +6,14 @@ import { redirect } from "next/navigation";
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
-import { Loader } from 'lucide-react';
 
 
 async function getUser() {
   const app = getFirebaseAdminApp();
   if (!app) {
-    // If admin app isn't initialized, we can't verify session, assume no user.
-    console.log("Admin App not initialized, cannot verify session cookie.");
+    // If admin app isn't initialized (e.g., service account not set),
+    // we can't verify the session. Assume no user is logged in.
+    console.warn("[Server Auth] Firebase Admin App not initialized. Cannot verify session cookie.");
     return null;
   }
 
