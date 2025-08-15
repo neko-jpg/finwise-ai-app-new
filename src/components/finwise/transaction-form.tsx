@@ -20,8 +20,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Rule } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
+import { applyRulesToTransaction } from '@/lib/rule-engine';
 import { useDebouncedCallback } from 'use-debounce';
 
 const FormSchema = z.object({
@@ -42,11 +43,12 @@ interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     uid: string;
+    rules: Rule[];
     initialData?: Partial<TransactionFormValues>;
     onTransactionAction: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, uid, initialData, onTransactionAction }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, uid, rules, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -102,13 +104,15 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
             updatedAt: now,
         };
 
+        const txToSave = applyRulesToTransaction(optimisticTx, rules);
+
         // Optimistic Update
-        onTransactionAction(optimisticTx);
+        onTransactionAction(txToSave);
         onOpenChange(false);
 
         try {
             const docData = {
-              ...optimisticTx,
+              ...txToSave,
               id: undefined, // Firestore generates the ID
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),

@@ -65,3 +65,24 @@ export interface QuickActionDefinition {
     text: string;
     icon: LucideIcon;
 }
+
+export interface Rule {
+  id: string; // Firestore document ID
+  name: string; // e.g., "Starbucks Coffee"
+  priority: number; // To determine execution order, lower numbers first
+
+  trigger: {
+    field: 'merchant' | 'amount'; // Field to check on the transaction
+    operator: 'contains' | 'equals' | 'greater_than' | 'less_than'; // The comparison to make
+    value: string | number; // The value to compare against
+  };
+
+  action: {
+    field: 'category'; // Field to modify on the transaction
+    value: string; // The new value (e.g., category key)
+  };
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  deletedAt?: Timestamp | null;
+}

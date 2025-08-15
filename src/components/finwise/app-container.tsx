@@ -11,6 +11,7 @@ import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Goal, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
+import { useRules } from "@/hooks/use-rules";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
@@ -49,6 +50,7 @@ export function AppContainer({ children }: AppContainerProps) {
   const { transactions, setTransactions, loading: txLoading } = useTransactions(uid);
   const { budget, setBudget, loading: budgetLoading } = useBudget(uid, currentMonth);
   const { goals, setGoals, loading: goalsLoading } = useGoals(uid);
+  const { rules, loading: rulesLoading } = useRules(uid);
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
@@ -72,6 +74,7 @@ export function AppContainer({ children }: AppContainerProps) {
       if (pathname.startsWith('/app/transactions')) return 'tx';
       if (pathname.startsWith('/app/budget')) return 'budget';
       if (pathname.startsWith('/app/goals')) return 'goals';
+      if (pathname.startsWith('/app/rules')) return 'rules';
       if (pathname.startsWith('/app/profile')) return 'profile';
       if (pathname.startsWith('/app/subscriptions')) return 'subscriptions';
       if (pathname.startsWith('/app/reviews')) return 'reviews';
@@ -85,6 +88,7 @@ export function AppContainer({ children }: AppContainerProps) {
       tx: '/app/transactions',
       budget: '/app/budget',
       goals: '/app/goals',
+      rules: '/app/rules',
       profile: '/app/profile',
       subscriptions: '/app/subscriptions',
       reviews: '/app/reviews',
@@ -123,7 +127,8 @@ export function AppContainer({ children }: AppContainerProps) {
             transactions: transactions || [],
             budget,
             goals: goals || [],
-            loading: txLoading || budgetLoading || goalsLoading,
+            rules: rules || [],
+            loading: txLoading || budgetLoading || goalsLoading || rulesLoading,
             onOpenTransactionForm: handleOpenTransactionForm,
             onOpenOcr: handleOpenOcr,
             onOpenGoalForm: handleOpenGoalForm,
@@ -159,6 +164,7 @@ export function AppContainer({ children }: AppContainerProps) {
         open={transactionFormOpen} 
         onOpenChange={setTransactionFormOpen}
         uid={user.uid}
+        rules={rules}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
             setTransactions(prev => [newTx, ...(prev || [])].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
