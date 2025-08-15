@@ -161,8 +161,7 @@ export function AppContainer({ children }: AppContainerProps) {
         uid={user.uid}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
-            if (!transactions) return;
-            setTransactions(prev => [newTx, ...prev].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
+            setTransactions(prev => [newTx, ...(prev || [])].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
         }}
       />
       <GoalForm
