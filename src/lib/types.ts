@@ -134,6 +134,17 @@ export interface Security {
     updatedAt: Timestamp;
 }
 
+export interface Dividend {
+  id: string; // Firestore document ID
+  familyId: string;
+  securityId: string;
+  exDate: Timestamp;
+  paymentDate: Timestamp;
+  amount: number;
+  currency: string;
+  createdAt: Timestamp;
+}
+
 export interface Rule {
   id: string; // Firestore document ID
   name: string; // e.g., "Starbucks Coffee"
