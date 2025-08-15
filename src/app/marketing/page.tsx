@@ -1,6 +1,7 @@
 
 'use client';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Landmark,
   Check,
@@ -135,17 +136,41 @@ const FeaturesSection = () => {
 
 // Demo Section Component
 const DemoSection = () => (
-  <section id="demo" className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
-    <h2 className="text-2xl font-bold leading-tight tracking-tight text-white px-4 pb-3 pt-5 text-center">
-      See Finwise AI in Action
-    </h2>
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
-        <div data-ai-hint="dashboard analytics" className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1642427749670-f20e2e76f8c8?q=80&w=2670&auto=format&fit=crop")' }}></div>
-        <div data-ai-hint="budgeting app" className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1641125694761-12727a3a693c?q=80&w=2670&auto=format&fit=crop")' }}></div>
-        <div data-ai-hint="mobile finance" className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1642427749633-59a5a3a7b6a4?q=80&w=2670&auto=format&fit=crop")' }}></div>
-    </div>
-  </section>
-);
+    <section id="demo" className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
+      <h2 className="text-2xl font-bold leading-tight tracking-tight text-white px-4 pb-3 pt-5 text-center">
+        See Finwise AI in Action
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+        <div data-ai-hint="dashboard analytics" className="relative w-full aspect-video rounded-xl overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1642427749670-f20e2e76f8c8?q=80&w=2670&auto=format&fit=crop"
+            alt="Dashboard analytics"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            className="object-cover"
+          />
+        </div>
+        <div data-ai-hint="budgeting app" className="relative w-full aspect-video rounded-xl overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1641125694761-12727a3a693c?q=80&w=2670&auto=format&fit=crop"
+            alt="Budgeting app interface"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            className="object-cover"
+          />
+        </div>
+        <div data-ai-hint="mobile finance" className="relative w-full aspect-video rounded-xl overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1642427749633-59a5a3a7b6a4?q=80&w=2670&auto=format&fit=crop"
+            alt="Mobile finance app"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            className="object-cover"
+          />
+        </div>
+      </div>
+    </section>
+  );
 
 
 // Pricing Card Component
