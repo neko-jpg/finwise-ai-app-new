@@ -27,20 +27,20 @@ const defaultBudget: Omit<Budget, 'id'> = {
     updatedAt: Timestamp.now(),
 };
 
-export function useBudget(uid: string | undefined, period: string): UseBudgetReturn {
+export function useBudget(familyId: string | undefined, period: string): UseBudgetReturn {
     const [budget, setBudget] = useState<Budget | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
     
     useEffect(() => {
-        if (!uid) {
+        if (!familyId) {
             setLoading(false);
             setBudget(null);
             return;
         }
 
         setLoading(true);
-        const budgetDocRef = doc(db, `users/${uid}/budgets`, period);
+        const budgetDocRef = doc(db, `families/${familyId}/budgets`, period);
 
         const unsubscribe: Unsubscribe = onSnapshot(budgetDocRef, 
             (docSnapshot) => {
@@ -70,7 +70,7 @@ export function useBudget(uid: string | undefined, period: string): UseBudgetRet
         );
 
         return () => unsubscribe();
-    }, [uid, period]);
+    }, [familyId, period]);
 
     return { budget, setBudget, loading, error };
 }

@@ -12,20 +12,20 @@ interface UseGoalsReturn {
     error: FirestoreError | undefined;
 }
 
-export function useGoals(uid: string | undefined): UseGoalsReturn {
+export function useGoals(familyId: string | undefined): UseGoalsReturn {
     const [goals, setGoals] = useState<Goal[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
     useEffect(() => {
-        if (!uid) {
+        if (!familyId) {
             setLoading(false);
             setGoals([]);
             return;
         }
 
         setLoading(true);
-        const goalsCollectionRef = collection(db, `users/${uid}/goals`);
+        const goalsCollectionRef = collection(db, `families/${familyId}/goals`);
         const q = query(goalsCollectionRef, orderBy('createdAt', 'desc'));
 
         const unsubscribe: Unsubscribe = onSnapshot(q,
@@ -56,7 +56,7 @@ export function useGoals(uid: string | undefined): UseGoalsReturn {
 
         return () => unsubscribe();
 
-    }, [uid]);
+    }, [familyId]);
 
     return { goals, setGoals, loading, error };
 }

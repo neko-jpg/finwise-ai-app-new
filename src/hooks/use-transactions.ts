@@ -11,20 +11,20 @@ interface UseTransactionsReturn {
     error: FirestoreError | undefined;
 }
 
-export function useTransactions(uid: string | undefined): UseTransactionsReturn {
+export function useTransactions(familyId: string | undefined): UseTransactionsReturn {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
     useEffect(() => {
-        if (!uid) {
+        if (!familyId) {
             setLoading(false);
             setTransactions([]);
             return;
         }
         
         setLoading(true);
-        const transactionsCollectionRef = collection(db, `users/${uid}/transactions`);
+        const transactionsCollectionRef = collection(db, `families/${familyId}/transactions`);
         const q = query(transactionsCollectionRef, orderBy('bookedAt', 'desc'));
 
         const unsubscribe: Unsubscribe = onSnapshot(q, 
@@ -60,7 +60,7 @@ export function useTransactions(uid: string | undefined): UseTransactionsReturn 
 
         // Cleanup subscription on unmount
         return () => unsubscribe();
-    }, [uid]);
+    }, [familyId]);
 
     return { transactions, setTransactions, loading, error };
 }

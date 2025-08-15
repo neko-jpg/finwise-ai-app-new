@@ -19,6 +19,7 @@ import { Timestamp } from 'firebase/firestore';
 
 
 interface BudgetScreenProps {
+  familyId?: string;
   user?: User;
   budget?: Budget | null;
   loading?: boolean;
@@ -27,13 +28,13 @@ interface BudgetScreenProps {
   setBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
 }
 
-export function BudgetScreen({ user, budget, loading, transactions = [], goals = [], setBudget }: BudgetScreenProps) {
+export function BudgetScreen({ familyId, user, budget, loading, transactions = [], goals = [], setBudget }: BudgetScreenProps) {
   const { toast } = useToast();
   const [isAiPending, startAiTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   
   const handleBudgetChange = (key: string, value: number) => {
-    if (!budget || !user) return;
+    if (!budget || !familyId) return;
     
     const newLimits = {
       ...(budget.limits || {}),
@@ -46,7 +47,7 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
     startSavingTransition(async () => {
         try {
             const period = format(new Date(), 'yyyy-MM');
-            const docRef = doc(db, `users/${user.uid}/budgets`, period);
+            const docRef = doc(db, `families/${familyId}/budgets`, period);
             await setDoc(docRef, { 
               limits: newLimits,
               updatedAt: serverTimestamp()
@@ -73,7 +74,7 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
       return;
     }
     startAiTransition(async () => {
-      if (!user) return;
+      if (!familyId) return;
       try {
         const result = await budgetPlanner({
             transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString() })),
@@ -96,7 +97,7 @@ export function BudgetScreen({ user, budget, loading, transactions = [], goals =
         });
         
         const period = format(new Date(), 'yyyy-MM');
-        const docRef = doc(db, `users/${user.uid}/budgets`, period);
+        const docRef = doc(db, `families/${familyId}/budgets`, period);
         await setDoc(docRef, { 
           limits: newLimits,
           updatedAt: serverTimestamp()

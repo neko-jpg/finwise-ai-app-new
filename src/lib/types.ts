@@ -1,4 +1,3 @@
-
 import type { LucideIcon } from 'lucide-react';
 import type { Timestamp } from 'firebase/firestore';
 
@@ -11,15 +10,16 @@ export interface Category {
 export interface Transaction {
   id: string; // Firestore document ID
   bookedAt: Date;
-  amount: number;
-  currency: 'JPY' | 'USD' | 'EUR';
+  amount: number; // Value in the user's primary currency (e.g., JPY)
+  originalAmount: number;
+  originalCurrency: string; // 3-letter currency code (e.g., 'USD')
   merchant: string;
   category: {
     major: string;
     minor?: string;
     confidence?: number;
   };
-  source: 'manual' | 'voice' | 'ocr' | 'csv';
+  source: 'manual' | 'voice' | 'ocr' | 'csv' | 'plaid';
   note?: string;
   attachment?: {
     filePath: string;
@@ -34,36 +34,97 @@ export interface Transaction {
   updatedAt: Timestamp;
   clientUpdatedAt: Date;
   deletedAt?: Timestamp | null; // For soft deletes
-}
-
-export interface BudgetItem {
-  limit: number;
-  used: number;
-}
-
-export interface Budget {
-  id: string; // YYYY-MM
-  limits: { [categoryKey: string]: number };
-  used: { [categoryKey: string]: number };
-  suggestedByAI?: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  // For family sharing
+  familyId: string;
+  scope?: 'personal' | 'shared';
+  createdBy?: string; // UID of the user who created the transaction
+  // For tax purposes
+  taxTag?: string; // e.g., 'medical', 'donation'
+  // For bank linking
+  plaidTransactionId?: string;
+  plaidAccountId?: string;
 }
 
 export interface Goal {
-    id: string; // Firestore document ID
-    name: string;
-    target: number;
-    saved: number;
-    due: Date | null;
+  id: string; // Firestore document ID
+  familyId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  createdBy: string;
+}
+
+export interface Budget {
+    id: string; // YYYY-MM format
+    familyId: string;
+    year: number;
+    month: number;
+    totalBudget: number;
+    categories: { [key: string]: number }; // e.g., { 'food': 50000, 'transport': 10000 }
+    updatedAt: Timestamp;
+}
+
+export interface UserProfile {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    primaryCurrency: string; // e.g., 'JPY'
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
 
-export interface QuickActionDefinition {
-    key: string;
-    text: string;
-    icon: LucideIcon;
+export interface Family {
+    id: string;
+    name: string;
+    members: string[]; // array of UIDs
+    admins: string[]; // array of UIDs
+    createdAt: Timestamp;
+}
+
+export interface PlaidItem {
+    id: string; // Firestore document ID, same as Plaid item_id
+    familyId: string;
+    userId: string;
+    accessToken: string; // Encrypted
+    institutionId: string;
+    institutionName: string;
+    updatedAt: Timestamp;
+}
+
+export interface Account {
+    id: string; // Firestore document ID, same as Plaid account_id
+    familyId: string;
+    plaidItemId: string;
+    name: string;
+    mask: string | null;
+    type: string;
+    subtype: string;
+    currentBalance: number;
+    updatedAt: Timestamp;
+}
+
+export interface Holding {
+    id: string; // Firestore document ID, composite key like ${accountId}-${securityId}
+    familyId: string;
+    plaidAccountId: string;
+    securityId: string;
+    quantity: number;
+    institutionValue: number;
+    costBasis: number | null;
+    updatedAt: Timestamp;
+}
+
+export interface Security {
+    id: string; // Firestore document ID, same as Plaid security_id
+    name: string | null;
+    tickerSymbol: string | null;
+    type: string | null;
+    closePrice: number | null;
+    updatedAt: Timestamp;
 }
 
 export interface Rule {
@@ -78,11 +139,11 @@ export interface Rule {
   };
 
   action: {
-    field: 'category'; // Field to modify on the transaction
-    value: string; // The new value (e.g., category key)
+    type: 'categorize' | 'set_scope' | 'add_tax_tag'; // The action to perform
+    value: string; // The value for the action (e.g., category key, 'shared', tax tag key)
   };
 
+  uid: string; // User ID
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  deletedAt?: Timestamp | null;
 }

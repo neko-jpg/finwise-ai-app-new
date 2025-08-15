@@ -4,6 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Target, PlusCircle } from "lucide-react";
 import type { Goal } from "@/lib/types";
 import { format } from "date-fns";
@@ -67,9 +68,12 @@ export function GoalsScreen({ goals = [], loading, onOpenGoalForm = () => {} }: 
             return (
             <Card key={g.id}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="font-headline flex items-center gap-2 text-base">
-                        <Target className="h-5 w-5 text-primary" />
-                        {g.name}
+                    <CardTitle className="font-headline flex items-center justify-between text-base">
+                        <div className="flex items-center gap-2">
+                            <Target className="h-5 w-5 text-primary" />
+                            {g.name}
+                        </div>
+                        {g.scope === 'personal' && <Badge variant="secondary">個人</Badge>}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from 'lucide-react';
@@ -26,6 +27,7 @@ const FormSchema = z.object({
     .positive('目標金額は0より大きい値を入力してください。')
     .max(100_000_000, '金額は1億円以下にしてください。'),
   due: z.date().optional(),
+  scope: z.enum(['shared', 'personal']),
 });
 
 export type GoalFormValues = z.infer<typeof FormSchema>;
@@ -33,11 +35,12 @@ export type GoalFormValues = z.infer<typeof FormSchema>;
 interface GoalFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    uid: string;
+    familyId: string | undefined;
+    user: User | null;
     onGoalAction: (goal: Goal) => void;
 }
 
-export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProps) {
+export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: GoalFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,10 +50,19 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
             name: '',
             target: '' as any,
             due: undefined,
+            scope: 'shared',
         },
     });
 
     const onSubmit = async (values: GoalFormValues) => {
+        if (!familyId || !user) {
+            toast({
+                variant: 'destructive',
+                title: "エラー",
+                description: "ユーザー情報が見つかりません。もう一度ログインしてください。",
+            });
+            return;
+        }
         setIsSubmitting(true);
         
         const optimisticId = `optimistic-${Date.now()}`;
@@ -64,6 +76,8 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
             due: values.due || null,
             createdAt: now,
             updatedAt: now,
+            scope: values.scope,
+            createdBy: user.uid,
         };
         
         // Optimistic Update
@@ -78,9 +92,11 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
                 due: values.due || null,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                scope: values.scope,
+                createdBy: user.uid,
             };
 
-            await addDoc(collection(db, `users/${uid}/goals`), docData);
+            await addDoc(collection(db, `families/${familyId}/goals`), docData);
 
             toast({
                 title: "新しい目標を作成しました！",
@@ -183,6 +199,41 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
                                         </PopoverContent>
                                     </Popover>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="scope"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>公開範囲</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex space-x-4"
+                                    >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="shared" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        家族で共有
+                                        </FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="personal" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        自分のみ
+                                        </FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
                                 </FormItem>
                             )}
                         />

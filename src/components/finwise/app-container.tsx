@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState, useEffect } from "react";
@@ -11,6 +10,7 @@ import { TransactionForm, TransactionFormValues } from './transaction-form';
 import type { Budget, Goal, Transaction } from "@/lib/types";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRules } from "@/hooks/use-rules";
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
@@ -30,117 +30,80 @@ export function AppContainer({ children }: AppContainerProps) {
   
   const { user, loading: authLoading } = useAuthState();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/entry');
-    }
-  }, [user, authLoading, router]);
-
-
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
-  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
-  const [offline, setOffline] = useState(false);
+  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
 
-  const uid = user?.uid;
-  const currentMonth = useMemo(() => format(new Date(), 'yyyy-MM'), []);
-  
-  const { transactions, setTransactions, loading: txLoading } = useTransactions(uid);
-  const { budget, setBudget, loading: budgetLoading } = useBudget(uid, currentMonth);
-  const { goals, setGoals, loading: goalsLoading } = useGoals(uid);
-  const { rules, loading: rulesLoading } = useRules(uid);
+  const familyId = 'family-dummy-id'; // This should come from user's profile or context
+
+  const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
+  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId);
+  const { goals, loading: goalsLoading } = useGoals(familyId);
+  const { budget, loading: budgetLoading } = useBudget(familyId, new Date().getFullYear(), new Date().getMonth() + 1);
+  const { rules, loading: rulesLoading } = useRules(user?.uid);
+
+  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/entry');
+    }
+  }, [user, authLoading, router]);
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
     setTransactionFormOpen(true);
   };
-  
-  const handleOpenGoalForm = () => {
-    setGoalFormOpen(true);
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
   };
 
-  const handleOpenVoice = () => {
-      setVoiceOpen(true);
-  }
-  
-  const handleOpenOcr = () => {
-      setOcrOpen(true);
-  }
-
-  const tab = useMemo(() => {
-      if (pathname === '/app') return 'home';
-      if (pathname.startsWith('/app/transactions')) return 'tx';
-      if (pathname.startsWith('/app/budget')) return 'budget';
-      if (pathname.startsWith('/app/goals')) return 'goals';
-      if (pathname.startsWith('/app/rules')) return 'rules';
-      if (pathname.startsWith('/app/profile')) return 'profile';
-      if (pathname.startsWith('/app/subscriptions')) return 'subscriptions';
-      if (pathname.startsWith('/app/reviews')) return 'reviews';
-      if (pathname.startsWith('/app/link')) return 'link';
-      return 'home';
+  const activeTab = useMemo(() => {
+    const path = pathname.split('/').pop();
+    if (['transactions', 'budget', 'goals', 'rules', 'profile', 'link', 'subscriptions', 'reviews'].includes(path || '')) {
+      return path;
+    }
+    return 'home';
   }, [pathname]);
 
-  const handleSetTab = (newTab: string) => {
-    const pathMap: { [key: string]: string } = {
-      home: '/app',
-      tx: '/app/transactions',
-      budget: '/app/budget',
-      goals: '/app/goals',
-      rules: '/app/rules',
-      profile: '/app/profile',
-      subscriptions: '/app/subscriptions',
-      reviews: '/app/reviews',
-      link: '/app/link',
-    };
-    router.push(pathMap[newTab] || '/app');
-  };
-  
-  if (authLoading || !user) {
+  if (loading || !user) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-12 w-12 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <Skeleton className="h-4 w-[200px]" />
+      <div className="flex flex-col h-screen">
+        <header className="p-4 border-b">
+          <Skeleton className="h-8 w-32" />
+        </header>
+        <main className="flex-1 p-4">
+          <Skeleton className="h-32 w-full mb-4" />
+          <Skeleton className="h-64 w-full" />
+        </main>
+        <footer className="p-4 border-t">
+          <div className="flex justify-around">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-16 w-16 rounded-full relative -top-4" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
           </div>
-        </div>
+        </footer>
       </div>
     );
   }
 
-
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/30 font-body text-foreground">
-      <AppHeader 
-        onOpenVoice={handleOpenVoice}
-        onOpenSettings={() => handleSetTab("profile")}
-      />
-
-      {offline && <OfflineBanner />}
-
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-4">
-        {React.cloneElement(children as React.ReactElement, {
-            user,
-            transactions: transactions || [],
-            budget,
-            goals: goals || [],
-            rules: rules || [],
-            loading: txLoading || budgetLoading || goalsLoading || rulesLoading,
-            onOpenTransactionForm: handleOpenTransactionForm,
-            onOpenOcr: handleOpenOcr,
-            onOpenGoalForm: handleOpenGoalForm,
-            setTab: handleSetTab,
-            setTransactions,
-            setBudget,
-            setGoals,
-         })}
+    <div className="flex min-h-screen flex-col bg-background">
+      <AppHeader user={user} onOcr={() => setOcrOpen(true)} />
+      <OfflineBanner />
+      <main className="flex-1 pb-24 pt-16">
+        {children}
       </main>
-
-      <BottomNav tab={tab} setTab={handleSetTab} onMic={handleOpenVoice} />
-
+      <BottomNav
+        tab={activeTab}
+        setTab={(tab) => handleNavigation(`/app/${tab === 'home' ? '' : tab}`)}
+        onMic={() => setVoiceOpen(true)}
+      />
       <VoiceDialog 
         open={voiceOpen} 
         onOpenChange={setVoiceOpen} 
@@ -163,7 +126,9 @@ export function AppContainer({ children }: AppContainerProps) {
       <TransactionForm 
         open={transactionFormOpen} 
         onOpenChange={setTransactionFormOpen}
-        uid={user.uid}
+        familyId={familyId}
+        user={user}
+        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
         rules={rules}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
@@ -173,9 +138,12 @@ export function AppContainer({ children }: AppContainerProps) {
       <GoalForm
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
-        uid={user.uid}
+        familyId={familyId}
+        user={user}
+        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
         onGoalAction={(newGoal) => {
-            setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
+          // This is a simplified update. You might want a more robust state management.
+          // setGoals(prev => [...(prev || []), newGoal]);
         }}
       />
     </div>

@@ -64,3 +64,10 @@ export const QUICK_ACTIONS: QuickActionDefinition[] = [
     { key: "review_fixed_costs", text: "毎週の固定費レビュー", icon: Rocket },
     { key: "link_bank", text: "銀行・カード連携", icon: Link },
 ];
+
+export const TAX_TAGS = [
+    { key: 'medical', label: '医療費控除' },
+    { key: 'donation', label: '寄付金控除' },
+    { key: 'insurance', label: '社会保険料控除' },
+    { key: 'housing', label: '住宅ローン控除' },
+];
