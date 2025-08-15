@@ -7,11 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from '@/components/ui/button';
 import { PlaidLinkButton } from './plaid-link-button';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { useInvestmentPortfolio, EnrichedHolding } from '@/hooks/use-investment-portfolio';
+import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { User } from 'firebase/auth';
 import { PlusCircle } from 'lucide-react';
 import { CryptoForm } from './crypto-form';
+import { DividendTracker } from './dividend-tracker';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const functions = getFunctions();
 const cryptoApiProxy = httpsCallable(functions, 'cryptoApiProxy');
@@ -60,23 +62,10 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
     <Accordion type="single" collapsible className="w-full" defaultValue={plaidAccounts[0]?.id}>
       {plaidAccounts.map(account => (
         <AccordionItem value={account.id} key={account.id}>
-          <AccordionTrigger>
-            <div className="flex justify-between w-full pr-4">
-              <span>{account.name} ({account.mask})</span>
-              <span className="font-mono">¥{account.currentBalance.toLocaleString()}</span>
-            </div>
-          </AccordionTrigger>
+          <AccordionTrigger><div className="flex justify-between w-full pr-4"><span>{account.name} ({account.mask})</span><span className="font-mono">¥{account.currentBalance.toLocaleString()}</span></div></AccordionTrigger>
           <AccordionContent>
-            <Table>
-              <TableHeader><TableRow><TableHead>銘柄</TableHead><TableHead className="text-right">現在価値</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {account.holdings.map(holding => (
-                  <TableRow key={holding.id}>
-                    <TableCell>{holding.security?.name}</TableCell>
-                    <TableCell className="text-right font-mono">¥{holding.institutionValue?.toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+            <Table><TableHeader><TableRow><TableHead>銘柄</TableHead><TableHead className="text-right">現在価値</TableHead></TableRow></TableHeader>
+              <TableBody>{account.holdings.map(holding => (<TableRow key={holding.id}><TableCell>{holding.security?.name}</TableCell><TableCell className="text-right font-mono">¥{holding.institutionValue?.toLocaleString()}</TableCell></TableRow>))}</TableBody>
             </Table>
           </AccordionContent>
         </AccordionItem>
@@ -95,10 +84,7 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
             <TableRow key={holding.id}>
               <TableCell className="flex items-center">
                 {holding.security?.logoUrl && <img src={holding.security.logoUrl} alt="" className="w-6 h-6 mr-2 rounded-full" />}
-                <div>
-                  <div className="font-medium">{holding.security?.name}</div>
-                  <div className="text-sm text-muted-foreground">{holding.security?.tickerSymbol?.toUpperCase()}</div>
-                </div>
+                <div><div className="font-medium">{holding.security?.name}</div><div className="text-sm text-muted-foreground">{holding.security?.tickerSymbol?.toUpperCase()}</div></div>
               </TableCell>
               <TableCell className="text-right font-mono">{holding.quantity.toFixed(4)}</TableCell>
               <TableCell className="text-right font-mono">¥{Math.round(value).toLocaleString()}</TableCell>
@@ -115,41 +101,42 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>総資産</CardTitle>
-            <span className="text-2xl font-bold font-mono">¥{Math.round(totalValue).toLocaleString()}</span>
-          </div>
-        </CardHeader>
+        <CardHeader><div className="flex justify-between items-center"><CardTitle>総資産</CardTitle><span className="text-2xl font-bold font-mono">¥{Math.round(totalValue).toLocaleString()}</span></div></CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>連携済み口座</CardTitle>
-          <CardDescription>Plaid経由で連携された株式や投資信託です。</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {plaidAccounts.length > 0 ? renderPlaidAccounts() : <p className="text-muted-foreground">連携された口座はありません。</p>}
-          <div className="mt-4 border-t pt-4">
-            <PlaidLinkButton user={user || null} familyId={familyId} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <div>
-            <CardTitle>暗号通貨</CardTitle>
-            <CardDescription>手動で登録した暗号通貨資産です。</CardDescription>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setIsFormOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />追加
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {cryptoHoldings.length > 0 ? renderCryptoHoldings() : <p className="text-muted-foreground">登録された暗号通貨はありません。</p>}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="stocks" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="stocks">株式/投資信託</TabsTrigger>
+          <TabsTrigger value="crypto">暗号通貨</TabsTrigger>
+          <TabsTrigger value="dividends">配当</TabsTrigger>
+        </TabsList>
+        <TabsContent value="stocks">
+          <Card><CardHeader><CardTitle>連携済み口座</CardTitle><CardDescription>Plaid経由で連携された株式や投資信託です。</CardDescription></CardHeader>
+            <CardContent>
+              {plaidAccounts.length > 0 ? renderPlaidAccounts() : <p className="text-muted-foreground">連携された口座はありません。</p>}
+              <div className="mt-4 border-t pt-4"><PlaidLinkButton user={user || null} familyId={familyId} /></div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="crypto">
+          <Card><CardHeader className="flex flex-row justify-between items-center"><div><CardTitle>暗号通貨</CardTitle><CardDescription>手動で登録した暗号通貨資産です。</CardDescription></div><Button variant="outline" size="sm" onClick={() => setIsFormOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />追加</Button></CardHeader>
+            <CardContent>
+              {cryptoHoldings.length > 0 ? renderCryptoHoldings() : <p className="text-muted-foreground">登録された暗号通貨はありません。</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="dividends">
+            <Card>
+                <CardHeader>
+                    <CardTitle>配当履歴</CardTitle>
+                    <CardDescription>保有する株式の配当金支払い履歴です。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DividendTracker accounts={plaidAccounts} />
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
 
       <CryptoForm open={isFormOpen} onOpenChange={setIsFormOpen} user={user} familyId={familyId} />
     </div>
