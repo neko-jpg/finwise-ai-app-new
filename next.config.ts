@@ -47,6 +47,10 @@ const nextConfig: NextConfig = {
   },
   // This is to allow the Next.js dev server to be proxied in the Studio IDE
   allowedDevOrigins: ["*.cluster-cd3bsnf6r5bemwki2bxljme5as.cloudworkstations.dev"],
+  serverExternalPackages: [
+    '@genkit-ai/flow',
+    '@genkit-ai/googleai'
+  ],
 };
 
 export default nextConfig;

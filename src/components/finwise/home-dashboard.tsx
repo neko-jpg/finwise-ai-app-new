@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Plus, ScanLine, LayoutDashboard, Save } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
-import { TodaySpendWidget } from "./widgets/TodaySpendWidget";
-import { MonthlyBudgetWidget } from "./widgets/MonthlyBudgetWidget";
-import { SortableWidget } from './widgets/SortableWidget';
+// import { TodaySpendWidget } from "./widgets/TodaySpendWidget";
+// import { MonthlyBudgetWidget } from "./widgets/MonthlyBudgetWidget";
+// import { SortableWidget } from './widgets/SortableWidget';
 import type { TransactionFormValues } from "./transaction-form";
 import type { Transaction, Budget, Goal, WidgetConfig, WidgetId, DashboardLayout } from "@/lib/types";
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { useDashboardLayout } from '@/hooks/use-dashboard-layout';
+// import { useDashboardLayout } from '@/hooks/use-dashboard-layout';
 import type { User } from 'firebase/auth';
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+// import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+// import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface HomeDashboardProps {
   user?: User;
@@ -29,9 +29,16 @@ interface HomeDashboardProps {
   onOpenGoalForm?: () => void;
 }
 
+const StubWidget: React.FC<{title: string}> = ({ title }) => (
+    <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">
+        <h3 className="font-bold">{title}</h3>
+        <p className="text-muted-foreground text-sm">This widget is temporarily disabled.</p>
+    </div>
+);
+
 const WidgetMap: Record<WidgetId, React.FC<any>> = {
-    todaySpend: TodaySpendWidget,
-    monthlyBudget: MonthlyBudgetWidget,
+    todaySpend: () => <StubWidget title="Today's Spend" />,
+    monthlyBudget: () => <StubWidget title="Monthly Budget" />,
     advice: AdviceCard,
     quickActions: QuickActions,
     goals: () => <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">Goals Widget</div>,
@@ -56,23 +63,33 @@ export function HomeDashboard({
     onOpenGoalForm = () => {}
 }: HomeDashboardProps) {
 
-  const { layout, loading: layoutLoading } = useDashboardLayout(user?.uid);
+  // const { layout, loading: layoutLoading } = useDashboardLayout(user?.uid);
   const [isEditing, setIsEditing] = useState(false);
-  const [localLayout, setLocalLayout] = useState<DashboardLayout | null>(null);
+  // MOCK LAYOUT DATA
+  const [localLayout, setLocalLayout] = useState<DashboardLayout | null>({
+    widgets: [
+        { id: 'advice', size: 'full', order: 1 },
+        { id: 'todaySpend', size: 'half', order: 2 },
+        { id: 'monthlyBudget', size: 'half', order: 3 },
+        { id: 'quickActions', size: 'full', order: 4 },
+    ]
+  });
+  const layoutLoading = false;
+
 
   useEffect(() => {
-    if (layout) {
-      setLocalLayout(layout);
-    }
-  }, [layout]);
+    // if (layout) {
+    //   setLocalLayout(layout);
+    // }
+  }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  // const sensors = useSensors(
+  //   useSensor(PointerSensor, {
+  //     activationConstraint: {
+  //       distance: 8,
+  //     },
+  //   })
+  // );
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -93,18 +110,18 @@ export function HomeDashboard({
   
   const loading = propsLoading || layoutLoading;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id && localLayout) {
-      const oldIndex = localLayout.widgets.findIndex(w => w.id === active.id);
-      const newIndex = localLayout.widgets.findIndex(w => w.id === over.id);
+  // const handleDragEnd = (event: DragEndEvent) => {
+  //   const { active, over } = event;
+  //   if (over && active.id !== over.id && localLayout) {
+  //     const oldIndex = localLayout.widgets.findIndex(w => w.id === active.id);
+  //     const newIndex = localLayout.widgets.findIndex(w => w.id === over.id);
       
-      const reorderedWidgets = arrayMove(localLayout.widgets, oldIndex, newIndex);
-      const newWidgetsWithOrder = reorderedWidgets.map((w, index) => ({ ...w, order: index + 1 }));
+  //     const reorderedWidgets = arrayMove(localLayout.widgets, oldIndex, newIndex);
+  //     const newWidgetsWithOrder = reorderedWidgets.map((w, index) => ({ ...w, order: index + 1 }));
       
-      setLocalLayout({ ...localLayout, widgets: newWidgetsWithOrder });
-    }
-  };
+  //     setLocalLayout({ ...localLayout, widgets: newWidgetsWithOrder });
+  //   }
+  // };
 
   const handleSaveLayout = () => {
     setIsEditing(false);
@@ -115,7 +132,7 @@ export function HomeDashboard({
   
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setLocalLayout(layout);
+    // setLocalLayout(layout);
   };
 
   if (loading || !localLayout) {
@@ -164,40 +181,30 @@ export function HomeDashboard({
                         <ScanLine className="h-4 w-4 mr-2" />
                         レシート読取
                     </Button>
-                    <Button onClick={() => setIsEditing(true)} variant="outline">
+                    <Button onClick={() => setIsEditing(true)} variant="outline" disabled>
                         <LayoutDashboard className="h-4 w-4 mr-2" />
                         編集
                     </Button>
                 </>
             )}
         </div>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={sortedWidgets.map(w => w.id)} strategy={verticalListSortingStrategy}>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-                    {sortedWidgets.map((widget) => {
-                        const WidgetComponent = WidgetMap[widget.id];
-                        if (!WidgetComponent) return null;
-                        
-                        const componentProps = widgetProps[widget.id] as any;
-                        const className = sizeToClassMap[widget.size] || 'md:col-span-6';
-                        
-                        const widgetContent = <WidgetComponent {...componentProps} />;
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+            {sortedWidgets.map((widget) => {
+                const WidgetComponent = WidgetMap[widget.id];
+                if (!WidgetComponent) return null;
 
-                        return (
-                            <div key={widget.id} className={className}>
-                                {isEditing ? (
-                                    <SortableWidget id={widget.id}>
-                                        {widgetContent}
-                                    </SortableWidget>
-                                ) : (
-                                    widgetContent
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            </SortableContext>
-        </DndContext>
+                const componentProps = widgetProps[widget.id] as any;
+                const className = sizeToClassMap[widget.size] || 'md:col-span-6';
+
+                const widgetContent = <WidgetComponent {...componentProps} />;
+
+                return (
+                    <div key={widget.id} className={className}>
+                        {widgetContent}
+                    </div>
+                )
+            })}
+        </div>
     </div>
   );
 }
