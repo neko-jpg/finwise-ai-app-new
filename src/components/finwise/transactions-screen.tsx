@@ -223,9 +223,15 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <div className={`font-bold font-mono ${t.amount < 0 ? 'text-foreground' : 'text-green-600'}`}>
-                {t.amount < 0 ? "-" : "+"}¥{Math.abs(t.amount).toLocaleString()}
+            <div className={`font-bold font-mono ${t.originalAmount < 0 ? 'text-foreground' : 'text-green-600'}`}>
+                {t.originalAmount < 0 ? "-" : "+"}{Math.abs(t.originalAmount).toLocaleString()}
+                <span className="text-xs ml-1">{t.originalCurrency}</span>
             </div>
+            {t.originalCurrency !== 'JPY' && (
+                <div className="text-xs text-muted-foreground font-mono">
+                    (約 ¥{Math.abs(Math.round(t.amount)).toLocaleString()})
+                </div>
+            )}
             <Badge variant="outline" className="mt-1 font-normal">
                 {CATEGORIES.find(c => c.key === t.category.major)?.label || t.category.major}
             </Badge>

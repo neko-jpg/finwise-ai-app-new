@@ -166,6 +166,7 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setTransactionFormOpen}
         familyId={familyId}
         user={user}
+        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
             if (!transactions) return;
@@ -177,6 +178,7 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setGoalFormOpen}
         familyId={familyId}
         user={user}
+        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
         onGoalAction={(newGoal) => {
             setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
         }}

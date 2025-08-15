@@ -23,15 +23,17 @@ import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
+import { getExchangeRate } from '@/ai/flows/exchange-rate';
 import { useDebouncedCallback } from 'use-debounce';
 
 const FormSchema = z.object({
   bookedAt: z.date({
     required_error: "日付は必須です。",
   }),
-  amount: z.coerce.number()
+  originalAmount: z.coerce.number()
     .refine(v => v !== 0, { message: "金額は0以外で入力してください。" })
     .refine(v => Math.abs(v) <= 10_000_000, { message: "金額は1,000万円以下にしてください。"}),
+  originalCurrency: z.string().length(3),
   merchant: z.string().min(1, '店名・メモは必須です。'),
   categoryMajor: z.string().min(1, 'カテゴリは必須です。'),
   note: z.string().max(200).optional(),
@@ -45,11 +47,12 @@ interface TransactionFormProps {
     onOpenChange: (open: boolean) => void;
     familyId: string | undefined;
     user: User | null;
+    primaryCurrency: string;
     initialData?: Partial<TransactionFormValues>;
     onTransactionAction: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, familyId, user, initialData, onTransactionAction }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, familyId, user, primaryCurrency, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -58,7 +61,8 @@ export function TransactionForm({ open, onOpenChange, familyId, user, initialDat
         resolver: zodResolver(FormSchema),
         defaultValues: {
             bookedAt: new Date(),
-            amount: '' as any,
+            originalAmount: '' as any,
+            originalCurrency: primaryCurrency || 'JPY',
             merchant: '',
             categoryMajor: '',
             note: '',
@@ -85,56 +89,61 @@ export function TransactionForm({ open, onOpenChange, familyId, user, initialDat
 
     const onSubmit = async (values: TransactionFormValues) => {
         if (!familyId || !user) {
-            toast({
-                variant: 'destructive',
-                title: "エラー",
-                description: "ユーザー情報が見つかりません。もう一度ログインしてください。",
-            });
+            toast({ variant: 'destructive', title: "エラー", description: "ユーザー情報が見つかりません。もう一度ログインしてください。" });
             return;
         }
 
         setIsSubmitting(true);
         
-        const optimisticId = `optimistic-${Date.now()}`;
-        const now = Timestamp.now();
-        const SHA256 = require('crypto-js/sha256');
-        const hashSource = familyId + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
-
-        const optimisticTx: Transaction = {
-            id: optimisticId,
-            bookedAt: values.bookedAt,
-            amount: values.amount,
-            currency: 'JPY',
-            merchant: values.merchant,
-            category: { major: values.categoryMajor },
-            source: initialData?.amount ? 'ocr' : 'manual',
-            note: values.note,
-            hash: SHA256(hashSource).toString(),
-            clientUpdatedAt: new Date(),
-            createdAt: now,
-            updatedAt: now,
-            scope: values.scope,
-            createdBy: user.uid,
-        };
-
-        // Optimistic Update
-        onTransactionAction(optimisticTx);
-        onOpenChange(false);
-
         try {
-            const docData = {
-              ...optimisticTx,
-              id: undefined, // Firestore generates the ID
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            };
-            delete docData.id;
+            let finalAmount = values.originalAmount;
+            if (values.originalCurrency !== primaryCurrency) {
+                const rate = await getExchangeRate({ base: values.originalCurrency, target: primaryCurrency });
+                finalAmount = values.originalAmount * rate;
+            }
 
-            await addDoc(collection(db, `families/${familyId}/transactions`), docData);
+            const optimisticId = `optimistic-${Date.now()}`;
+            const now = Timestamp.now();
+            const SHA256 = require('crypto-js/sha256');
+            const hashSource = familyId + format(values.bookedAt, 'yyyyMMdd') + values.originalAmount + values.merchant;
+
+            const newTxData: Omit<Transaction, 'id'> = {
+                bookedAt: values.bookedAt,
+                amount: finalAmount,
+                originalAmount: values.originalAmount,
+                originalCurrency: values.originalCurrency,
+                merchant: values.merchant,
+                category: { major: values.categoryMajor },
+                source: initialData?.originalAmount ? 'ocr' : 'manual',
+                note: values.note,
+                hash: SHA256(hashSource).toString(),
+                clientUpdatedAt: new Date(),
+                createdAt: serverTimestamp() as Timestamp,
+                updatedAt: serverTimestamp() as Timestamp,
+                scope: values.scope,
+                createdBy: user.uid,
+            };
+
+            const optimisticTx: Transaction = {
+                ...newTxData,
+                id: optimisticId,
+                createdAt: now,
+                updatedAt: now,
+            };
+
+            // Optimistic Update
+            onTransactionAction(optimisticTx);
+            onOpenChange(false);
+
+            await addDoc(collection(db, `families/${familyId}/transactions`), {
+                ...newTxData,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
 
             toast({
                 title: "取引を登録しました",
-                description: `${values.merchant}: ¥${Math.abs(values.amount).toLocaleString()}`,
+                description: `${values.merchant}: ${values.originalAmount.toLocaleString()} ${values.originalCurrency}`,
             });
 
         } catch (error) {
@@ -215,22 +224,45 @@ export function TransactionForm({ open, onOpenChange, familyId, user, initialDat
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>金額 (支出は -500 のように入力)</FormLabel>
+                        <div className="flex gap-2">
+                            <FormField
+                                control={form.control}
+                                name="originalAmount"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>金額 (支出は -500)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="-580" {...field} onChange={(e) => {
+                                                field.onChange(e);
+                                                debouncedCategorize();
+                                            }}/>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="originalCurrency"
+                                render={({ field }) => (
+                                <FormItem className="w-[100px]">
+                                    <FormLabel>通貨</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <Input type="number" placeholder="-580" {...field} onChange={(e) => {
-                                            field.onChange(e);
-                                            debouncedCategorize();
-                                        }}/>
+                                        <SelectTrigger>
+                                        <SelectValue />
+                                        </SelectTrigger>
                                     </FormControl>
-                                    <FormMessage />
+                                    <SelectContent>
+                                        <SelectItem value="JPY">JPY</SelectItem>
+                                        <SelectItem value="USD">USD</SelectItem>
+                                        <SelectItem value="EUR">EUR</SelectItem>
+                                    </SelectContent>
+                                    </Select>
                                 </FormItem>
-                            )}
-                        />
+                                )}
+                            />
+                        </div>
 
                         <FormField
                             control={form.control}
