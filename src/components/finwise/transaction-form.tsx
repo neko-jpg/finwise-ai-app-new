@@ -41,12 +41,12 @@ export type TransactionFormValues = z.infer<typeof FormSchema>;
 interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    uid: string;
+    familyId: string | undefined;
     initialData?: Partial<TransactionFormValues>;
     onTransactionAction: (newTx: Transaction) => void;
 }
 
-export function TransactionForm({ open, onOpenChange, uid, initialData, onTransactionAction }: TransactionFormProps) {
+export function TransactionForm({ open, onOpenChange, familyId, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
@@ -80,12 +80,21 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
     }, 1000);
 
     const onSubmit = async (values: TransactionFormValues) => {
+        if (!familyId) {
+            toast({
+                variant: 'destructive',
+                title: "エラー",
+                description: "ユーザー情報が見つかりません。もう一度ログインしてください。",
+            });
+            return;
+        }
+
         setIsSubmitting(true);
         
         const optimisticId = `optimistic-${Date.now()}`;
         const now = Timestamp.now();
         const SHA256 = require('crypto-js/sha256');
-        const hashSource = uid + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
+        const hashSource = familyId + format(values.bookedAt, 'yyyyMMdd') + values.amount + values.merchant;
 
         const optimisticTx: Transaction = {
             id: optimisticId,
@@ -115,7 +124,7 @@ export function TransactionForm({ open, onOpenChange, uid, initialData, onTransa
             };
             delete docData.id;
 
-            await addDoc(collection(db, `users/${uid}/transactions`), docData);
+            await addDoc(collection(db, `families/${familyId}/transactions`), docData);
 
             toast({
                 title: "取引を登録しました",

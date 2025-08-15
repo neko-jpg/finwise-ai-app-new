@@ -162,7 +162,7 @@ export function AppContainer({ children }: AppContainerProps) {
       <TransactionForm 
         open={transactionFormOpen} 
         onOpenChange={setTransactionFormOpen}
-        uid={user.uid}
+        familyId={familyId}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
             if (!transactions) return;
@@ -172,7 +172,7 @@ export function AppContainer({ children }: AppContainerProps) {
       <GoalForm
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
-        uid={user.uid}
+        familyId={familyId}
         onGoalAction={(newGoal) => {
             setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
         }}

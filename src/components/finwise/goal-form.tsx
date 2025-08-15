@@ -33,11 +33,11 @@ export type GoalFormValues = z.infer<typeof FormSchema>;
 interface GoalFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    uid: string;
+    familyId: string | undefined;
     onGoalAction: (goal: Goal) => void;
 }
 
-export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProps) {
+export function GoalForm({ open, onOpenChange, familyId, onGoalAction }: GoalFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,6 +51,14 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
     });
 
     const onSubmit = async (values: GoalFormValues) => {
+        if (!familyId) {
+            toast({
+                variant: 'destructive',
+                title: "エラー",
+                description: "ユーザー情報が見つかりません。もう一度ログインしてください。",
+            });
+            return;
+        }
         setIsSubmitting(true);
         
         const optimisticId = `optimistic-${Date.now()}`;
@@ -80,7 +88,7 @@ export function GoalForm({ open, onOpenChange, uid, onGoalAction }: GoalFormProp
                 updatedAt: serverTimestamp(),
             };
 
-            await addDoc(collection(db, `users/${uid}/goals`), docData);
+            await addDoc(collection(db, `families/${familyId}/goals`), docData);
 
             toast({
                 title: "新しい目標を作成しました！",
