@@ -1,19 +1,24 @@
-
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Wallet, PiggyBank, Plus, ScanLine } from "lucide-react";
+import { Plus, ScanLine, LayoutDashboard, Save } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
+import { TodaySpendWidget } from "./widgets/TodaySpendWidget";
+import { MonthlyBudgetWidget } from "./widgets/MonthlyBudgetWidget";
+import { SortableWidget } from './widgets/SortableWidget';
 import type { TransactionFormValues } from "./transaction-form";
-import type { Transaction, Budget, Goal } from "@/lib/types";
+import type { Transaction, Budget, Goal, WidgetConfig, WidgetId, DashboardLayout } from "@/lib/types";
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
+import { useDashboardLayout } from '@/hooks/use-dashboard-layout';
+import type { User } from 'firebase/auth';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface HomeDashboardProps {
+  user?: User;
   transactions?: Transaction[];
   budget?: Budget | null;
   goals?: Goal[];
@@ -24,15 +29,50 @@ interface HomeDashboardProps {
   onOpenGoalForm?: () => void;
 }
 
+const WidgetMap: Record<WidgetId, React.FC<any>> = {
+    todaySpend: TodaySpendWidget,
+    monthlyBudget: MonthlyBudgetWidget,
+    advice: AdviceCard,
+    quickActions: QuickActions,
+    goals: () => <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">Goals Widget</div>,
+    recentTransactions: () => <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">Recent Transactions Widget</div>
+};
+
+const sizeToClassMap: Record<WidgetConfig['size'], string> = {
+    full: 'md:col-span-6',
+    half: 'md:col-span-3',
+    third: 'md:col-span-2',
+};
+
 export function HomeDashboard({ 
+    user,
     transactions = [], 
     budget = null,
-    loading,
+    goals = [],
+    loading: propsLoading,
     setTab = () => {}, 
     onOpenTransactionForm = () => {}, 
     onOpenOcr = () => {},
     onOpenGoalForm = () => {}
 }: HomeDashboardProps) {
+
+  const { layout, loading: layoutLoading } = useDashboardLayout(user?.uid);
+  const [isEditing, setIsEditing] = useState(false);
+  const [localLayout, setLocalLayout] = useState<DashboardLayout | null>(null);
+
+  useEffect(() => {
+    if (layout) {
+      setLocalLayout(layout);
+    }
+  }, [layout]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -42,83 +82,122 @@ export function HomeDashboard({
       .reduce((a, b) => a + Math.abs(b.amount), 0);
   }, [transactions]);
 
-  const {monthUsed, monthLimit} = useMemo(() => {
-    if (!budget || !budget.limits) return { monthUsed: 0, monthLimit: 0 };
+  const {monthUsed, monthLimit, remain, usageRate} = useMemo(() => {
+    if (!budget || !budget.limits) return { monthUsed: 0, monthLimit: 0, remain: 0, usageRate: 0 };
     const used = Object.values(budget.used || {}).reduce((a, b) => a + b, 0);
     const limit = Object.values(budget.limits).reduce((a, b) => a + b, 0);
-    return { monthUsed: used, monthLimit: limit };
+    const remain = Math.max(0, limit - used);
+    const usageRate = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+    return { monthUsed: used, monthLimit: limit, remain, usageRate };
   }, [budget]);
-    
-  const remain = Math.max(0, monthLimit - monthUsed);
-  const usageRate = monthLimit > 0 ? Math.min(100, Math.round((monthUsed / monthLimit) * 100)) : 0;
   
-  if (loading) {
+  const loading = propsLoading || layoutLoading;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id && localLayout) {
+      const oldIndex = localLayout.widgets.findIndex(w => w.id === active.id);
+      const newIndex = localLayout.widgets.findIndex(w => w.id === over.id);
+      
+      const reorderedWidgets = arrayMove(localLayout.widgets, oldIndex, newIndex);
+      const newWidgetsWithOrder = reorderedWidgets.map((w, index) => ({ ...w, order: index + 1 }));
+      
+      setLocalLayout({ ...localLayout, widgets: newWidgetsWithOrder });
+    }
+  };
+
+  const handleSaveLayout = () => {
+    setIsEditing(false);
+    // In the next step, we will save `localLayout` to Firestore.
+    // For now, we'll just log it.
+    console.log("Saving layout:", localLayout);
+  };
+  
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setLocalLayout(layout);
+  };
+
+  if (loading || !localLayout) {
       return (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="md:col-span-3 flex justify-end gap-2 mb-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+              <div className="md:col-span-6 flex justify-end gap-2 mb-2">
                   <Skeleton className="h-10 w-24" />
                   <Skeleton className="h-10 w-32" />
               </div>
-              <Card className="md:col-span-2">
-                  <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
-                  <CardContent><Skeleton className="h-10 w-1/2" /></CardContent>
-              </Card>
-              <Card>
-                  <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
-                  <CardContent className="space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-3 w-full" />
-                  </CardContent>
-              </Card>
-              <div className="md:col-span-3">
-                  <Skeleton className="h-24 w-full" />
-              </div>
+              <Skeleton className="h-48 md:col-span-6" />
+              <Skeleton className="h-24 md:col-span-3" />
+              <Skeleton className="h-24 md:col-span-3" />
           </div>
       )
   }
 
+  const sortedWidgets = localLayout.widgets.sort((a, b) => a.order - b.order);
+
+  const widgetProps = {
+      todaySpend: { todaySpend, setTab },
+      monthlyBudget: { remain, usageRate, monthUsed },
+      advice: { transactions, budget },
+      quickActions: { onOpenGoalForm, setTab },
+      goals: { goals },
+      recentTransactions: { transactions },
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div className="md:col-span-3 flex justify-end gap-2 mb-2">
-         <Button onClick={() => onOpenTransactionForm()} variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            手入力
-          </Button>
-          <Button onClick={onOpenOcr}>
-            <ScanLine className="h-4 w-4 mr-2" />
-            レシート読取
-          </Button>
-      </div>
-      <Card className="md:col-span-2">
-        <CardHeader className="pb-2">
-          <CardTitle className="font-headline flex items-center gap-2 text-lg"><Wallet className="h-5 w-5 text-muted-foreground" />本日の支出</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-4xl font-bold font-headline">¥{todaySpend.toLocaleString()}</div>
-          <div className="mt-6 flex gap-2">
-            <Button onClick={() => setTab("tx")}>明細を見る</Button>
-            <Button variant="outline" onClick={() => setTab("budget")}>予算を調整</Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div>
+        <div className="flex justify-end gap-2 mb-4">
+            {isEditing ? (
+                <>
+                    <Button onClick={handleCancelEdit} variant="ghost">キャンセル</Button>
+                    <Button onClick={handleSaveLayout}>
+                        <Save className="h-4 w-4 mr-2" />
+                        レイアウトを保存
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Button onClick={() => onOpenTransactionForm()} variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        手入力
+                    </Button>
+                    <Button onClick={onOpenOcr}>
+                        <ScanLine className="h-4 w-4 mr-2" />
+                        レシート読取
+                    </Button>
+                    <Button onClick={() => setIsEditing(true)} variant="outline">
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        編集
+                    </Button>
+                </>
+            )}
+        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sortedWidgets.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+                    {sortedWidgets.map((widget) => {
+                        const WidgetComponent = WidgetMap[widget.id];
+                        if (!WidgetComponent) return null;
+                        
+                        const componentProps = widgetProps[widget.id] as any;
+                        const className = sizeToClassMap[widget.size] || 'md:col-span-6';
+                        
+                        const widgetContent = <WidgetComponent {...componentProps} />;
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="font-headline flex items-center gap-2 text-lg"><PiggyBank className="h-5 w-5 text-muted-foreground" />今月の予算</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm font-medium mb-2">残高: ¥{remain.toLocaleString()}</div>
-          <Progress value={usageRate} className="h-3"/>
-          <div className="mt-2 text-xs text-muted-foreground flex justify-between">
-            <span>使用済: ¥{monthUsed.toLocaleString()}</span>
-            <span>{usageRate}%</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <AdviceCard transactions={transactions} budget={budget} />
-
-      <QuickActions onOpenGoalForm={onOpenGoalForm} setTab={setTab} />
+                        return (
+                            <div key={widget.id} className={className}>
+                                {isEditing ? (
+                                    <SortableWidget id={widget.id}>
+                                        {widgetContent}
+                                    </SortableWidget>
+                                ) : (
+                                    widgetContent
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            </SortableContext>
+        </DndContext>
     </div>
   );
 }
