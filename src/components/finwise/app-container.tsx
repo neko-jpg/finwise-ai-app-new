@@ -17,7 +17,6 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { format } from "date-fns";
 import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
-import React from 'react';
 import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
@@ -56,7 +55,8 @@ export function AppContainer({ children }: AppContainerProps) {
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;
 
-  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId);
+  // 修正点: useTransactionsフックにuser.uidを渡すように変更しました
+  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
   const { goals, loading: goalsLoading } = useGoals(familyId);
   const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date());
   const { rules, loading: rulesLoading } = useRules(user?.uid);
@@ -176,7 +176,6 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setGoalFormOpen}
         familyId={familyId}
         user={user}
-        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
         onGoalAction={(newGoal) => {
           // This is a simplified update. You might want a more robust state management.
           // setGoals(prev => [...(prev || []), newGoal]);
