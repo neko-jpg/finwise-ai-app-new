@@ -51,12 +51,12 @@ const MarketingHeader = () => {
             ))}
         </nav>
         <div className="flex items-center gap-2">
-            <button
-                onClick={() => router.push('/entry')}
+            <Link
+                href="/entry"
                 className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-accent text-mk-bg-1 text-sm font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90"
             >
                 <span className="truncate">Get Started</span>
-            </button>
+            </Link>
         </div>
     </header>
   );
@@ -65,7 +65,6 @@ const MarketingHeader = () => {
 
 // Hero Component
 const HeroSection = () => {
-  const router = useRouter();
   return (
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
           <div
@@ -84,9 +83,9 @@ const HeroSection = () => {
                   </h2>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                  <button onClick={() => router.push('/entry')} className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-accent text-mk-bg-1 text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90">
+                  <Link href="/entry" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-accent text-mk-bg-1 text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-accent/90">
                       <span className="truncate">Get Started Free</span>
-                  </button>
+                  </Link>
                   <a href="#demo" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-mk-secondary text-white text-base font-bold leading-normal tracking-[0.015em] transition-colors hover:bg-mk-secondary/80">
                       <span className="truncate">Watch Demo</span>
                   </a>
@@ -162,9 +161,9 @@ const PricingCard = ({ plan, price, popular, features }: { plan:string, price:st
                 <span className="text-base font-bold leading-tight">/month</span>
             </p>
         </div>
-        <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-secondary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-mk-secondary/80 transition-colors">
+        <Link href="/entry" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-mk-secondary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-mk-secondary/80 transition-colors">
             <span className="truncate">Get Started</span>
-        </button>
+        </Link>
         <div className="flex flex-col gap-2">
             {features.map((feature, i) => (
                 <div key={i} className="flex gap-3 text-sm font-normal leading-normal text-white">
