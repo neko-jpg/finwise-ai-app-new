@@ -170,8 +170,7 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setGoalFormOpen}
         uid={user.uid}
         onGoalAction={(newGoal) => {
-            if (!goals) return;
-            setGoals(prev => [newGoal, ...prev].sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)));
+            setGoals(prev => [newGoal, ...(prev || [])].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
         }}
       />
     </div>

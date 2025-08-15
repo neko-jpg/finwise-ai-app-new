@@ -20,8 +20,7 @@ const initialLimits = CATEGORIES.reduce((acc, cat) => {
     return acc;
 }, {} as {[key: string]: number});
 
-const defaultBudget: Budget = {
-    id: '',
+const defaultBudget: Omit<Budget, 'id'> = {
     limits: initialLimits,
     used: {},
     createdAt: Timestamp.now(),

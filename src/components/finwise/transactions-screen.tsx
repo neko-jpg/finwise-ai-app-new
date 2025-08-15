@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 
@@ -75,7 +75,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     if (!user) return;
     
     // Optimistic Update
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : new Date() } : t));
+    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : Timestamp.fromDate(new Date()) } : t));
 
     const docRef = doc(db, `users/${user.uid}/transactions`, txId);
     try {
@@ -89,7 +89,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     } catch (e) {
       console.error(e);
       // Revert optimistic update on failure
-      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? new Date() : null } : t));
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? Timestamp.fromDate(new Date()) : null } : t));
       toast({ variant: "destructive", title: "更新に失敗しました"});
     }
   };
