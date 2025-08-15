@@ -38,11 +38,12 @@ export function getFirebaseAdminApp() {
     }
 
     try {
+        const { project_id, client_email, private_key } = serviceAccount;
         return initializeApp({
             credential: {
-                projectId: serviceAccount.project_id,
-                clientEmail: serviceAccount.client_email,
-                privateKey: serviceAccount.private_key,
+                projectId: project_id,
+                clientEmail: client_email,
+                privateKey: private_key,
             },
         });
     } catch(e: any) {
