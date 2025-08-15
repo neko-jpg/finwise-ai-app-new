@@ -17,6 +17,16 @@ export interface AppUser {
   createdAt: any;
 }
 
+export interface Invitation {
+  id: string;
+  familyId: string;
+  senderId: string;
+  senderName: string | null;
+  recipientEmail: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: any;
+}
+
 /**
  * Creates a user profile and a new family if the user is new.
  * Checks if the user document already exists to prevent overwriting.

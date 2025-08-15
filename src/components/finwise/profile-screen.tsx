@@ -4,8 +4,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronRight, LogIn, LogOut, Upload, Loader } from "lucide-react";
+import { ChevronRight, LogIn, LogOut, Upload, Loader, Users } from "lucide-react";
 import type { User } from 'firebase/auth';
+import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
 import { signOut, linkToGoogle } from "@/lib/auth";
 import { useState, useRef, ChangeEvent } from "react";
@@ -145,6 +146,23 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
                   ログアウト
                 </Button>
             )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>家族の管理</CardTitle>
+          <CardDescription>
+            家族を招待して、予算や取引を共有します。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/app/family" passHref>
+            <Button>
+              <Users className="mr-2 h-4 w-4" />
+              家族を管理する
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 
