@@ -14,6 +14,7 @@ export interface AppUser {
   familyId: string;
   email: string | null;
   displayName: string | null;
+  primaryCurrency: string; // e.g., 'JPY'
   createdAt: any;
 }
 
@@ -54,6 +55,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
       familyId: familyRef.id,
       email: user.email,
       displayName: user.displayName,
+      primaryCurrency: 'JPY', // Default to JPY
       createdAt: serverTimestamp(),
     };
     await setDoc(userRef, newUser);

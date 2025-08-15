@@ -11,8 +11,9 @@ export interface Category {
 export interface Transaction {
   id: string; // Firestore document ID
   bookedAt: Date;
-  amount: number;
-  currency: 'JPY' | 'USD' | 'EUR';
+  amount: number; // Value in the user's primary currency (e.g., JPY)
+  originalAmount: number;
+  originalCurrency: string; // 3-letter currency code (e.g., 'USD')
   merchant: string;
   category: {
     major: string;
