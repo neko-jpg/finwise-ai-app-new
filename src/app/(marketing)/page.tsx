@@ -143,7 +143,7 @@ const DemoSection = () => (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
         <div data-ai-hint="dashboard analytics" className="relative w-full aspect-video rounded-xl overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1642427749670-f20e2e76f8c8?q=80&w=2670&auto=format&fit=crop"
+            src="/hero/analytics.jpg"
             alt="Dashboard analytics"
             fill
             sizes="(max-width: 640px) 100vw, 33vw"
@@ -152,7 +152,7 @@ const DemoSection = () => (
         </div>
         <div data-ai-hint="budgeting app" className="relative w-full aspect-video rounded-xl overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1641125694761-12727a3a693c?q=80&w=2670&auto=format&fit=crop"
+            src="/hero/budget.jpg"
             alt="Budgeting app interface"
             fill
             sizes="(max-width: 640px) 100vw, 33vw"
@@ -161,7 +161,7 @@ const DemoSection = () => (
         </div>
         <div data-ai-hint="mobile finance" className="relative w-full aspect-video rounded-xl overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1642427749633-59a5a3a7b6a4?q=80&w=2670&auto=format&fit=crop"
+            src="/hero/mobile.jpg"
             alt="Mobile finance app"
             fill
             sizes="(max-width: 640px) 100vw, 33vw"
@@ -280,3 +280,5 @@ export default function MarketingPage() {
         </div>
     );
 }
+
+    
