@@ -74,7 +74,7 @@ export function AppContainer({ children }: AppContainerProps) {
   const tab = useMemo(() => {
       if (pathname === '/app') return 'home';
       if (pathname.startsWith('/app/transactions')) return 'tx';
-      if (pathname.startsWith('/app/budget')) return 'budget';
+      if (pathname.startsWith('/app/investments')) return 'investments';
       if (pathname.startsWith('/app/reports')) return 'reports';
       if (pathname.startsWith('/app/goals')) return 'goals';
       if (pathname.startsWith('/app/profile')) return 'profile';
@@ -88,7 +88,7 @@ export function AppContainer({ children }: AppContainerProps) {
     const pathMap: { [key: string]: string } = {
       home: '/app',
       tx: '/app/transactions',
-      budget: '/app/budget',
+      investments: '/app/investments',
       reports: '/app/reports',
       goals: '/app/goals',
       profile: '/app/profile',

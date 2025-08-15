@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, BarChart, Bell, Target, Mic } from "lucide-react";
+import { Home, List, BarChart, TrendingUp, Mic } from "lucide-react";
 
 export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: string) => void; onMic: () => void }) {
   const navItems = [
     { key: "home", label: "ホーム", Icon: Home },
     { key: "tx", label: "明細", Icon: List },
     { key: "reports", label: "レポート", Icon: BarChart },
-    { key: "subscriptions", label: "サブスク", Icon: Bell },
-    { key: "goals", label: "目標", Icon: Target },
+    { key: "investments", label: "投資", Icon: TrendingUp },
   ];
 
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (

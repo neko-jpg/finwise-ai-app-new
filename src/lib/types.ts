@@ -71,3 +71,44 @@ export interface QuickActionDefinition {
     text: string;
     icon: LucideIcon;
 }
+
+// For Plaid Integration
+export interface PlaidItem {
+    id: string; // Firestore document ID
+    familyId: string;
+    accessToken: string;
+    institutionName: string;
+    createdAt: Timestamp;
+}
+
+export interface InvestmentAccount {
+    id: string; // Firestore document ID, same as Plaid account_id
+    familyId: string;
+    plaidItemId: string;
+    name: string;
+    mask: string | null;
+    type: string;
+    subtype: string;
+    currentBalance: number;
+    updatedAt: Timestamp;
+}
+
+export interface Holding {
+    id: string; // Firestore document ID, composite key like ${accountId}-${securityId}
+    familyId: string;
+    plaidAccountId: string;
+    securityId: string;
+    quantity: number;
+    institutionValue: number;
+    costBasis: number | null;
+    updatedAt: Timestamp;
+}
+
+export interface Security {
+    id: string; // Firestore document ID, same as Plaid security_id
+    name: string | null;
+    tickerSymbol: string | null;
+    type: string | null;
+    closePrice: number | null;
+    updatedAt: Timestamp;
+}
