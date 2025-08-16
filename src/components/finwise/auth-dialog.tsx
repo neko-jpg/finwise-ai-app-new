@@ -9,9 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/lib/auth';
-import { getAdditionalUserInfo } from 'firebase/auth';
+import { getAdditionalUserInfo, User } from 'firebase/auth';
 import { createUserProfile } from '@/lib/user';
 import { Loader } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, where, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { BADGES } from '@/data/badges';
 
 interface AuthDialogProps {
   open: boolean;
@@ -66,6 +69,39 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     toast({ title: "認証に失敗しました", description, variant: 'destructive' });
   };
   
+  const checkAndAwardBadges = async (user: User) => {
+    // Check for "1 Month of Continuous Use" badge
+    try {
+        const creationTime = new Date(user.metadata.creationTime || Date.now());
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        if (creationTime < oneMonthAgo) {
+            const badgeId = 'one_month_user';
+            const userBadgesRef = collection(db, `users/${user.uid}/badges`);
+            const q = query(userBadgesRef, where("badgeId", "==", badgeId));
+            const existingBadgeSnap = await getDocs(q);
+
+            if (existingBadgeSnap.empty) {
+                // Award the badge
+                await addDoc(userBadgesRef, {
+                    userId: user.uid,
+                    badgeId: badgeId,
+                    createdAt: serverTimestamp(),
+                });
+                const badgeInfo = BADGES[badgeId];
+                toast({
+                    title: "新しいバッジを獲得しました！",
+                    description: `「${badgeInfo.name}」`,
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to check or award badges:", e);
+        // Don't bother the user with an error here.
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading('google');
     try {
@@ -74,6 +110,8 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
         const additionalInfo = getAdditionalUserInfo(result);
         if (additionalInfo?.isNewUser) {
           await createUserProfile(result.user);
+        } else {
+          await checkAndAwardBadges(result.user);
         }
         onOpenChange(false);
         onSignin();
@@ -95,6 +133,8 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
         const additionalInfo = getAdditionalUserInfo(result);
         if (additionalInfo?.isNewUser) {
           await createUserProfile(result.user);
+        } else {
+            await checkAndAwardBadges(result.user);
         }
       }
       onOpenChange(false);
@@ -111,7 +151,10 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     e.preventDefault();
     setIsLoading('email');
     try {
-      await signInWithEmail(email, password);
+      const result = await signInWithEmail(email, password);
+      if (result?.user) {
+        await checkAndAwardBadges(result.user);
+      }
       onOpenChange(false);
       onSignin();
     } catch (e) {
