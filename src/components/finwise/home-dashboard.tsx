@@ -5,20 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Plus, ScanLine, LayoutDashboard, Save } from "lucide-react";
 import { AdviceCard } from "./advice-card";
 import { QuickActions } from "./quick-actions";
-// import { TodaySpendWidget } from "./widgets/TodaySpendWidget";
-// import { MonthlyBudgetWidget } from "./widgets/MonthlyBudgetWidget";
-// import { SortableWidget } from './widgets/SortableWidget';
+import { TasksOverview } from "./tasks-overview";
 import type { TransactionFormValues } from "./transaction-form";
-import type { Transaction, Budget, Goal, WidgetConfig, WidgetId, DashboardLayout } from "@/lib/types";
+import type { Transaction, Budget, Goal, WidgetConfig, WidgetId, DashboardLayout, Task } from "@/lib/types";
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-// import { useDashboardLayout } from '@/hooks/use-dashboard-layout';
 import type { User } from 'firebase/auth';
-// import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-// import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface HomeDashboardProps {
   user?: User;
+  tasks?: Task[];
   transactions?: Transaction[];
   budget?: Budget | null;
   goals?: Goal[];
@@ -53,6 +49,7 @@ const sizeToClassMap: Record<WidgetConfig['size'], string> = {
 
 export function HomeDashboard({ 
     user,
+    tasks = [],
     transactions = [], 
     budget = null,
     goals = [],
@@ -63,9 +60,7 @@ export function HomeDashboard({
     onOpenGoalForm = () => {}
 }: HomeDashboardProps) {
 
-  // const { layout, loading: layoutLoading } = useDashboardLayout(user?.uid);
   const [isEditing, setIsEditing] = useState(false);
-  // MOCK LAYOUT DATA
   const [localLayout, setLocalLayout] = useState<DashboardLayout | null>({
     widgets: [
         { id: 'advice', size: 'full', order: 1 },
@@ -78,18 +73,7 @@ export function HomeDashboard({
 
 
   useEffect(() => {
-    // if (layout) {
-    //   setLocalLayout(layout);
-    // }
   }, []);
-
-  // const sensors = useSensors(
-  //   useSensor(PointerSensor, {
-  //     activationConstraint: {
-  //       distance: 8,
-  //     },
-  //   })
-  // );
 
   const todaySpend = useMemo(() => {
     if (!transactions) return 0;
@@ -110,29 +94,13 @@ export function HomeDashboard({
   
   const loading = propsLoading || layoutLoading;
 
-  // const handleDragEnd = (event: DragEndEvent) => {
-  //   const { active, over } = event;
-  //   if (over && active.id !== over.id && localLayout) {
-  //     const oldIndex = localLayout.widgets.findIndex(w => w.id === active.id);
-  //     const newIndex = localLayout.widgets.findIndex(w => w.id === over.id);
-      
-  //     const reorderedWidgets = arrayMove(localLayout.widgets, oldIndex, newIndex);
-  //     const newWidgetsWithOrder = reorderedWidgets.map((w, index) => ({ ...w, order: index + 1 }));
-      
-  //     setLocalLayout({ ...localLayout, widgets: newWidgetsWithOrder });
-  //   }
-  // };
-
   const handleSaveLayout = () => {
     setIsEditing(false);
-    // In the next step, we will save `localLayout` to Firestore.
-    // For now, we'll just log it.
     console.log("Saving layout:", localLayout);
   };
   
   const handleCancelEdit = () => {
     setIsEditing(false);
-    // setLocalLayout(layout);
   };
 
   if (loading || !localLayout) {
@@ -188,6 +156,12 @@ export function HomeDashboard({
                 </>
             )}
         </div>
+
+        <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">タスク</h2>
+            <TasksOverview tasks={tasks} />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
             {sortedWidgets.map((widget) => {
                 const WidgetComponent = WidgetMap[widget.id];

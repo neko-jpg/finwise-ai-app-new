@@ -213,3 +213,23 @@ export interface UserBadge {
     badgeId: BadgeId;
     createdAt: Timestamp;
 }
+
+export type TaskType = 'duplicate_transactions' | 'subscription_review' | 'budget_review';
+
+export interface Task {
+    id: string;
+    type: TaskType;
+    title: string;
+    description: string;
+    cta: string;
+    link: string;
+    data?: any;
+}
+
+export interface Review {
+    id: string; // e.g., '2025-08-duplicates'
+    userId: string;
+    type: TaskType;
+    completedAt: Timestamp;
+    relatedIds?: string[]; // e.g., transaction IDs
+}
