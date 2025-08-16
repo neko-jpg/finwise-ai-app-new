@@ -76,23 +76,6 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
     return { nodes, links };
   }, [filteredTransactions]);
 
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold font-headline">レポート</h2>
-        <p className="text-muted-foreground">お金の流れを視覚的に分析しましょう。</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>期間を選択</CardTitle>
-          <CardDescription>レポートの対象となる期間を指定してください。</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
-        </CardContent>
-      </Card>
-
   const handleGenerateSummary = () => {
     const today = new Date();
     const from = startOfWeek(today, { weekStartsOn: 1 }); // Monday
@@ -117,6 +100,23 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
         }
     });
   };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold font-headline">レポート</h2>
+        <p className="text-muted-foreground">お金の流れを視覚的に分析しましょう。</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>期間を選択</CardTitle>
+          <CardDescription>レポートの対象となる期間を指定してください。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="sankey" className="w-full">
         <TabsList className="grid w-full grid-cols-4">

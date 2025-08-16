@@ -30,6 +30,7 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
   const [isLinking, setIsLinking] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [is2faDialogOpen, setIs2faDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userBadges, loading: badgesLoading } = useUserBadges(user?.uid);
   
@@ -60,6 +61,20 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
       });
     } finally {
       setIsLinking(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch('/api/sessionLogout', { method: 'POST' });
+      await signOut();
+      toast({ title: "ログアウトしました" });
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      toast({ title: "ログアウトに失敗しました", variant: "destructive" });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -147,9 +162,9 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
                   {isLinking ? '連携中...' : 'Googleアカウントと連携'}
                 </Button>
             ) : (
-                <Button variant="destructive" onClick={() => signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  ログアウト
+                <Button variant="destructive" onClick={handleSignOut} disabled={isLoggingOut}>
+                  {isLoggingOut ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <LogOut className="mr-2 h-4 w-4" />}
+                  {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
                 </Button>
             )}
         </CardContent>

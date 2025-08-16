@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail } from '@/lib/auth';
-import { getAdditionalUserInfo, User } from 'firebase/auth';
+import { getAdditionalUserInfo, User, UserCredential } from 'firebase/auth';
 import { createUserProfile } from '@/lib/user';
 import { Loader } from 'lucide-react';
 import { db } from '@/lib/firebase';
@@ -102,19 +102,39 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     }
   };
 
+  const handleAuthSuccess = async (result: UserCredential | null) => {
+    if (!result?.user) return;
+
+    const idToken = await result.user.getIdToken();
+    const response = await fetch('/api/sessionLogin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!response.ok) {
+      toast({ title: "セッションの作成に失敗しました", description: "ログインに失敗しました。もう一度お試しください。", variant: 'destructive' });
+      throw new Error("Session creation failed");
+    }
+
+    const additionalInfo = getAdditionalUserInfo(result);
+    if (additionalInfo?.isNewUser) {
+      await createUserProfile(result.user);
+    } else if (!result.user.isAnonymous) {
+      await checkAndAwardBadges(result.user);
+    }
+
+    onOpenChange(false);
+    onSignin();
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading('google');
     try {
       const result = await signInWithGoogle();
-      if (result?.user) {
-        const additionalInfo = getAdditionalUserInfo(result);
-        if (additionalInfo?.isNewUser) {
-          await createUserProfile(result.user);
-        } else {
-          await checkAndAwardBadges(result.user);
-        }
-        onOpenChange(false);
-        onSignin();
+      // signInWithGoogle can return null if the user closes the popup
+      if (result) {
+        await handleAuthSuccess(result);
       }
     } catch (e) {
       handleAuthError(e);
@@ -128,17 +148,7 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     setIsLoading('email');
     try {
       const result = await signUpWithEmail(email, password);
-      // NOTE: A new user via email/pass is always a new user, but we check anyway for consistency.
-      if (result?.user) {
-        const additionalInfo = getAdditionalUserInfo(result);
-        if (additionalInfo?.isNewUser) {
-          await createUserProfile(result.user);
-        } else {
-            await checkAndAwardBadges(result.user);
-        }
-      }
-      onOpenChange(false);
-      onSignin();
+      await handleAuthSuccess(result);
       toast({ title: "登録が完了しました", description: "確認メールは送信されません（開発モード）。" });
     } catch (e) {
       handleAuthError(e);
@@ -152,11 +162,7 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     setIsLoading('email');
     try {
       const result = await signInWithEmail(email, password);
-      if (result?.user) {
-        await checkAndAwardBadges(result.user);
-      }
-      onOpenChange(false);
-      onSignin();
+      await handleAuthSuccess(result);
     } catch (e) {
       handleAuthError(e);
     } finally {
@@ -168,14 +174,7 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     setIsLoading('anonymous');
     try {
       const result = await signInGuest();
-      if (result?.user) {
-        const additionalInfo = getAdditionalUserInfo(result);
-        if (additionalInfo?.isNewUser) {
-          await createUserProfile(result.user);
-        }
-      }
-      onOpenChange(false);
-      onSignin();
+      await handleAuthSuccess(result);
     } catch (e) {
       handleAuthError(e);
     } finally {
