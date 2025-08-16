@@ -1,22 +1,25 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Loader, Sparkles, NotebookPen } from 'lucide-react';
+import { Loader, Sparkles, NotebookPen, BotMessageSquare } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Budget } from '@/lib/types';
+import type { Budget, Transaction } from '@/lib/types';
 import { CATEGORIES } from "@/data/dummy-data";
+import { proactiveBudgetSuggestion } from '@/ai/flows/proactive-budget-suggestion';
 
 interface BudgetScreenProps {
   familyId?: string;
   personalBudget?: Budget | null;
   sharedBudget?: Budget | null;
+  transactions?: Transaction[]; // Add transactions to props
   setPersonalBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   setSharedBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   loading?: boolean;
@@ -27,6 +30,7 @@ export function BudgetScreen({
   familyId,
   personalBudget,
   sharedBudget,
+  transactions = [],
   setPersonalBudget,
   setSharedBudget,
   loading,
@@ -35,9 +39,27 @@ export function BudgetScreen({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
   const [isSaving, setIsSaving] = useState(false);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
 
   const activeBudget = activeTab === 'personal' ? personalBudget : sharedBudget;
   const setActiveBudget = activeTab === 'personal' ? setPersonalBudget : setSharedBudget;
+
+  useEffect(() => {
+    // Clear suggestion when tab changes
+    setSuggestion(null);
+
+    const getSuggestion = async () => {
+        if (activeBudget) {
+            const result = await proactiveBudgetSuggestion({ budget: activeBudget, transactions });
+            if (result.suggestion) {
+                setSuggestion(result.suggestion);
+            }
+        }
+    };
+    // Add a small delay to avoid being too intrusive
+    const timer = setTimeout(getSuggestion, 1000);
+    return () => clearTimeout(timer);
+  }, [activeBudget, transactions]);
 
   const handleBudgetChange = async (categoryId: string, newLimit: number) => {
     if (!activeBudget || !familyId || !setActiveBudget) return;
@@ -138,6 +160,24 @@ export function BudgetScreen({
           {renderBudgetContent(sharedBudget)}
         </TabsContent>
       </Tabs>
+      <Dialog open={!!suggestion} onOpenChange={() => setSuggestion(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>
+                    <div className="flex items-center gap-2">
+                        <BotMessageSquare className="h-6 w-6 text-primary" />
+                        AIからの提案
+                    </div>
+                </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                {suggestion}
+            </div>
+            <DialogFooter>
+                <Button onClick={() => setSuggestion(null)}>閉じる</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
