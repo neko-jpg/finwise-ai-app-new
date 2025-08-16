@@ -5,7 +5,7 @@ import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useToast, showErrorToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { applyRulesToTransaction } from "@/lib/rule-engine";
 import { InteractiveTutorial } from "./InteractiveTutorial";
@@ -14,7 +14,7 @@ import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
-import type { Transaction, Goal, Rule, Account, Budget } from "@/domain";
+import type { Transaction, Goal, Rule, Account, Budget } from "@/lib/domain";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -26,7 +26,7 @@ import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
-import { txConverter } from "@/repo";
+import { txConverter } from "@/lib/repo";
 import { User } from "firebase/auth";
 
 interface InjectedPageProps {
@@ -184,7 +184,7 @@ export function AppContainer({ children }: AppContainerProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader user={user} onOcr={() => setOcrOpen(true)} notifications={notifications} />
+      <AppHeader onOcr={() => setOcrOpen(true)} notifications={notifications} />
       {!isOnline && <OfflineBanner />}
       <main className="flex-1 pb-24 pt-16">
         {Children.map(children, child =>

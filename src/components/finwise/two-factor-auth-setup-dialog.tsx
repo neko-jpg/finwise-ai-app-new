@@ -62,9 +62,10 @@ export function TwoFactorAuthSetupDialog({ open, onOpenChange }: TwoFactorAuthSe
       await verifyAndEnable2faFn({ token: verificationCode });
       toast({ title: "2段階認証が有効になりました", description: "次回ログイン時から認証コードの入力が必要になります。" });
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "コードが正しくないか、有効期限が切れています。";
       console.error(e);
-      toast({ title: "認証に失敗しました", description: e.message || "コードが正しくないか、有効期限が切れています。", variant: "destructive" });
+      toast({ title: "認証に失敗しました", description: message, variant: "destructive" });
     } finally {
       setIsVerifying(false);
     }

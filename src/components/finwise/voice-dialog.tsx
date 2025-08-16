@@ -2,10 +2,9 @@
 
 import React, { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import { Dialog } from "@/components/ui/dialog";
-import { assistant } from '@/ai/flows/assistant';
 import { speechToTransaction } from '@/ai/flows/speech-to-transaction';
 import type { TransactionFormValues } from './transaction-form';
-import type { Budget, Goal, Transaction } from '@/domain';
+import type { Budget, Goal, Transaction } from '@/lib/domain';
 import { useToast } from '@/hooks/use-toast';
 
 interface VoiceDialogProps {
@@ -27,7 +26,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
   const [_isPending, startTransition] = useTransition();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  const handleSubmit = useCallback((currentQuery: string) => {
+  const handleSubmit = useCallback(async (currentQuery: string) => {
     if (!currentQuery) return;
     setQuery('');
     setResponse('');
@@ -38,17 +37,27 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
         if (result.type === 'transaction') {
             onComplete({ merchant: result.merchant, amount: result.amount });
         } else {
-            const assistantResult = await assistant({
-                query: currentQuery,
-                transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString()})),
-                budget,
-                goals: goals.map(g => ({...g, due: g.due?.toISOString()})),
+            const response = await fetch('/api/ai/assistant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: currentQuery,
+                    transactions: transactions.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString()})),
+                    budget,
+                    goals: goals.map(g => ({...g, due: g.due?.toISOString()})),
+                }),
             });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'API call failed');
+            }
+            const assistantResult = await response.json();
             setResponse(assistantResult.response);
         }
       } catch (e) {
+        const message = e instanceof Error ? e.message : 'エラーが発生しました。もう一度お試しください。';
         console.error(e);
-        setResponse('エラーが発生しました。もう一度お試しください。');
+        setResponse(message);
       } finally {
         setMicStatus('idle');
       }

@@ -1,19 +1,12 @@
-
 'use client';
 
 import { GoalsScreen } from '@/components/finwise/goals-screen';
-import type { Goal } from '@/domain';
-import type { User } from 'firebase/auth';
+import { Suspense } from 'react';
 
-interface GoalsPageProps {
-  user?: User;
-  familyId?: string;
-  goals: Goal[];
-  loading?: boolean;
-}
-
-export default function GoalsPage(props: GoalsPageProps) {
+export default function GoalsPage() {
   return (
-    <GoalsScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <GoalsScreen />
+    </Suspense>
   );
 }

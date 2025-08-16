@@ -9,7 +9,7 @@ import { PlaidLinkButton } from './plaid-link-button';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import type { User } from 'firebase/auth';
+import { useAuthState } from '@/hooks/use-auth-state';
 import { PlusCircle } from 'lucide-react';
 import { CryptoForm } from './crypto-form';
 import { DividendTracker } from './dividend-tracker';
@@ -18,11 +18,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const functions = getFunctions();
 const cryptoApiProxy = httpsCallable(functions, 'cryptoApiProxy');
 
-interface InvestmentsScreenProps {
-  user?: User;
-}
+interface InvestmentsScreenProps {}
 
-export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
+export function InvestmentsScreen({}: InvestmentsScreenProps) {
+  const { user } = useAuthState();
   const { userProfile } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;
   const { plaidAccounts, cryptoHoldings, loading, error } = useInvestmentPortfolio(familyId, user?.uid);
@@ -109,7 +108,7 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
           <Card><CardHeader><CardTitle>連携済み口座</CardTitle><CardDescription>Plaid経由で連携された株式や投資信託です。</CardDescription></CardHeader>
             <CardContent>
               {plaidAccounts.length > 0 ? renderPlaidAccounts() : <p className="text-muted-foreground">連携された口座はありません。</p>}
-              <div className="mt-4 border-t pt-4"><PlaidLinkButton user={user || null} familyId={familyId} /></div>
+              <div className="mt-4 border-t pt-4"><PlaidLinkButton user={user ?? undefined} familyId={familyId} /></div>
             </CardContent>
           </Card>
         </TabsContent>

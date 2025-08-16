@@ -7,7 +7,7 @@ import { Sparkles, ChevronRight, Info } from "lucide-react";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { predictMonthEndBalance, PredictMonthEndBalanceOutput } from "@/ai/flows/predict-month-end-balance";
 import { Skeleton } from "../ui/skeleton";
-import type { Transaction, Budget } from "@/domain";
+import type { Transaction, Budget } from "@/lib/domain";
 import { Timestamp } from "firebase/firestore";
 
 import { JsonValue, JsonObject } from '@/types/global';

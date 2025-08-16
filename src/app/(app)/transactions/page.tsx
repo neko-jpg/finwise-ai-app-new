@@ -1,19 +1,12 @@
-
 'use client';
 
 import { TransactionsScreen } from '@/components/finwise/transactions-screen';
-import type { Transaction } from '@/domain';
+import { Suspense } from 'react';
 
-import React from 'react';
-
-interface TransactionsPageProps {
-  transactions: Transaction[];
-  loading?: boolean;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-}
-
-export default function TransactionsPage(props: TransactionsPageProps) {
+export default function TransactionsPage() {
   return (
-    <TransactionsScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <TransactionsScreen />
+    </Suspense>
   );
 }

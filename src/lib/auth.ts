@@ -1,8 +1,8 @@
 import { getAuth, signInAnonymously, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, UserCredential } from 'firebase/auth';
-import { firebaseApp, db } from './firebase';
+import { app as firebaseApp, db } from './firebase/client';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { userConverter, familyConverter } from '@/repo';
-import type { AppUser, Family } from '@/domain';
+import { userConverter, familyConverter } from '@/lib/repo';
+import type { AppUser, Family } from '@/lib/domain';
 
 export const auth = getAuth(firebaseApp);
 

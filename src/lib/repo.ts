@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Timestamp, FirestoreDataConverter, DocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
 import {
     TransactionSchema, type Transaction,
     FamilySchema, type Family,
     AppUserSchema, type AppUser,
     BudgetSchema, type Budget
-} from "@/domain";
+} from "@/lib/domain";
 
 // --- Transaction Converter ---
 const txFromDoc = (doc: DocumentSnapshot): Transaction => {

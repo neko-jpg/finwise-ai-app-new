@@ -8,8 +8,8 @@ import {
   Unsubscribe,
   FirestoreError,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Notification } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { Notification } from '@/lib/domain';
 
 interface UseNotificationsReturn {
   notifications: Notification[];

@@ -183,7 +183,7 @@ function useToast() {
   }
 }
 
-function showErrorToast(error: any) {
+function showErrorToast(error: unknown) {
   console.error("Displaying error toast:", error);
 
   let title = "エラーが発生しました";

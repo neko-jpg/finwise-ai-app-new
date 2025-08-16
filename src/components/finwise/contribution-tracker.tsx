@@ -1,8 +1,8 @@
 'use client';
 
 import { useContributionTracker } from '@/hooks/use-contribution-tracker';
-import type { Account } from '@/domain';
-import type { Transaction } from '@/domain';
+import type { Account } from '@/lib/domain';
+import type { Transaction } from '@/lib/domain';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

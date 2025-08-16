@@ -1,7 +1,5 @@
 import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '@/lib/firebase-admin';
-
-const adminApp = getFirebaseAdminApp();
+import { adminApp } from '@/lib/firebase/admin';
 
 // This guard is crucial for environments where the Admin SDK cannot be initialized
 // (e.g., client-side, or server-side without credentials).

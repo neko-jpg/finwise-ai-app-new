@@ -13,22 +13,18 @@ import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
 import { syncAllTransactions } from '@/ai/flows/plaid-flows';
 import { useToast, showErrorToast } from '@/hooks/use-toast';
-import type { Transaction } from '@/domain';
+import type { Transaction } from '@/lib/domain';
 import { DuplicateReviewCard } from './DuplicateReviewCard';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { User } from 'firebase/auth';
+import { db } from '@/lib/firebase/client';
+import { useAuthState } from '@/hooks/use-auth-state';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { useTransactions } from '@/hooks/use-transactions';
+import { TransactionForm, TransactionFormValues } from './transaction-form';
 
-interface TransactionsScreenProps {
-  loading?: boolean;
-  transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  user?: User;
-  familyId?: string;
-  onOpenTransactionForm?: () => void;
-}
+interface TransactionsScreenProps {}
 
 const aiAnalyzeMessages = [
   "AIが分析中...",
@@ -37,7 +33,12 @@ const aiAnalyzeMessages = [
   "インサイトを生成しています...",
 ];
 
-export function TransactionsScreen({ loading, transactions = [], setTransactions, user, familyId, onOpenTransactionForm = () => {} }: TransactionsScreenProps) {
+export function TransactionsScreen({}: TransactionsScreenProps) {
+  const { user } = useAuthState();
+  const { userProfile } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
+  const { transactions, setTransactions, loading } = useTransactions(familyId, user?.uid);
+
   const [q, setQ] = useState("");
   const [scopeFilter, setScopeFilter] = useState<'all' | 'shared' | 'personal'>('all');
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -50,7 +51,16 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   const [potentialDuplicates, setPotentialDuplicates] = useState<DetectDuplicatesOutput['potentialDuplicates']>([]);
   const { toast } = useToast();
 
+  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
+  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
+
+  const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
+    setTransactionInitialData(initialData);
+    setTransactionFormOpen(true);
+  };
+
   const filteredTx = useMemo(() => {
+    if (!transactions) return [];
     return transactions.filter((t: Transaction) => {
       const scopeMatch = scopeFilter === 'all'
         || (scopeFilter === 'shared' && t.scope === 'shared')
@@ -84,8 +94,9 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     try {
         const result = await syncAllTransactions({ familyId });
         toast({ title: "同期が完了しました", description: `${result.syncedItems}件の口座を同期しました。` });
-    } catch (e: any) {
-        showErrorToast(new Error("取引の同期に失敗しました。"));
+    } catch (e) {
+        const error = e instanceof Error ? e : new Error("取引の同期に失敗しました。");
+        showErrorToast(error);
         console.error(e);
     } finally {
         setIsSyncing(false);
@@ -156,7 +167,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   };
 
   const handleToggleDelete = async (txId: string, isDeleted: boolean) => {
-    if (!user || !familyId) return;
+    if (!user || !familyId || !db) return;
     
     setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? undefined : new Date() } : t));
 
@@ -177,7 +188,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   };
   
   const handleMerge = async (winnerId: string, loserId: string) => {
-    if (!user || !familyId) return;
+    if (!user || !familyId || !db) return;
 
     const docRef = doc(db, `families/${familyId}/transactions`, loserId);
     try {
@@ -228,7 +239,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
                 <FilePlus2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <h3 className="font-bold text-lg">最初の取引を追加しましょう</h3>
                 <p className="text-sm mt-2 mb-4">レシートを撮影するか、手動で入力して家計管理を始めましょう。</p>
-                 <Button onClick={onOpenTransactionForm} size="lg">取引を追加する</Button>
+                 <Button onClick={() => handleOpenTransactionForm()} size="lg">取引を追加する</Button>
             </div>
         )
       }
@@ -255,8 +266,8 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <div className={`font-bold font-mono ${t.originalAmount < 0 ? 'text-foreground' : 'text-green-600'}`}>
-                {t.originalAmount < 0 ? "-" : "+"}{Math.abs(t.originalAmount).toLocaleString()}
+            <div className={`font-bold font-mono ${t.amount < 0 ? 'text-foreground' : 'text-green-600'}`}>
+                {t.amount < 0 ? "-" : "+"}{Math.abs(t.amount).toLocaleString()}
                 <span className="text-xs ml-1">{t.originalCurrency}</span>
             </div>
             {t.originalCurrency !== 'JPY' && (
@@ -286,116 +297,131 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle className="font-headline text-xl">取引明細</CardTitle>
-                <div className="flex items-center gap-2">
-                   <Button variant="secondary" size="sm" onClick={handleSyncTransactions} disabled={isSyncing || loading}>
-                      {isSyncing ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                      同期
-                  </Button>
-                   <Button variant="ghost" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
-                    {showDeleted ? "一覧に戻る" : "削除済みを表示"}
-                  </Button>
-                   <Button variant="outline" size="sm" onClick={handleDetectDuplicates} disabled={isDetecting || loading}>
-                      {isDetecting ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <AlertCircle className="mr-2 h-4 w-4" />}
-                      重複をチェック
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
-                      {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                      {isPending ? aiMessage : "AIで分析"}
-                  </Button>
-                </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-            <Tabs value={scopeFilter} onValueChange={(v) => setScopeFilter(v as any)} className="mb-4">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">すべて</TabsTrigger>
-                <TabsTrigger value="shared">共有</TabsTrigger>
-                <TabsTrigger value="personal">個人</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="店名・メモ・金額で検索..." className="pl-9" />
-                </div>
-                <Sheet open={isFilterSheetOpen} onOpenChange={setFilterSheetOpen}>
-                <SheetTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                        <span className="sr-only">フィルタ</span>
+    <>
+      <TransactionForm
+        open={transactionFormOpen}
+        onOpenChange={setTransactionFormOpen}
+        familyId={familyId!}
+        user={user!}
+        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
+        rules={[]} // Rules also need to be fetched if needed
+        initialData={transactionInitialData}
+        onTransactionAction={(newTx) => {
+            setTransactions(prev => [newTx, ...(prev || [])].sort((a, b) => new Date(b.bookedAt).getTime() - new Date(a.bookedAt).getTime()));
+        }}
+      />
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+              <div className="flex justify-between items-center">
+                  <CardTitle className="font-headline text-xl">取引明細</CardTitle>
+                  <div className="flex items-center gap-2">
+                     <Button variant="secondary" size="sm" onClick={handleSyncTransactions} disabled={isSyncing || loading}>
+                        {isSyncing ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        同期
                     </Button>
-                </SheetTrigger>
-                <SheetContent>
-                    <SheetHeader>
-                    <SheetTitle className="font-headline">カテゴリで絞り込み</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                    {CATEGORIES.map(c => (
-                        <Button
-                            key={c.key}
-                            variant={catFilter === c.key ? "default" : "secondary"}
-                            onClick={() => {
-                                setCatFilter(catFilter === c.key ? null : c.key);
-                                setFilterSheetOpen(false);
-                            }}
-                            className="justify-start gap-2"
-                        >
-                        {c.icon}
-                        {c.label}
-                        </Button>
-                    ))}
-                     <Button
-                        variant={!catFilter ? "default" : "secondary"}
-                        onClick={() => {
-                            setCatFilter(null);
-                            setFilterSheetOpen(false);
-                        }}
-                        className="col-span-2"
-                        >
-                        すべてのカテゴリ
+                     <Button variant="ghost" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
+                      {showDeleted ? "一覧に戻る" : "削除済みを表示"}
                     </Button>
-                    </div>
-                </SheetContent>
-                </Sheet>
-            </div>
-        </CardContent>
-      </Card>
-      
-      {potentialDuplicates.length > 0 && (
-        <div className="space-y-4">
-            <h3 className="font-bold text-lg">重複の可能性がある取引の確認</h3>
-            {potentialDuplicates.map((p) => {
-                const tx1 = transactions.find(t => t.id === p.tx1_id);
-                const tx2 = transactions.find(t => t.id === p.tx2_id);
-                if (!tx1 || !tx2) return null;
-                return (
-                    <DuplicateReviewCard
-                        key={`${p.tx1_id}-${p.tx2_id}`}
-                        tx1={tx1}
-                        tx2={tx2}
-                        reason={p.reason}
-                        onMerge={handleMerge}
-                        onDismiss={handleDismiss}
-                    />
-                );
-            })}
-        </div>
-      )}
+                     <Button variant="outline" size="sm" onClick={handleDetectDuplicates} disabled={isDetecting || loading}>
+                        {isDetecting ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <AlertCircle className="mr-2 h-4 w-4" />}
+                        重複をチェック
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
+                        {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        {isPending ? aiMessage : "AIで分析"}
+                    </Button>
+                  </div>
+              </div>
+          </CardHeader>
+          <CardContent>
+              <Tabs value={scopeFilter} onValueChange={(v) => setScopeFilter(v as 'all' | 'shared' | 'personal')} className="mb-4">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="all">すべて</TabsTrigger>
+                  <TabsTrigger value="shared">共有</TabsTrigger>
+                  <TabsTrigger value="personal">個人</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="店名・メモ・金額で検索..." className="pl-9" />
+                  </div>
+                  <Sheet open={isFilterSheetOpen} onOpenChange={setFilterSheetOpen}>
+                  <SheetTrigger asChild>
+                      <Button variant="outline" size="icon">
+                          <Filter className="h-4 w-4" />
+                          <span className="sr-only">フィルタ</span>
+                      </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                      <SheetHeader>
+                      <SheetTitle className="font-headline">カテゴリで絞り込み</SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                      {CATEGORIES.map(c => (
+                          <Button
+                              key={c.key}
+                              variant={catFilter === c.key ? "default" : "secondary"}
+                              onClick={() => {
+                                  setCatFilter(catFilter === c.key ? null : c.key);
+                                  setFilterSheetOpen(false);
+                              }}
+                              className="justify-start gap-2"
+                          >
+                          {c.icon}
+                          {c.label}
+                          </Button>
+                      ))}
+                       <Button
+                          variant={!catFilter ? "default" : "secondary"}
+                          onClick={() => {
+                              setCatFilter(null);
+                              setFilterSheetOpen(false);
+                          }}
+                          className="col-span-2"
+                          >
+                          すべてのカテゴリ
+                      </Button>
+                      </div>
+                  </SheetContent>
+                  </Sheet>
+              </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100dvh-32rem)]">
-            <div className="divide-y">
-              {renderList()}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+        {potentialDuplicates.length > 0 && (
+          <div className="space-y-4">
+              <h3 className="font-bold text-lg">重複の可能性がある取引の確認</h3>
+              {potentialDuplicates.map((p) => {
+                  if (!transactions) return null;
+                  const tx1 = transactions.find(t => t.id === p.tx1_id);
+                  const tx2 = transactions.find(t => t.id === p.tx2_id);
+                  if (!tx1 || !tx2) return null;
+                  return (
+                      <DuplicateReviewCard
+                          key={`${p.tx1_id}-${p.tx2_id}`}
+                          tx1={tx1}
+                          tx2={tx2}
+                          reason={p.reason}
+                          onMerge={handleMerge}
+                          onDismiss={handleDismiss}
+                      />
+                  );
+              })}
+          </div>
+        )}
+
+        <Card>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[calc(100dvh-32rem)]">
+              <div className="divide-y">
+                {renderList()}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

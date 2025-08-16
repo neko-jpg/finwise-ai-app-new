@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, DocumentData, FirestoreError, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Goal } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { Goal } from '@/lib/domain';
 
 interface UseGoalsReturn {
     goals: Goal[] | null;

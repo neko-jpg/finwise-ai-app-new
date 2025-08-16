@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot, Unsubscribe, FirestoreError } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { AppUser } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { AppUser } from '@/lib/domain';
 
 interface UseUserProfileReturn {
     userProfile: AppUser | null;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, PiggyBank, Settings, Camera } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import type { Notification } from '@/domain';
+import type { Notification } from '@/lib/domain';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 

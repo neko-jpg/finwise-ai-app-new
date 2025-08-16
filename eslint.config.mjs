@@ -1,65 +1,60 @@
-// eslint.config.mjs
-import tseslint from 'typescript-eslint'
-import pluginImport from 'eslint-plugin-import'
+// eslint.config.mjs (Flat Config)
+import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
+import * as tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
+
+// 旧式の "extends" や "plugins" を Flat Config として読み込むための互換レイヤ
+const compat = new FlatCompat({
+  baseDirectory: import.meta.dirname,
+});
 
 export default [
-  { ignores: ['.next/**', 'dist/**'] },
-  ...tseslint.configs.recommended, // ← メタパッケージの推奨セット
+  // 無視ファイル（.eslintignore はもう使わない）
   {
-    files: ['**/*.{ts,tsx}'],
-    languageOptions: {
-      parser: tseslint.parser, // これでOK（parser同梱）
-    },
-    plugins: { import: pluginImport, '@typescript-eslint': tseslint.plugin },
-    settings: {
-      'import/resolver': {
-        typescript: {
-          alwaysTryTypes: true,
-          project: ['./tsconfig.json', './functions/tsconfig.json'],
-        },
-      },
-    },
-    rules: {
-      'import/no-unresolved': 'error',
-      // ここにプロジェクトの好みで追記
-      '@typescript-eslint/no-unused-vars': ['error', {
-        args: 'after-used',
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_',
-        ignoreRestSiblings: true,
-      }],
-    },
+    ignores: [
+      "node_modules",
+      ".next",
+      "dist",
+      "public/*",
+      // 型定義ファイルの警告を黙らせたい場合は次行を残す/調整
+      "src/types/*.d.ts",
+      "functions/"
+    ],
   },
-  // Cloud Functions 専用の解決設定
+
+  // JS の推奨
+  js.configs.recommended,
+
+  // TypeScript の推奨（型情報を使う版）
+  ...tseslint.configs.recommendedTypeChecked,
+
+  // Next.js 推奨（core-web-vitals 相当）を互換レイヤで読み込む
+  ...compat.extends("plugin:@next/next/core-web-vitals"),
+
+  // 追加設定ブロック（パーサやルールを統一）
   {
-    files: ['functions/**/*.ts', 'functions/**/*.tsx', 'app/functions/**/*.ts', 'app/functions/**/*.tsx'],
+    plugins: {
+      // Flat Config では plugins はオブジェクトで渡す
+      "@next/next": nextPlugin,
+      "@typescript-eslint": tseslint.plugin,
+    },
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: ['./functions/tsconfig.json'], // ← functions/ の tsconfig を明示
+        project: ["./tsconfig.json"],
         tsconfigRootDir: import.meta.dirname,
+        ecmaVersion: "latest",
+        sourceType: "module",
       },
+    },
+    rules: {
+      // ここにプロジェクト独自の上書きルールを追加（必要なら）
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-explicit-any": "off",
     },
     settings: {
-      'import/resolver': {
-        typescript: {
-          project: ['./functions/tsconfig.json'],
-        },
-        node: {
-          // functions 下の node_modules を解決
-          paths: ['functions/node_modules'],
-          extensions: ['.ts', '.js'],
-        },
-      },
+      next: { rootDir: ["./"] },
     },
   },
-  // 型宣言 (*.d.ts) は any を許容（宣言の性質上、許される）
-  {
-    files: ['**/*.d.ts'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      'no-var': 'off',
-    },
-  }
-]
+];

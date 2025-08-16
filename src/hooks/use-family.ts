@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, Unsubscribe, FirestoreError } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Family } from '@/domain';
-import { familyConverter } from '@/repo';
+import { db } from '@/lib/firebase/client';
+import type { Family } from '@/lib/domain';
+import { familyConverter } from '@/lib/repo';
 
 interface UseFamilyReturn {
     family: Family | null;

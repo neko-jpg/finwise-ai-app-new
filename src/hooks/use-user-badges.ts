@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, Unsubscribe, FirestoreError, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { UserBadge } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { UserBadge } from '@/lib/domain';
 
 interface UseUserBadgesReturn {
     userBadges: UserBadge[];

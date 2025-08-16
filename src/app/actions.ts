@@ -2,7 +2,7 @@
 
 import { receiptOcr, ReceiptOcrInput, ReceiptOcrOutput } from "@/ai/flows/receipt-ocr";
 import { detectSubscriptions } from "@/ai/flows/detect-subscriptions";
-import { getFirebaseAdminApp } from "@/lib/firebase-admin";
+import { adminDb } from '@/lib/firebase/admin';
 import { firestore } from 'firebase-admin';
 import { JsonValue, JsonObject } from "@/types/global";
 
@@ -46,8 +46,7 @@ export async function scanAndTagSubscriptions(familyId: string): Promise<ScanAnd
     }
 
     try {
-        getFirebaseAdminApp(); // Ensure admin app is initialized
-        const db = firestore();
+        const db = adminDb;
 
         // 1. Fetch recent transactions for the family
         const oneYearAgo = new Date();
@@ -116,4 +115,10 @@ export async function processReceipt(input: ReceiptOcrInput): Promise<ActionResu
     // The specific error is logged on the server.
     return { success: false, error: "レシートの解析に失敗しました。" };
   }
+}
+
+import { assistant, AssistantInput, AssistantOutput } from "@/ai/flows/assistant";
+
+export async function runAssistantAction(input: AssistantInput): Promise<AssistantOutput> {
+    return await assistant(input);
 }

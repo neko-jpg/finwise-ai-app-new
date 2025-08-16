@@ -2,13 +2,14 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { reviewFixedCosts, ReviewFixedCostsOutput } from '@/ai/flows/review-fixed-costs';
-import type { Transaction } from '@/domain';
+import type { Transaction } from '@/lib/domain';
 import { Timestamp } from 'firebase/firestore';
 
 interface ReviewsScreenProps {
     transactions: Transaction[];
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const convertTimestampsInObject = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;
     if (obj instanceof Date || obj instanceof Timestamp) return obj.toString();
@@ -22,6 +23,7 @@ const convertTimestampsInObject = (obj: any): any => {
     }
     return newObj;
 };
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function ReviewsScreen({ transactions }: ReviewsScreenProps) {
     const [_isPending, startTransition] = useTransition();

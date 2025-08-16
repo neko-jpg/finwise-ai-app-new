@@ -7,7 +7,7 @@ import { AdviceCard } from './advice-card';
 import { TasksOverview } from './tasks-overview';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
-import type { Budget, Goal, Transaction, Task, DashboardLayout } from '@/domain';
+import type { Budget, Goal, Transaction, Task, DashboardLayout } from '@/lib/domain';
 
 interface HomeDashboardProps {
   user?: User;

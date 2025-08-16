@@ -3,11 +3,11 @@
 import { z } from 'genkit';
 import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode, Transaction as PlaidTransactionResponse } from 'plaid';
 import { doc, setDoc, getDoc, writeBatch, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { createTransactionHash } from '@/lib/utils';
-import type { Transaction } from '@/domain';
+import type { Transaction } from '@/lib/domain';
 import { defineFlow } from '@/ai/compat';
-import { txConverter } from '@/repo';
+import { txConverter } from '@/lib/repo';
 
 const plaidClient = new PlaidApi(new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV || 'sandbox'],

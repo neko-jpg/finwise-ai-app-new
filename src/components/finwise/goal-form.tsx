@@ -16,9 +16,9 @@ import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Goal } from '@/domain';
+import type { Goal } from '@/lib/domain';
 import type { User } from 'firebase/auth';
 
 const FormSchema = z.object({
@@ -102,7 +102,7 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction: _on
         if (!open) {
           form.reset({
             name: '',
-            target: '' as any,
+            target: undefined,
             due: undefined,
             scope: 'shared',
           });

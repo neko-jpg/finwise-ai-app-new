@@ -7,7 +7,7 @@ const WeeklySummaryInputSchema = z.object({
   transactions: z.array(z.any()).describe("A list of transactions from the past week."),
 });
 
-const WeeklySummaryOutputSchema = z.object({
+export const WeeklySummaryOutputSchema = z.object({
     mvpCategory: z.string().describe("The 'MVP' category where the user spent the least amount of money this week. This should be a category label, e.g., '食費'."),
     highestSpendingCategory: z.string().describe("The category where the user spent the most money this week. This should be a category label, e.g., '趣味'."),
     subscriptionToWatch: z.string().nullable().describe("A recurring subscription payment that the user should be aware of from this week's transactions, or null if none stands out."),

@@ -9,37 +9,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader, Award, TrendingUp, AlertTriangle } from 'lucide-react';
-import { generateWeeklySummary } from '@/ai/flows/generate-weekly-summary';
+import { generateWeeklySummary, WeeklySummaryOutputSchema } from '@/ai/flows/generate-weekly-summary';
 import { useToast } from '@/hooks/use-toast';
 import { TaxReport } from './tax-report';
 import { ContributionTracker } from './contribution-tracker';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
-import type { Account } from '@/domain';
-import type { Transaction } from '@/domain';
 import { CATEGORIES } from '@/data/dummy-data';
+import { useAuthState } from '@/hooks/use-auth-state';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { useTransactions } from '@/hooks/use-transactions';
+import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
+import { z } from 'zod';
 
-interface ReportsScreenProps {
-  transactions: Transaction[];
-  accounts: Account[];
-}
+type WeeklySummary = z.infer<typeof WeeklySummaryOutputSchema>;
 
-export function ReportsScreen({ transactions, accounts }: ReportsScreenProps) {
+interface ReportsScreenProps {}
+
+export function ReportsScreen({}: ReportsScreenProps) {
+  const { user } = useAuthState();
+  const { userProfile } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
+  const { transactions } = useTransactions(familyId, user?.uid);
+  const { plaidAccounts: accounts } = useInvestmentPortfolio(familyId, user?.uid);
+
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),
   });
   const [isGenerating, startGeneration] = useTransition();
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<WeeklySummary | null>(null);
   const { toast } = useToast();
   const [selectedTaxYear, setSelectedTaxYear] = useState<string>(new Date().getFullYear().toString());
 
   const filteredTransactions = useMemo(() => {
-    if (!dateRange?.from) return transactions;
+    if (!dateRange?.from || !transactions) return [];
     return transactions.filter(t => {
       const txDate = new Date(t.bookedAt);
       const from = dateRange.from!;
       const to = dateRange.to || from; // If only 'from' is selected, treat it as a single day
-      // Set hours to include the whole day
       from.setHours(0, 0, 0, 0);
       to.setHours(23, 59, 59, 999);
       return txDate >= from && txDate <= to;
@@ -93,8 +100,9 @@ export function ReportsScreen({ transactions, accounts }: ReportsScreenProps) {
         try {
             const result = await generateWeeklySummary({ transactions: weeklyTx });
             setSummary(result);
-        } catch (e: any) {
-            toast({ title: "エラー", description: e.message, variant: "destructive"});
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "不明なエラーが発生しました。";
+            toast({ title: "エラー", description: message, variant: "destructive"});
         }
     });
   };
