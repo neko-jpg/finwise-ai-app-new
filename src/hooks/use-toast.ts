@@ -192,4 +192,36 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+function showErrorToast(error: any) {
+  console.error("Displaying error toast:", error);
+
+  let title = "エラーが発生しました";
+  let description = "不明なエラーです。時間をおいて再度お試しください。";
+
+  if (error instanceof Error) {
+    // Handle generic network errors
+    if (error.message.toLowerCase().includes('failed to fetch') || error.message.toLowerCase().includes('network')) {
+      title = "ネットワークエラー";
+      description = "ネットワーク接続が不安定です。接続を確認して再度お試しください。";
+    }
+    // Handle AI-related timeouts or lack of response
+    else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('no response')) {
+      title = "AIの応答エラー";
+      description = "AIからの応答がありませんでした。時間を置いて再度お試しください。";
+    }
+    // For other generic errors, use their message
+    else {
+      description = error.message;
+    }
+  } else if (typeof error === 'string') {
+    description = error;
+  }
+
+  toast({
+    variant: "destructive",
+    title: title,
+    description: description,
+  })
+}
+
+export { useToast, toast, showErrorToast }
