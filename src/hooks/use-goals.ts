@@ -30,7 +30,7 @@ export function useGoals(familyId: string | undefined): UseGoalsReturn {
         const unsubscribe: Unsubscribe = onSnapshot(q,
             (querySnapshot) => {
                 const goalsData = querySnapshot.docs.map(doc => {
-                    const data = doc.data() as DocumentData;
+                    const data = doc.data();
                     // Firestore Timestamps need to be converted to JS Dates for client-side use
                     const due = data.due?.toDate();
                     const createdAt = data.createdAt; // Keep as Timestamp for sorting

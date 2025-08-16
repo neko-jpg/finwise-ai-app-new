@@ -73,7 +73,7 @@ export function useTasks(transactions: Transaction[], budget: Budget | null): { 
       setLoading(false);
     };
 
-    generateTasks();
+    void generateTasks();
   }, [transactions, budget, user]);
 
   return { tasks, loading };

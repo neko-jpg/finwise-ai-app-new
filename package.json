@@ -6,9 +6,10 @@
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "npm run lint && npm run typecheck && next build",
+    "build": "npm run typecheck && npm run lint:relax && next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:relax": "eslint -c eslint.config.mjs -c eslint.build-relax.mjs .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

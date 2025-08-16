@@ -122,7 +122,7 @@ export function AppContainer({ children }: AppContainerProps) {
         }
     };
 
-    syncPendingTransactions();
+    void syncPendingTransactions();
   }, [isOnline, familyId, user, rules, toast, userProfile, setTransactions]);
 
   const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
@@ -246,7 +246,7 @@ export function AppContainer({ children }: AppContainerProps) {
       <GoalForm
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
-        familyId={familyId!}
+        familyId={familyId}
         user={user}
         onGoalAction={(_newGoal) => {}}
       />

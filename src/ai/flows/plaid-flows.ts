@@ -60,7 +60,7 @@ export const exchangePublicToken = defineFlow(
       createdAt: serverTimestamp(),
     });
 
-    syncInvestments({ plaidItemId: itemId, familyId });
+    void syncInvestments({ plaidItemId: itemId, familyId });
     return { success: true };
   }
 );

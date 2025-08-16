@@ -31,7 +31,7 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({ user, familyId
         }
       }
     };
-    generateToken();
+    void generateToken();
   }, [user, toast]);
 
   const { open, ready } = usePlaidLink({

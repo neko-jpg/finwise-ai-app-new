@@ -52,7 +52,7 @@ export function DividendTracker({ accounts }: DividendTrackerProps) {
             }
         };
 
-        fetchDividends();
+        void fetchDividends();
     }, [accounts, toast]);
 
     if (loading) {
