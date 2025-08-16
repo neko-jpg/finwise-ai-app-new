@@ -103,6 +103,7 @@ export interface PlaidItem {
     institutionId: string;
     institutionName: string;
     updatedAt: Timestamp;
+    transactionsCursor?: string;
 }
 
 export interface Account {

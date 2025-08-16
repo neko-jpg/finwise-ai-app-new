@@ -4,8 +4,10 @@
 import { defineFlow, run, startFlow } from '@genkit-ai/core';
 import { z } from 'zod';
 import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode } from 'plaid';
-import { doc, setDoc, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, writeBatch, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { createTransactionHash } from '@/lib/utils';
+import type { Transaction } from '@/lib/types';
 
 // Plaid client configuration
 const plaidClient = new PlaidApi(new Configuration({
@@ -60,6 +62,117 @@ export const createLinkToken = defineFlow(
       console.error("Error creating Plaid link token:", error);
       throw new Error("Failed to create Plaid link token.");
     }
+  }
+);
+
+/**
+ * Flow to sync transaction data for all Plaid Items for a given family.
+ */
+export const syncAllTransactions = defineFlow(
+    {
+        name: 'syncAllTransactions',
+        inputSchema: z.object({ familyId: z.string() }),
+        outputSchema: z.object({ success: z.boolean(), syncedItems: z.number() }),
+    },
+    async ({ familyId }) => {
+        const plaidItemsRef = collection(db, 'plaid_items');
+        const q = query(plaidItemsRef, where("familyId", "==", familyId));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            console.log(`No Plaid items found for family ${familyId}`);
+            return { success: true, syncedItems: 0 };
+        }
+
+        const syncPromises = querySnapshot.docs.map(doc =>
+            startFlow(syncTransactions, { plaidItemId: doc.id, familyId })
+        );
+
+        await Promise.all(syncPromises);
+
+        return { success: true, syncedItems: querySnapshot.size };
+    }
+);
+
+
+/**
+ * Flow to sync transaction data for a given Plaid Item.
+ */
+export const syncTransactions = defineFlow(
+  {
+    name: 'syncTransactions',
+    inputSchema: z.object({
+        plaidItemId: z.string(),
+        familyId: z.string(),
+    }),
+    outputSchema: z.object({ success: z.boolean(), added: z.number() }),
+  },
+  async ({ plaidItemId, familyId }) => {
+    const itemRef = doc(db, 'plaid_items', plaidItemId);
+    const itemDoc = await getDoc(itemRef);
+    if (!itemDoc.exists()) throw new Error(`Plaid item ${plaidItemId} not found.`);
+
+    const { accessToken, transactionsCursor: lastCursor } = itemDoc.data();
+
+    let cursor = lastCursor || null;
+    let added: any[] = [];
+    let modified: any[] = [];
+    let removed: any[] = [];
+    let hasMore = true;
+
+    while (hasMore) {
+      const request = {
+        access_token: accessToken,
+        cursor: cursor,
+      };
+      const response = await plaidClient.transactionsSync(request);
+      const data = response.data;
+
+      added = added.concat(data.added);
+      modified = modified.concat(data.modified);
+      removed = removed.concat(data.removed);
+      hasMore = data.has_more;
+      cursor = data.next_cursor;
+    }
+
+    const txCollectionRef = collection(db, `families/${familyId}/transactions`);
+    const batch = writeBatch(db);
+
+    // Process added transactions
+    for (const plaidTx of added) {
+        const hash = createTransactionHash({
+            bookedAt: new Date(plaidTx.date),
+            amount: plaidTx.amount * -1, // Plaid amounts are positive for expenses
+            merchant: plaidTx.merchant_name || plaidTx.name,
+        });
+
+        const newTx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' > = {
+            amount: plaidTx.amount * -1,
+            originalAmount: plaidTx.amount,
+            originalCurrency: plaidTx.iso_currency_code,
+            merchant: plaidTx.merchant_name || plaidTx.name,
+            bookedAt: new Date(plaidTx.date),
+            category: { major: 'other' }, // Default category
+            source: 'plaid',
+            scope: 'personal', // Default scope
+            familyId,
+            plaidTransactionId: plaidTx.transaction_id,
+            plaidAccountId: plaidTx.account_id,
+            hash,
+        };
+        const docRef = doc(txCollectionRef); // Create a new doc with a random ID
+        batch.set(docRef, { ...newTx, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    }
+
+    // TODO: Handle modified and removed transactions
+    console.log(`[${plaidItemId}] Added ${added.length} transactions.`);
+
+    // Update the cursor on the Plaid item
+    batch.update(itemRef, { transactionsCursor: cursor, updatedAt: serverTimestamp() });
+
+    await batch.commit();
+
+    return { success: true, added: added.length };
   }
 );
 
