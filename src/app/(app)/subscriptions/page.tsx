@@ -1,98 +1,112 @@
-
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Bell, ChevronRight, RefreshCw, Trash2, Loader } from "lucide-react";
+import { Bell, RefreshCw, Loader, Tags, ArrowRight } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { detectSubscriptions, DetectSubscriptionsOutput } from '@/ai/flows/detect-subscriptions';
+import { scanAndTagSubscriptions } from '@/app/actions';
 import type { Transaction } from '@/lib/types';
-import { Timestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 interface SubscriptionsScreenProps {
     transactions: Transaction[];
+    familyId: string;
 }
 
-const convertTimestampsInObject = (obj: any): any => {
-    if (!obj || typeof obj !== 'object') return obj;
-    if (obj instanceof Date || obj instanceof Timestamp) return obj.toString();
-    if (Array.isArray(obj)) return obj.map(convertTimestampsInObject);
+interface SubscriptionGroup {
+    name: string;
+    count: number;
+    totalAmount: number;
+    lastPaymentDate: Date;
+    transactionIds: string[];
+}
 
-    const newObj: { [key: string]: any } = {};
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            const value = obj[key];
-            newObj[key] = convertTimestampsInObject(value);
-        }
-    }
-    return newObj;
-};
-
-export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) {
-    const [isPending, startTransition] = useTransition();
+export function SubscriptionsScreen({ transactions, familyId }: SubscriptionsScreenProps) {
+    const [isScanning, startScanTransition] = useTransition();
     const { toast } = useToast();
-    const [subs, setSubs] = useState<DetectSubscriptionsOutput['subscriptions'] | null>(null);
-    const [dismissedSubs, setDismissedSubs] = useState<string[]>([]);
+    const router = useRouter();
 
-    const handleDismiss = (name: string) => {
-        setDismissedSubs(prev => [...prev, name]);
-        toast({
-            title: `「${name}」を非表示にしました`,
-            description: "「無視した項目を管理」から元に戻せます。",
+    const subscriptions = useMemo(() => {
+        if (!transactions) return [];
+        const taggedTransactions = transactions.filter(t => t.tags?.includes('subscription'));
+
+        const groups = taggedTransactions.reduce((acc, tx) => {
+            const merchant = tx.merchant || '不明な店舗';
+            if (!acc[merchant]) {
+                acc[merchant] = {
+                    name: merchant,
+                    count: 0,
+                    totalAmount: 0,
+                    lastPaymentDate: tx.bookedAt,
+                    transactionIds: [],
+                };
+            }
+            acc[merchant].count++;
+            acc[merchant].totalAmount += tx.amount;
+            if (tx.bookedAt > acc[merchant].lastPaymentDate) {
+                acc[merchant].lastPaymentDate = tx.bookedAt;
+            }
+            acc[merchant].transactionIds.push(tx.id);
+            return acc;
+        }, {} as Record<string, SubscriptionGroup>);
+
+        return Object.values(groups).sort((a, b) => b.lastPaymentDate.getTime() - a.lastPaymentDate.getTime());
+    }, [transactions]);
+
+    const handleScan = async () => {
+        if (!familyId) {
+            toast({
+                variant: "destructive",
+                title: "エラー",
+                description: "スキャンを開始できませんでした。ファミリーIDが見つかりません。",
+            });
+            return;
+        }
+        startScanTransition(async () => {
+            const result = await scanAndTagSubscriptions(familyId);
+            if (result.success) {
+                toast({
+                    title: "スキャン完了",
+                    description: `${result.taggedCount || 0}件の取引に「サブスクリプション」タグが付きました。`,
+                });
+                router.refresh();
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "スキャン失敗",
+                    description: result.error || "AIによる分析中にエラーが発生しました。",
+                });
+            }
         });
     };
 
-     const fetchSubscriptions = () => {
-        if (transactions.length > 0) {
-            startTransition(async () => {
-                try {
-                    const result = await detectSubscriptions({
-                        transactions: convertTimestampsInObject(transactions)
-                    });
-                    setSubs(result.subscriptions);
-                } catch (e) {
-                    console.error("Subscription detection failed", e);
-                    toast({
-                        variant: "destructive",
-                        title: "サブスクリプションの検出に失敗しました",
-                        description: "AIによる分析中にエラーが発生しました。時間をおいて再度お試しください。",
-                    });
-                }
-            });
-        }
-    };
-    
-    useEffect(() => {
-        fetchSubscriptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [transactions]);
-
     const renderContent = () => {
-        if (isPending || !subs) {
+        if (!transactions) {
             return (
                 <Card>
                     <CardHeader>
                         <CardTitle>検出されたサブスクリプション</CardTitle>
-                        <CardDescription>AIがあなたの取引履歴から定期的な支払いと判断した項目です。</CardDescription>
+                        <CardDescription>「サブスクリプション」タグが付いた取引を店舗ごとにまとめて表示しています。</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {Array.from({length: 3}).map((_, i) => (
-                           <Skeleton key={i} className="h-24 w-full" />
+                           <Skeleton key={i} className="h-20 w-full" />
                         ))}
                     </CardContent>
                 </Card>
             );
         }
         
-        if (subs.length === 0) {
+        if (subscriptions.length === 0) {
             return (
                 <Card>
                     <CardContent className="pt-6 text-center text-muted-foreground">
                         <Bell className="h-8 w-8 mx-auto mb-2" />
                         <h3 className="font-bold">サブスクリプションが見つかりません</h3>
-                        <p className="text-sm mt-1">取引データを登録すると、AIが定期的な支払いを自動で検出します。</p>
+                        <p className="text-sm mt-1">下のボタンからスキャンを実行して、取引履歴から定期的な支払いを探しましょう。</p>
                     </CardContent>
                 </Card>
             )
@@ -102,49 +116,25 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
             <Card>
                 <CardHeader>
                     <CardTitle>検出されたサブスクリプション</CardTitle>
-                    <CardDescription>AIがあなたの取引履歴から定期的な支払いと判断した項目です。</CardDescription>
+                    <CardDescription>「サブスクリプション」タグが付いた取引を店舗ごとにまとめて表示しています。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {subs.filter(s => !dismissedSubs.includes(s.name)).sort((a,b) => b.wasteScore - a.wasteScore).map((sub, i) => (
-                        <Card key={i} className={`p-4 flex flex-col md:flex-row md:items-center gap-4 ${sub.wasteScore > 0.7 ? 'border-amber-500/50 bg-amber-500/5' : ''}`}>
-                           {sub.wasteScore > 0.7 && (
-                             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 shrink-0">
-                                <AlertCircle className="h-5 w-5" />
-                                <span className="font-bold">解約候補</span>
-                            </div>
-                           )}
+                    {subscriptions.map((sub) => (
+                        <Card key={sub.name} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                             <div className="flex-grow">
-                                <p className="font-semibold">{sub.name}</p>
+                                <p className="font-semibold text-lg">{sub.name}</p>
                                 <p className="text-sm text-muted-foreground">
-                                    約 {sub.amount.toLocaleString()}円 / {sub.interval}
-                                    <span className="mx-2">|</span>
-                                    次回支払見込: {sub.nextDate}
+                                    {sub.count}件の支払い | 合計: {Math.abs(sub.totalAmount).toLocaleString()}円
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    最終支払日: {format(new Date(sub.lastPaymentDate), 'yyyy/MM/dd')}
                                 </p>
                             </div>
-                            <div className="flex-grow">
-                                <p className="font-semibold">{sub.name} <Badge variant="outline" className="ml-2">{sub.category}</Badge></p>
-                                <p className="text-sm text-muted-foreground">
-                                    約 {sub.amount.toLocaleString()}円 / {sub.interval}
-                                    <span className="mx-2">|</span>
-                                    次回支払見込: {sub.nextDate}
-                                </p>
-                                <p className="text-sm mt-2 p-2 bg-muted rounded-md">{sub.suggestion}</p>
-                            </div>
-                            <div className="flex items-center gap-2 self-end">
-                                <Button variant="ghost" size="sm" onClick={() => handleDismiss(sub.name)}>
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    無視
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="gap-1"
-                                    onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(sub.name + ' 解約方法')}`, '_blank')}
-                                >
-                                    解約する
-                                    <ChevronRight className="h-4 w-4"/>
-                                </Button>
-                            </div>
+                            <Button variant="ghost" size="sm" asChild>
+                               <a href={`/app/transactions?q=${encodeURIComponent(sub.name)}`}>
+                                    詳細を見る <ArrowRight className="h-4 w-4 ml-2" />
+                               </a>
+                            </Button>
                         </Card>
                     ))}
                 </CardContent>
@@ -155,20 +145,16 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
     return (
         <div className="space-y-6">
              <div className="text-center">
-                <h2 className="text-2xl font-bold font-headline flex items-center justify-center gap-2"><Bell />無駄サブスク検知</h2>
-                <p className="text-muted-foreground">定期的な支出をAIが自動検出し、解約候補を提案します。</p>
+                <h2 className="text-2xl font-bold font-headline flex items-center justify-center gap-2"><Tags />サブスクリプション管理</h2>
+                <p className="text-muted-foreground">取引履歴から定期的な支払いを自動で検出し、タグ付けします。</p>
             </div>
             
             {renderContent()}
 
-            <div className="flex justify-center gap-2">
-                <Button variant="outline" onClick={fetchSubscriptions} disabled={isPending}>
-                    {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    再スキャンを実行
-                </Button>
-                <Button variant="secondary">
-                     <Trash2 className="mr-2 h-4 w-4" />
-                    無視した項目を管理
+            <div className="flex justify-center gap-2 mt-6">
+                <Button onClick={handleScan} disabled={isScanning}>
+                    {isScanning ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {subscriptions.length > 0 ? '再スキャンを実行' : 'サブスクリプションをスキャン'}
                 </Button>
             </div>
         </div>
@@ -176,5 +162,7 @@ export function SubscriptionsScreen({ transactions }: SubscriptionsScreenProps) 
 }
 
 export default function SubscriptionsPage(props: any) {
+    // This page now needs familyId, which should be passed from the layout.
+    // The AppContainer will pass it down to its children.
     return <SubscriptionsScreen {...props} />;
 }

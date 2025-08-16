@@ -38,6 +38,7 @@ export interface Transaction {
   scope?: 'personal' | 'shared';
   createdBy?: string;
   taxTag?: string;
+  tags?: string[];
   plaidTransactionId?: string;
   plaidAccountId?: string;
 }
