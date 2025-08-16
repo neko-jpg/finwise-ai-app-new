@@ -12,7 +12,7 @@ import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle, FilePlus2
 import { CATEGORIES, TAX_TAGS } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
-import { useToast } from '@/hooks/use-toast';
+import { useToast, showErrorToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { DuplicateReviewCard } from './DuplicateReviewCard';
 import { format } from 'date-fns';
@@ -36,6 +36,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   const [showDeleted, setShowDeleted] = useState(false);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [aiMessage, setAiMessage] = useState('AIで分析');
   const [isDetecting, setIsDetecting] = useState(false);
   const [potentialDuplicates, setPotentialDuplicates] = useState<DetectDuplicatesOutput['potentialDuplicates']>([]);
   const { toast } = useToast();
@@ -52,6 +53,27 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         scopeMatch;
     });
   }, [transactions, catFilter, q, showDeleted, scopeFilter, user?.uid]);
+
+  const aiAnalyzeMessages = [
+    "AIが分析中...",
+    "取引データを集計しています...",
+    "支出の傾向を特定中...",
+    "インサイトを生成しています...",
+  ];
+
+  useEffect(() => {
+    if (isPending) {
+        let index = 0;
+        setAiMessage(aiAnalyzeMessages[0]);
+        const interval = setInterval(() => {
+            index = (index + 1) % aiAnalyzeMessages.length;
+            setAiMessage(aiAnalyzeMessages[index]);
+        }, 2000);
+        return () => clearInterval(interval);
+    } else {
+        setAiMessage('AIで分析');
+    }
+  }, [isPending]);
 
   const handleAnalyze = () => {
     const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString()}));
@@ -74,11 +96,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         });
       } catch (e) {
         console.error(e);
-        toast({
-          title: "エラー",
-          description: "分析に失敗しました。",
-          variant: "destructive",
-        });
+        showErrorToast(new Error("分析中にエラーが発生しました。"));
       }
     });
   };
@@ -283,7 +301,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isPending || loading}>
                       {isPending ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                      AIで分析
+                      {isPending ? aiMessage : "AIで分析"}
                   </Button>
                 </div>
             </div>
