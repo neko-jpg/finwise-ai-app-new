@@ -57,6 +57,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
     const isOnline = useOnlineStatus();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
+    const [aiMessage, setAiMessage] = useState('AIにおまかせ');
     const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
 
     const form = useForm<TransactionFormValues>({
@@ -87,6 +88,28 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
     }, [initialData, form]);
 
 
+    const aiCategorizeMessages = [
+        "AIが思考中...",
+        "あなたの支出パターンを分析中...",
+        "最適なカテゴリを推測しています...",
+        "項目をデータベースと照合中...",
+        "最終確認をしています...",
+    ];
+
+    useEffect(() => {
+        if (isAiCategorizing) {
+            let index = 0;
+            setAiMessage(aiCategorizeMessages[0]);
+            const interval = setInterval(() => {
+                index = (index + 1) % aiCategorizeMessages.length;
+                setAiMessage(aiCategorizeMessages[index]);
+            }, 1500);
+            return () => clearInterval(interval);
+        } else {
+            setAiMessage('AIにおまかせ');
+        }
+    }, [isAiCategorizing]);
+
     const handleAiCategorize = () => {
         const merchant = form.getValues('merchant');
         const amount = form.getValues('amount');
@@ -112,11 +135,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 }
             } catch (error) {
                 console.error(error);
-                toast({
-                    title: 'AIによるカテゴリ分類エラー',
-                    description: 'カテゴリの分類中にエラーが発生しました。手動で選択してください。',
-                    variant: 'destructive',
-                });
+                showErrorToast(error);
             }
         });
     };
@@ -323,7 +342,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                                         カテゴリ
                                         <Button type="button" variant="ghost" size="sm" onClick={handleAiCategorize} disabled={isAiCategorizing}>
                                             <Sparkles className="h-4 w-4 mr-2" />
-                                            {isAiCategorizing ? '分類中...' : 'AIにおまかせ'}
+                                            {aiMessage}
                                         </Button>
                                     </FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
