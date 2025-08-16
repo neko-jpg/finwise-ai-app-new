@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Bell, PiggyBank, Settings, Camera } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import type { User } from 'firebase/auth';
 import type { Notification } from '@/domain';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -15,12 +13,11 @@ const functions = getFunctions();
 const markNotificationsAsReadFn = httpsCallable(functions, 'markNotificationsAsRead');
 
 interface AppHeaderProps {
-  user: User | null;
   onOcr: () => void;
   notifications?: Notification[];
 }
 
-export function AppHeader({ user, onOcr, notifications = [] }: AppHeaderProps) {
+export function AppHeader({ onOcr, notifications = [] }: AppHeaderProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

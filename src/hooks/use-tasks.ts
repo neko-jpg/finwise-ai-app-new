@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { differenceInHours, startOfMonth, isSameMonth } from 'date-fns';
+import { differenceInHours } from 'date-fns';
 import type { Budget, Task } from '@/domain';
 import type { Transaction } from '@/domain';
 import { useAuthState } from './use-auth-state';

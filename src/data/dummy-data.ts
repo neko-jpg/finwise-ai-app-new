@@ -1,16 +1,16 @@
 import { Category, QuickActionDefinition, Goal, Transaction } from '@/domain';
 import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet, Link } from "lucide-react";
-import React from 'react';
+import { createElement } from 'react';
 import { makeTransaction, makeGoal } from '@/lib/factory';
 
 export const CATEGORIES: Category[] = [
-  { key: "food", label: "食費", icon: React.createElement(Coffee, {className: "h-4 w-4"}) },
-  { key: "daily", label: "日用品", icon: React.createElement(ShoppingBasket, {className: "h-4 w-4"}) },
-  { key: "trans", label: "交通費", icon: React.createElement(Bus, {className: "h-4 w-4"}) },
-  { key: "fun", label: "娯楽", icon: React.createElement(Gamepad2, {className: "h-4 w-4"}) },
-  { key: "util", label: "光熱費", icon: React.createElement(Zap, {className: "h-4 w-4"}) },
-  { key: "income", label: "収入", icon: React.createElement(Wallet, {className: "h-4 w-4"}) },
-  { key: "other", label: "その他", icon: React.createElement(Rocket, {className: "h-4 w-4"}) },
+  { key: "food", label: "食費", icon: createElement(Coffee, {className: "h-4 w-4"}) },
+  { key: "daily", label: "日用品", icon: createElement(ShoppingBasket, {className: "h-4 w-4"}) },
+  { key: "trans", label: "交通費", icon: createElement(Bus, {className: "h-4 w-4"}) },
+  { key: "fun", label: "娯楽", icon: createElement(Gamepad2, {className: "h-4 w-4"}) },
+  { key: "util", label: "光熱費", icon: createElement(Zap, {className: "h-4 w-4"}) },
+  { key: "income", label: "収入", icon: createElement(Wallet, {className: "h-4 w-4"}) },
+  { key: "other", label: "その他", icon: createElement(Rocket, {className: "h-4 w-4"}) },
 ];
 
 export const DEMO_TRANSACTIONS: Transaction[] = [

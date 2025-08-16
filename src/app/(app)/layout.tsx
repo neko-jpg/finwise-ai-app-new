@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppContainer } from "@/components/finwise/app-container";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function AppLayout({
   children,

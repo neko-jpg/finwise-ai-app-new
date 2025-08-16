@@ -1,10 +1,15 @@
 import * as functions from "firebase-functions";
 
-// @ts-ignore - Assuming global fetch is available in Node.js 18+ environment
+// @ts-expect-error - Assuming global fetch is available in Node.js 18+ environment
 const fetch = global.fetch;
 
 // Simple in-memory cache
-let cachedCoinList: any | null = null;
+interface Coin {
+  id: string;
+  symbol: string;
+  name: string;
+}
+let cachedCoinList: Coin[] | null = null;
 let lastFetched = 0;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -12,7 +17,7 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
  * Fetches a list of all supported cryptocurrencies from CoinGecko.
  * Uses an in-memory cache to avoid excessive API calls.
  */
-export const getCoinList = functions.https.onCall(async (data: unknown, context: functions.https.CallableContext) => {
+export const getCoinList = functions.https.onCall(async () => {
     const now = Date.now();
     if (cachedCoinList && (now - lastFetched < CACHE_DURATION)) {
         return cachedCoinList;
@@ -43,7 +48,7 @@ interface CryptoApiProxyData {
 /**
  * A generic proxy for making requests to the CoinGecko API.
  */
-export const cryptoApiProxy = functions.https.onCall(async (data: CryptoApiProxyData, context: functions.https.CallableContext) => {
+export const cryptoApiProxy = functions.https.onCall(async (data: CryptoApiProxyData) => {
     const { path, params } = data;
 
     if (!path) {

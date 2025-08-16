@@ -5,22 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { CATEGORIES, TAX_TAGS } from '@/data/dummy-data';
+import { Form } from "@/components/ui/form";
+import { CATEGORIES } from '@/data/dummy-data';
 import { useToast, showErrorToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { useOnlineStatus } from '@/hooks/use-online-status';
+import { addDoc, collection } from 'firebase/firestore';
 import type { Transaction, Rule } from '@/domain';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
@@ -51,17 +41,14 @@ interface TransactionFormProps {
     onTransactionAction: (tx: Transaction) => void;
 }
 
-const SUPPORTED_CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD'];
-
 const aiCategorizeMessages = ["AIが思考中...", "あなたの支出パターンを分析中...", "最適なカテゴリを推測しています...", "項目をデータベースと照合中...", "最終確認をしています..."];
 
 export function TransactionForm({ open, onOpenChange, familyId, user, primaryCurrency, rules, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
-    const isOnline = useOnlineStatus();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
-    const [aiMessage, setAiMessage] = useState('AIにおまかせ');
-    const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
+    const [_aiMessage, setAiMessage] = useState('AIにおまかせ');
+    const [selectedCurrency, _setSelectedCurrency] = useState(primaryCurrency);
 
     const form = useForm<TransactionFormValues>({
         resolver: zodResolver(formSchema),
@@ -88,7 +75,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
         }
     }, [isAiCategorizing]);
 
-    const handleAiCategorize = () => {
+    const _handleAiCategorize = () => {
         const merchant = form.getValues('merchant');
         const amount = form.getValues('amount');
         if (!merchant) {

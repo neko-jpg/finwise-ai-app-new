@@ -1,6 +1,5 @@
 
 'use client';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   Landmark,
@@ -20,10 +19,6 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-import analyticsJpg from '/hero/analytics.jpg';
-import budgetJpg from '/hero/budget.jpg';
-import mobileJpg from '/hero/mobile.jpg';
-
 // Logo Component
 const Logo = () => (
   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-6 text-mk-accent">
@@ -37,7 +32,6 @@ const Logo = () => (
 
 // Header Component
 const MarketingHeader = () => {
-  const router = useRouter();
   const navItems = [
     { name: 'Features', href: '#features' },
     { name: 'Demo', href: '#demo' },

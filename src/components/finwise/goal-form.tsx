@@ -40,7 +40,7 @@ interface GoalFormProps {
     onGoalAction: (goal: Goal) => void;
 }
 
-export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: GoalFormProps) {
+export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction: _onGoalAction }: GoalFormProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +48,7 @@ export function GoalForm({ open, onOpenChange, familyId, user, onGoalAction }: G
         resolver: zodResolver(FormSchema),
         defaultValues: {
             name: '',
-            target: '' as any,
+            target: undefined,
             due: undefined,
             scope: 'shared',
         },

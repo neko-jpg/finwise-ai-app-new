@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'genkit';
-import { endOfMonth, getDaysInMonth, differenceInDays } from 'date-fns';
+import { getDaysInMonth } from 'date-fns';
 import { defineFlow, definePrompt } from '@/ai/compat'; // Use the compatibility layer
 
 const PredictionInputSchema = z.object({
@@ -75,9 +75,9 @@ export const predictMonthEndBalance = defineFlow(
     try {
         // Format numbers before sending to the prompt
         const { output } = await predictionPrompt({
-            currentBalance: Math.round(currentBalance).toLocaleString(),
-            projectedSpending: Math.round(projectedTotalSpending).toLocaleString(),
-            avgDailySpending: Math.round(avgDailySpending).toLocaleString()
+            currentBalance: Math.round(currentBalance),
+            projectedSpending: Math.round(projectedTotalSpending),
+            avgDailySpending: Math.round(avgDailySpending)
         });
         return output!;
     } catch (error) {

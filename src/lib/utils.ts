@@ -1,6 +1,5 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Transaction } from '@/domain';
 import { SHA256 } from 'crypto-js';
 import { format } from 'date-fns';
 

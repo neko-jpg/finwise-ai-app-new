@@ -6,7 +6,14 @@ export function defineFlow<In, Out>(
   schemas: { input: z.ZodType<In>; output: z.ZodType<Out> },
   handler: (input: In) => Promise<Out> | Out
 ) {
-  return (ai.defineFlow as any)(name, schemas, handler);
+  return ai.defineFlow(
+    {
+      name,
+      inputSchema: schemas.input,
+      outputSchema: schemas.output,
+    },
+    handler
+  );
 }
 
 export function definePrompt<In extends z.ZodTypeAny, Out extends z.ZodTypeAny>(
@@ -17,5 +24,5 @@ export function definePrompt<In extends z.ZodTypeAny, Out extends z.ZodTypeAny>(
         prompt: string;
     }
 ) {
-    return (ai.definePrompt as any)(options);
+    return ai.definePrompt(options);
 }

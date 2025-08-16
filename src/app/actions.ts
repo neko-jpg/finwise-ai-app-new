@@ -4,6 +4,7 @@ import { receiptOcr, ReceiptOcrInput, ReceiptOcrOutput } from "@/ai/flows/receip
 import { detectSubscriptions } from "@/ai/flows/detect-subscriptions";
 import { getFirebaseAdminApp } from "@/lib/firebase-admin";
 import { firestore } from 'firebase-admin';
+import { JsonValue, JsonObject } from "@/types/global";
 
 // For processReceipt
 interface ActionResult {
@@ -20,24 +21,23 @@ interface ScanAndTagResult {
 }
 
 // Helper function to serialize data with Timestamps for AI flow
-const serializeDataForAI = (data: any): any => {
-    if (!data) return data;
+const serializeDataForAI = (data: unknown): JsonValue => {
+    if (data === null || typeof data !== 'object') {
+        return data as JsonValue;
+    }
     if (data instanceof firestore.Timestamp) {
         return data.toDate().toISOString();
     }
     if (Array.isArray(data)) {
         return data.map(serializeDataForAI);
     }
-    if (typeof data === 'object') {
-        const newObj: { [key: string]: any } = {};
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                newObj[key] = serializeDataForAI(data[key]);
-            }
+    const newObj: JsonObject = {};
+    for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            newObj[key] = serializeDataForAI((data as Record<string, unknown>)[key]);
         }
-        return newObj;
     }
-    return data;
+    return newObj;
 };
 
 export async function scanAndTagSubscriptions(familyId: string): Promise<ScanAndTagResult> {
@@ -65,6 +65,9 @@ export async function scanAndTagSubscriptions(familyId: string): Promise<ScanAnd
 
         // 2. Call the AI flow
         const serializedTransactions = serializeDataForAI(transactions);
+        if (!Array.isArray(serializedTransactions)) {
+            return { success: false, error: "Failed to serialize transactions." };
+        }
         const detectionResult = await detectSubscriptions({ transactions: serializedTransactions });
 
         if (!detectionResult.subscriptions || detectionResult.subscriptions.length === 0) {
@@ -97,7 +100,7 @@ export async function scanAndTagSubscriptions(familyId: string): Promise<ScanAnd
 
         return { success: true, taggedCount };
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("scanAndTagSubscriptions failed:", e);
         return { success: false, error: "サブスクリプションのスキャン中にエラーが発生しました。" };
     }
@@ -107,7 +110,7 @@ export async function processReceipt(input: ReceiptOcrInput): Promise<ActionResu
   try {
     const result = await receiptOcr(input);
     return { success: true, data: result };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Server action processReceipt failed:", e);
     // Return a generic error message to the client for security.
     // The specific error is logged on the server.

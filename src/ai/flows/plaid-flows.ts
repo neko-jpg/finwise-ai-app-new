@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'genkit';
-import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode } from 'plaid';
+import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode, Transaction as PlaidTransactionResponse } from 'plaid';
 import { doc, setDoc, getDoc, writeBatch, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createTransactionHash } from '@/lib/utils';
@@ -114,7 +114,7 @@ export const syncTransactions = defineFlow(
     const { accessToken, transactionsCursor: lastCursor } = itemDoc.data();
 
     let cursor = lastCursor || null;
-    let added: any[] = [];
+    let added: PlaidTransactionResponse[] = [];
     let hasMore = true;
     while (hasMore) {
       const response = await plaidClient.transactionsSync({ access_token: accessToken, cursor: cursor });
@@ -131,7 +131,7 @@ export const syncTransactions = defineFlow(
         familyId,
         amount: plaidTx.amount * -1,
         originalAmount: plaidTx.amount,
-        originalCurrency: plaidTx.iso_currency_code,
+        originalCurrency: plaidTx.iso_currency_code || 'USD',
         merchant: plaidTx.merchant_name || plaidTx.name,
         bookedAt: new Date(plaidTx.date),
         category: { major: 'other' },

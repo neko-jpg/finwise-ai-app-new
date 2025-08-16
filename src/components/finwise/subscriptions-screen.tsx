@@ -1,8 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Transaction } from '@/domain';
 import { detectSubscriptions, DetectSubscriptionsOutput } from '@/ai/flows/detect-subscriptions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Loader } from 'lucide-react';
 
@@ -11,8 +10,8 @@ interface SubscriptionsScreenProps {
   familyId?: string;
 }
 
-export function SubscriptionsScreen({ transactions, familyId }: SubscriptionsScreenProps) {
-  const [subscriptions, setSubscriptions] = useState<DetectSubscriptionsOutput['subscriptions']>([]);
+export function SubscriptionsScreen({ transactions, familyId: _familyId }: SubscriptionsScreenProps) {
+  const [_subscriptions, setSubscriptions] = useState<DetectSubscriptionsOutput['subscriptions']>([]);
   const [loading, setLoading] = useState(false);
 
   const handleDetect = async () => {

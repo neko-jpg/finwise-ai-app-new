@@ -1,4 +1,4 @@
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, getAdditionalUserInfo, UserCredential } from 'firebase/auth';
+import { getAuth, signInAnonymously, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { firebaseApp, db } from './firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { userConverter, familyConverter } from '@/repo';

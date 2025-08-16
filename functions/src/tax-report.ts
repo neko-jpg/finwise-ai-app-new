@@ -93,8 +93,9 @@ export const exportTaxReport = onRequest({ cors: true }, async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="tax-${year}.pdf"`);
     res.status(200).send(Buffer.from(bytes));
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e);
-    res.status(500).json({ error: 'PDF生成に失敗しました', detail: String(e?.message ?? e) });
+    const message = e instanceof Error ? e.message : String(e);
+    res.status(500).json({ error: 'PDF生成に失敗しました', detail: message });
   }
 });

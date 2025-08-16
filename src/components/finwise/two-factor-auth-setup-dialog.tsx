@@ -29,7 +29,6 @@ export function TwoFactorAuthSetupDialog({ open, onOpenChange }: TwoFactorAuthSe
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [secret, setSecret] = useState('');
-  const [uri, setUri] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -41,7 +40,6 @@ export function TwoFactorAuthSetupDialog({ open, onOpenChange }: TwoFactorAuthSe
           const result = await generate2faSecretFn();
           const data = result.data as { secret: string; uri: string };
           setSecret(data.secret);
-          setUri(data.uri);
         } catch (e) {
           console.error(e);
           toast({ title: "秘密鍵の生成に失敗しました", variant: "destructive" });

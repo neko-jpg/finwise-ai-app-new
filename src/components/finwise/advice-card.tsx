@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sparkles, ChevronRight, Info } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { realTimeSaver, RealTimeSaverOutput } from "@/ai/flows/real-time-saver";
 import { predictMonthEndBalance, PredictMonthEndBalanceOutput } from "@/ai/flows/predict-month-end-balance";
 import { Skeleton } from "../ui/skeleton";
 import type { Transaction, Budget } from "@/domain";
 import { Timestamp } from "firebase/firestore";
+
+import { JsonValue, JsonObject } from '@/types/global';
 
 interface AdviceCardProps {
     transactions: Transaction[];
@@ -17,16 +18,16 @@ interface AdviceCardProps {
     currentBalance: number;
 }
 
-const convertObjectForServerAction = (obj: any): any => {
-    if (!obj || typeof obj !== 'object') return obj;
+const convertObjectForServerAction = (obj: unknown): JsonValue => {
+    if (!obj || typeof obj !== 'object') return obj as JsonValue;
     if (obj instanceof Date || obj instanceof Timestamp) return obj.toString();
     if (Array.isArray(obj)) return obj.map(convertObjectForServerAction);
-    const newObj: { [key: string]: any } = {};
+    const newObj: JsonObject = {};
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            const value = obj[key];
-            if (value && typeof value.toDate === 'function') {
-                newObj[key] = value.toDate().toISOString();
+            const value = (obj as Record<string, unknown>)[key];
+            if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+                newObj[key] = (value as { toDate: () => Date }).toDate().toISOString();
             } else {
                 newObj[key] = convertObjectForServerAction(value);
             }
@@ -42,7 +43,6 @@ function isTip(advice: Advice): advice is { type: 'tip', content: RealTimeSaverO
 }
 
 export function AdviceCard({ transactions, budget, currentBalance }: AdviceCardProps) {
-  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [advice, setAdvice] = useState<Advice[]>([]);
 
@@ -52,10 +52,10 @@ export function AdviceCard({ transactions, budget, currentBalance }: AdviceCardP
         const plainTransactions = convertObjectForServerAction(transactions);
         const plainBudget = convertObjectForServerAction(budget);
         const promises: Promise<Advice | null>[] = [];
-        if (budget) {
+        if (budget && Array.isArray(plainTransactions) && typeof plainBudget === 'object') {
             promises.push(realTimeSaver({ transactions: plainTransactions, budget: plainBudget }).then((res: RealTimeSaverOutput): Advice => ({type: 'tip', content: res})).catch(() => null));
         }
-        if (currentBalance) {
+        if (currentBalance && Array.isArray(plainTransactions)) {
             promises.push(predictMonthEndBalance({ transactions: plainTransactions, currentBalance }).then((res: PredictMonthEndBalanceOutput): Advice => ({type: 'prediction', content: res.prediction})).catch(() => null));
         }
         try {

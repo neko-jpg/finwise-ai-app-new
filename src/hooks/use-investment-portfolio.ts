@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, Unsubscribe, doc, getDocs, DocumentData, FirestoreError } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Holding, Security, Account as PlaidAccount } from '@/domain';
 

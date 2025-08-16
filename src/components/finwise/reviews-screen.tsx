@@ -1,10 +1,5 @@
 'use client';
 import { useState, useEffect, useTransition } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowDown, ArrowUp, CheckCircle, Rocket, Loader } from "lucide-react";
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { reviewFixedCosts, ReviewFixedCostsOutput } from '@/ai/flows/review-fixed-costs';
 import type { Transaction } from '@/domain';
@@ -29,9 +24,9 @@ const convertTimestampsInObject = (obj: any): any => {
 };
 
 export function ReviewsScreen({ transactions }: ReviewsScreenProps) {
-    const [isPending, startTransition] = useTransition();
+    const [_isPending, startTransition] = useTransition();
     const { toast } = useToast();
-    const [review, setReview] = useState<ReviewFixedCostsOutput | null>(null);
+    const [_review, setReview] = useState<ReviewFixedCostsOutput | null>(null);
 
     useEffect(() => {
         if (transactions.length > 0) {

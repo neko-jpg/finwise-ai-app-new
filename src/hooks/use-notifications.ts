@@ -2,17 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   collection,
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
   Unsubscribe,
-  DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Notification } from '@/domain';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 interface UseNotificationsReturn {
   notifications: Notification[];
