@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import { DateRange } from "react-day-picker"
-import { startOfMonth } from 'date-fns';
+import { startOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveSankey } from '@nivo/sankey';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
+import { Loader, Award, TrendingUp, AlertTriangle } from 'lucide-react';
+import { generateWeeklySummary } from '@/ai/flows/generate-weekly-summary';
+import { useToast } from '@/hooks/use-toast';
 import { TaxReport } from './tax-report';
 import { ContributionTracker } from './contribution-tracker';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -25,6 +29,9 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
     from: startOfMonth(new Date()),
     to: new Date(),
   });
+  const [isGenerating, startGeneration] = useTransition();
+  const [summary, setSummary] = useState<any>(null);
+  const { toast } = useToast();
 
   const filteredTransactions = useMemo(() => {
     if (!dateRange?.from) return transactions;
@@ -84,9 +91,35 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
         </CardContent>
       </Card>
 
+  const handleGenerateSummary = () => {
+    const today = new Date();
+    const from = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const to = endOfWeek(today, { weekStartsOn: 1 });
+
+    const weeklyTx = transactions.filter(t => {
+        const txDate = new Date(t.bookedAt);
+        return txDate >= from && txDate <= to;
+    });
+
+    if (weeklyTx.length === 0) {
+        toast({ title: "データ不足", description: "今週の取引データがありません。", variant: "destructive"});
+        return;
+    }
+
+    startGeneration(async () => {
+        try {
+            const result = await generateWeeklySummary({ transactions: weeklyTx });
+            setSummary(result);
+        } catch (e: any) {
+            toast({ title: "エラー", description: e.message, variant: "destructive"});
+        }
+    });
+  };
+
       <Tabs defaultValue="sankey" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="sankey">月次フロー</TabsTrigger>
+          <TabsTrigger value="summary">週次サマリー</TabsTrigger>
           <TabsTrigger value="tax">税務レポート</TabsTrigger>
           <TabsTrigger value="contribution">拠出額</TabsTrigger>
         </TabsList>
@@ -103,6 +136,48 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="summary">
+            <Card className="mt-4">
+                <CardHeader>
+                    <CardTitle>AI週次サマリー</CardTitle>
+                    <CardDescription>AIが今週のあなたの支出を分析し、簡単なレポートを作成します。</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                    <Button onClick={handleGenerateSummary} disabled={isGenerating}>
+                        {isGenerating ? <Loader className="animate-spin mr-2" /> : null}
+                        今週のサマリーを生成
+                    </Button>
+
+                    {isGenerating && <p className="text-sm text-muted-foreground mt-2">AIが分析中です...</p>}
+
+                    {summary && !isGenerating && (
+                        <div className="mt-6 text-left space-y-4 animate-in fade-in-50">
+                            <p className="text-lg text-center p-4 bg-muted rounded-lg">"{summary.positiveInsight}"</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2"><Award className="h-4 w-4 text-amber-500" /> 今週のMVPカテゴリ</CardTitle>
+                                    </CardHeader>
+                                    <CardContent><p className="text-2xl font-bold">{summary.mvpCategory}</p></CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="h-4 w-4 text-red-500" /> 最大支出カテゴリ</CardTitle>
+                                    </CardHeader>
+                                    <CardContent><p className="text-2xl font-bold">{summary.highestSpendingCategory}</p></CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-orange-500" /> 要注意サブスク</CardTitle>
+                                    </CardHeader>
+                                    <CardContent><p className="text-2xl font-bold">{summary.subscriptionToWatch || 'なし'}</p></CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </TabsContent>
         <TabsContent value="tax">
            <div className="mt-4">
