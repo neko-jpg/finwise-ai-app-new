@@ -27,7 +27,7 @@ export function AppHeader({ onOcr, notifications = [] }: AppHeaderProps) {
     if (open && unreadCount > 0) {
       const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
       try {
-        markNotificationsAsReadFn({ notificationIds: unreadIds });
+        void markNotificationsAsReadFn({ notificationIds: unreadIds });
         // Note: The UI will update automatically due to the real-time listener in useNotifications.
       } catch (e) {
         console.error("Failed to mark notifications as read", e);

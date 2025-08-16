@@ -11,7 +11,7 @@ export default async function AppLayout({
   children: ReactNode;
 }) {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("__session")?.value;
+  const sessionCookie = cookieStore.get("__session")?.value ?? null;
 
   if (!sessionCookie) {
     redirect("/marketing");

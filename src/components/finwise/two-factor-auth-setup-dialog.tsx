@@ -48,7 +48,7 @@ export function TwoFactorAuthSetupDialog({ open, onOpenChange }: TwoFactorAuthSe
           setIsLoading(false);
         }
       };
-      generateSecret();
+      void generateSecret();
     }
   }, [open, onOpenChange, toast]);
 

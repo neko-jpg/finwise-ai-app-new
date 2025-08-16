@@ -47,7 +47,7 @@ export function InvestmentsScreen({}: InvestmentsScreenProps) {
         console.error("Failed to fetch crypto prices", e);
       }
     };
-    fetchPrices();
+    void fetchPrices();
   }, [cryptoHoldings]);
 
   const totalPlaidValue = plaidAccounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
@@ -108,7 +108,7 @@ export function InvestmentsScreen({}: InvestmentsScreenProps) {
           <Card><CardHeader><CardTitle>連携済み口座</CardTitle><CardDescription>Plaid経由で連携された株式や投資信託です。</CardDescription></CardHeader>
             <CardContent>
               {plaidAccounts.length > 0 ? renderPlaidAccounts() : <p className="text-muted-foreground">連携された口座はありません。</p>}
-              <div className="mt-4 border-t pt-4"><PlaidLinkButton user={user ?? undefined} familyId={familyId} /></div>
+              <div className="mt-4 border-t pt-4"><PlaidLinkButton user={user ?? null} familyId={familyId} /></div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -126,7 +126,7 @@ export function InvestmentsScreen({}: InvestmentsScreenProps) {
             </Card>
         </TabsContent>
       </Tabs>
-      <CryptoForm open={isFormOpen} onOpenChange={setIsFormOpen} user={user} familyId={familyId} />
+      <CryptoForm open={isFormOpen} onOpenChange={setIsFormOpen} user={user ?? undefined} familyId={familyId} />
     </div>
   );
 }

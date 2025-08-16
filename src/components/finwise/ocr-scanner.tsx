@@ -45,7 +45,7 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
                 }
             }
         };
-        getCameraPermission();
+        void getCameraPermission();
         
         const currentVideoRef = videoRef.current;
         return () => {

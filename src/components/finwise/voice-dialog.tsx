@@ -76,7 +76,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = event.results[0][0].transcript;
       setQuery(transcript);
-      handleSubmit(transcript);
+      void handleSubmit(transcript);
     };
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
@@ -102,7 +102,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
   
   const _handleQueryClick = (q: string) => {
     setQuery(q);
-    handleSubmit(q);
+    void handleSubmit(q);
   }
 
   // ... (rest of the component is the same)
