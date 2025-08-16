@@ -1,46 +1,45 @@
-
-'use client';
-
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { firebaseApp } from './firebase';
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signOut as firebaseSignOut, type User, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, getAdditionalUserInfo, UserCredential } from 'firebase/auth';
+import { firebaseApp, db } from './firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { userConverter, familyConverter } from '@/repo';
+import type { AppUser, Family } from '@/domain';
 
 export const auth = getAuth(firebaseApp);
 
-export function signInGuest(): Promise<any> {
-    return signInAnonymously(auth);
-}
+export const createUserProfile = async (user: User): Promise<void> => {
+  const userRef = doc(db, 'users', user.uid).withConverter(userConverter);
+  if ((await getDoc(userRef)).exists()) return;
 
-export async function signInWithGoogle(){
-    const provider = new GoogleAuthProvider();
-    try {
-        return await signInWithPopup(auth, provider);
-    } catch (e: any) {
-        if (e.code === 'auth/popup-closed-by-user') {
-            // User closed the popup, this is not a critical error.
-            // We can resolve the promise without a user object.
-            return Promise.resolve(null);
-        }
-        // Re-throw other errors to be handled by the caller.
-        throw e;
-    }
-}
+  const familyRef = doc(db, 'families', user.uid).withConverter(familyConverter);
+  const newFamily: Family = {
+    id: familyRef.id,
+    name: `${user.displayName || 'My'} Family`,
+    members: [user.uid],
+    admins: [user.uid],
+    createdAt: new Date(),
+  };
+  await setDoc(familyRef, newFamily);
 
-export async function signUpWithEmail(email: string, password: string): Promise<any> {
-    return createUserWithEmailAndPassword(auth, email, password);
-}
+  const newUser: AppUser = {
+    uid: user.uid,
+    familyId: familyRef.id,
+    email: user.email,
+    displayName: user.displayName,
+    photoURL: user.photoURL,
+    primaryCurrency: 'JPY',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    hasCompletedOnboarding: false,
+  };
+  await setDoc(userRef, newUser);
+};
 
-export async function signInWithEmail(email: string, password: string): Promise<any> {
-    return signInWithEmailAndPassword(auth, email, password);
-}
-
-export function linkToGoogle(): Promise<any> {
-    if (!auth.currentUser) {
-        return Promise.reject(new Error('No user signed in'));
-    }
-    const provider = new GoogleAuthProvider();
-    return linkWithPopup(auth.currentUser, provider);
-}
-
-export function signOut(): Promise<any> {
-    return firebaseSignOut(auth);
+export function signInGuest(): Promise<UserCredential> { return signInAnonymously(auth); }
+export function signInWithGoogle(): Promise<UserCredential> { return signInWithPopup(auth, new GoogleAuthProvider()); }
+export function signUpWithEmail(email:string, pass:string): Promise<UserCredential> { return createUserWithEmailAndPassword(auth, email, pass); }
+export function signInWithEmail(email:string, pass:string): Promise<UserCredential> { return signInWithEmailAndPassword(auth, email, pass); }
+export function signOut(): Promise<void> { return firebaseSignOut(auth); }
+export function linkToGoogle(): Promise<UserCredential> {
+    if (!auth.currentUser) throw new Error('No user');
+    return linkWithPopup(auth.currentUser, new GoogleAuthProvider());
 }

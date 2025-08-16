@@ -2,7 +2,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { Transaction } from '@/lib/types';
 
 const WeeklySummaryInputSchema = z.object({
   transactions: z.array(z.any()).describe("A list of transactions from the past week."),

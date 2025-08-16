@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { doc, DocumentData, FirestoreError, Timestamp, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, FirestoreError, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Budget } from '@/lib/types';
-import { CATEGORIES } from '@/data/dummy-data';
+import type { Budget } from '@/domain';
+import { budgetConverter } from '@/repo';
+import { CATEGORIES } from "@/data/dummy-data";
 import { format } from 'date-fns';
 
 interface UseBudgetsReturn {
@@ -21,39 +22,47 @@ const initialLimits = CATEGORIES.reduce((acc, cat) => {
     return acc;
 }, {} as {[key: string]: number});
 
-const getDefaultBudget = (id: string): Budget => ({
+const getDefaultBudget = (id: string, familyId: string, year: number, month: number, scope: 'personal' | 'shared', createdBy: string): Budget => ({
     id,
+    familyId,
+    year,
+    month,
+    scope,
+    createdBy,
     limits: initialLimits,
     used: {},
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-} as Budget);
+    createdAt: new Date(),
+    updatedAt: new Date(),
+});
 
-export function useBudget(familyId: string | undefined, date: Date): UseBudgetsReturn {
+export function useBudget(familyId: string | undefined, date: Date, userId: string | undefined): UseBudgetsReturn {
     const [personalBudget, setPersonalBudget] = useState<Budget | null>(null);
     const [sharedBudget, setSharedBudget] = useState<Budget | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
     useEffect(() => {
-        if (!familyId) {
+        if (!familyId || !userId) {
             setLoading(false);
             setPersonalBudget(null);
             setSharedBudget(null);
-            return () => {};
+            return;
         }
 
         setLoading(true);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
         const period = format(date, 'yyyy-MM');
+
         const personalPeriodId = `${period}_personal`;
         const sharedPeriodId = `${period}_shared`;
 
-        const personalDocRef = doc(db, `families/${familyId}/budgets`, personalPeriodId);
-        const sharedDocRef = doc(db, `families/${familyId}/budgets`, sharedPeriodId);
+        const personalDocRef = doc(db, `families/${familyId}/budgets`, personalPeriodId).withConverter(budgetConverter);
+        const sharedDocRef = doc(db, `families/${familyId}/budgets`, sharedPeriodId).withConverter(budgetConverter);
 
         const unsubPersonal = onSnapshot(personalDocRef,
             (docSnapshot) => {
-                setPersonalBudget(docSnapshot.exists() ? { id: docSnapshot.id, ...docSnapshot.data() } as Budget : getDefaultBudget(personalPeriodId));
+                setPersonalBudget(docSnapshot.exists() ? docSnapshot.data() : getDefaultBudget(personalPeriodId, familyId, year, month, 'personal', userId));
             },
             (err) => {
                 console.error("useBudget (personal) error:", err);
@@ -63,7 +72,7 @@ export function useBudget(familyId: string | undefined, date: Date): UseBudgetsR
 
         const unsubShared = onSnapshot(sharedDocRef,
             (docSnapshot) => {
-                setSharedBudget(docSnapshot.exists() ? { id: docSnapshot.id, ...docSnapshot.data() } as Budget : getDefaultBudget(sharedPeriodId));
+                setSharedBudget(docSnapshot.exists() ? docSnapshot.data() : getDefaultBudget(sharedPeriodId, familyId, year, month, 'shared', userId));
             },
             (err) => {
                 console.error("useBudget (shared) error:", err);
@@ -71,23 +80,14 @@ export function useBudget(familyId: string | undefined, date: Date): UseBudgetsR
             }
         );
 
-        // Combined loading state
-        const checkLoading = () => {
-            if (personalBudget !== null && sharedBudget !== null) {
-                setLoading(false);
-            }
-        };
-        // This is a simplified loading state. A more robust solution might be needed.
-        // For now, we'll just set it to false after a short delay, assuming listeners have attached.
         const timer = setTimeout(() => setLoading(false), 1500);
-
 
         return () => {
             unsubPersonal();
             unsubShared();
             clearTimeout(timer);
         };
-    }, [familyId, date]);
+    }, [familyId, date, userId]);
 
     return { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading, error };
 }

@@ -1,4 +1,4 @@
-import type { Transaction, Rule } from './types';
+import type { Transaction, Rule } from '@/domain';
 
 /**
  * Applies a set of rules to a single transaction.

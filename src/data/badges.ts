@@ -1,4 +1,4 @@
-import { Badge } from '@/lib/types';
+import { Badge } from '@/domain';
 import { Award, CalendarCheck } from 'lucide-react';
 
 export const BADGES: Record<string, Badge> = {

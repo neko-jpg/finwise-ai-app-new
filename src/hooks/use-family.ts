@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Family } from '@/lib/user';
+import type { Family } from '@/domain';
+import { familyConverter } from '@/repo';
 
 interface UseFamilyReturn {
     family: Family | null;
+    familyId: string | undefined;
     loading: boolean;
     error: FirestoreError | undefined;
 }
@@ -22,12 +24,12 @@ export function useFamily(familyId: string | undefined): UseFamilyReturn {
         }
 
         setLoading(true);
-        const familyDocRef = doc(db, 'families', familyId);
+        const familyDocRef = doc(db, 'families', familyId).withConverter(familyConverter);
 
         const unsubscribe: Unsubscribe = onSnapshot(familyDocRef,
             (doc) => {
                 if (doc.exists()) {
-                    setFamily({ id: doc.id, ...doc.data() } as Family);
+                    setFamily(doc.data());
                 } else {
                     setFamily(null);
                 }
@@ -45,5 +47,5 @@ export function useFamily(familyId: string | undefined): UseFamilyReturn {
 
     }, [familyId]);
 
-    return { family, loading, error };
+    return { family, familyId, loading, error };
 }

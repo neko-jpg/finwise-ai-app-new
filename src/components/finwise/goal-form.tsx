@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Goal } from '@/lib/types';
+import type { Goal } from '@/domain';
 import type { User } from 'firebase/auth';
 
 const FormSchema = z.object({

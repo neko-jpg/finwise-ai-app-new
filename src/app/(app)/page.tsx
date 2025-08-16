@@ -2,6 +2,7 @@
 
 import { HomeDashboard } from "@/components/finwise/home-dashboard";
 import { useAuthState } from '@/hooks/use-auth-state';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { useFamily } from '@/hooks/use-family';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useBudget } from '@/hooks/use-budget';
@@ -10,24 +11,26 @@ import { useTasks } from '@/hooks/use-tasks';
 
 export default function AppPage() {
   const { user, loading: authLoading } = useAuthState();
-  const { family, familyId, loading: familyLoading } = useFamily();
+  const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
 
   const today = new Date();
 
+  const { family, loading: familyLoading } = useFamily(familyId);
   const { transactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
-  const { personalBudget, sharedBudget, loading: budgetLoading } = useBudget(familyId, today);
+  const { personalBudget, sharedBudget, loading: budgetLoading } = useBudget(familyId, today, user?.uid);
   const { goals, loading: goalsLoading } = useGoals(familyId);
   const { tasks, loading: tasksLoading } = useTasks(transactions, sharedBudget);
 
-  const loading = authLoading || familyLoading || transactionsLoading || budgetLoading || goalsLoading || tasksLoading;
+  const loading = authLoading || profileLoading || familyLoading || transactionsLoading || budgetLoading || goalsLoading || tasksLoading;
 
   return (
     <HomeDashboard
       user={user ?? undefined}
       tasks={tasks}
       transactions={transactions}
-      budget={sharedBudget} // Or combine personal and shared? For now, just pass shared.
-      goals={goals}
+      budget={sharedBudget}
+      goals={goals ?? []}
       loading={loading}
     />
   );

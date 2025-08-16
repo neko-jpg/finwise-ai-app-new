@@ -1,184 +1,96 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Plus, ScanLine, LayoutDashboard, Save } from "lucide-react";
-import { AdviceCard } from "./advice-card";
-import { QuickActions } from "./quick-actions";
-import { TasksOverview } from "./tasks-overview";
-import type { TransactionFormValues } from "./transaction-form";
-import type { Transaction, Budget, Goal, WidgetConfig, WidgetId, DashboardLayout, Task } from "@/lib/types";
-import { format } from 'date-fns';
-import { Skeleton } from '../ui/skeleton';
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Lightbulb, PiggyBank, Target, Repeat, PlusCircle, ArrowRight } from "lucide-react";
+import { AdviceCard } from './advice-card';
+import { TasksOverview } from './tasks-overview';
+import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
+import type { Budget, Goal, Transaction, Task, DashboardLayout, WidgetConfig, WidgetId } from '@/domain';
 
 interface HomeDashboardProps {
   user?: User;
-  tasks?: Task[];
-  transactions?: Transaction[];
-  budget?: Budget | null;
-  goals?: Goal[];
+  tasks: Task[];
+  transactions: Transaction[];
+  budget: Budget | null;
+  goals: Goal[];
   loading?: boolean;
-  setTab?: (t: string) => void;
-  onOpenTransactionForm?: (initialData?: Partial<TransactionFormValues>) => void;
-  onOpenOcr?: () => void;
-  onOpenGoalForm?: () => void;
 }
 
-const StubWidget: React.FC<{title: string}> = ({ title }) => (
-    <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">
-        <h3 className="font-bold">{title}</h3>
-        <p className="text-muted-foreground text-sm">This widget is temporarily disabled.</p>
-    </div>
-);
+export function HomeDashboard({ user, tasks, transactions, budget, goals, loading }: HomeDashboardProps) {
+    const router = useRouter();
+    const [layout, setLayout] = useState<DashboardLayout | null>(null);
 
-const WidgetMap: Record<WidgetId, React.FC<any>> = {
-    todaySpend: () => <StubWidget title="Today's Spend" />,
-    monthlyBudget: () => <StubWidget title="Monthly Budget" />,
-    advice: AdviceCard,
-    quickActions: QuickActions,
-    goals: () => <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">Goals Widget</div>,
-    recentTransactions: () => <div className="border rounded-lg p-4 h-full bg-card text-card-foreground">Recent Transactions Widget</div>
-};
+    const todaySpend = useMemo(() => {
+        const today = new Date();
+        return transactions
+            .filter(t => new Date(t.bookedAt).toDateString() === today.toDateString() && t.amount < 0)
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    }, [transactions]);
 
-const sizeToClassMap: Record<WidgetConfig['size'], string> = {
-    full: 'md:col-span-6',
-    half: 'md:col-span-3',
-    third: 'md:col-span-2',
-};
+    const monthUsed = useMemo(() => {
+        return budget?.used ? Object.values(budget.used).reduce((sum, val) => sum + val, 0) : 0;
+    }, [budget]);
 
-export function HomeDashboard({ 
-    user,
-    tasks = [],
-    transactions = [], 
-    budget = null,
-    goals = [],
-    loading: propsLoading,
-    setTab = () => {}, 
-    onOpenTransactionForm = () => {}, 
-    onOpenOcr = () => {},
-    onOpenGoalForm = () => {}
-}: HomeDashboardProps) {
+    const monthLimit = useMemo(() => {
+        return budget?.limits ? Object.values(budget.limits).reduce((sum, val) => sum + val, 0) : 0;
+    }, [budget]);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [localLayout, setLocalLayout] = useState<DashboardLayout | null>({
-    widgets: [
-        { id: 'advice', size: 'full', order: 1 },
-        { id: 'todaySpend', size: 'half', order: 2 },
-        { id: 'monthlyBudget', size: 'half', order: 3 },
-        { id: 'quickActions', size: 'full', order: 4 },
-    ]
-  });
-  const layoutLoading = false;
+    const defaultLayout: DashboardLayout = {
+        id: user?.uid || 'default',
+        widgets: [
+            { id: 'advice', size: 'full', order: 1 },
+            { id: 'todaySpend', size: 'half', order: 2 },
+            { id: 'monthlyBudget', size: 'half', order: 3 },
+            { id: 'quickActions', size: 'full', order: 4 },
+        ]
+    };
 
+    const currentLayout = layout || defaultLayout;
 
-  useEffect(() => {
-  }, []);
+    const widgetComponents = {
+        advice: () => <AdviceCard transactions={transactions} budget={budget} currentBalance={0} />,
+        todaySpend: () => <TodaySpendCard todaySpend={todaySpend} setTab={() => router.push('/app/transactions')} />,
+        monthlyBudget: () => <MonthlyBudgetCard remain={monthLimit - monthUsed} usageRate={monthLimit > 0 ? (monthUsed / monthLimit) * 100 : 0} monthUsed={monthUsed} />,
+        quickActions: () => <QuickActionsCard onNavigate={(path: string) => router.push(path)} />,
+        goals: () => <GoalsCard goals={goals} />,
+        recentTransactions: () => <RecentTransactionsCard transactions={transactions} />,
+    };
 
-  const todaySpend = useMemo(() => {
-    if (!transactions) return 0;
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    return transactions
-      .filter((t: Transaction) => t.bookedAt && format(t.bookedAt, 'yyyy-MM-dd') === todayStr && t.amount < 0 && !t.deletedAt)
-      .reduce((a, b) => a + Math.abs(b.amount), 0);
-  }, [transactions]);
-
-  const {monthUsed, monthLimit, remain, usageRate} = useMemo(() => {
-    if (!budget || !budget.limits) return { monthUsed: 0, monthLimit: 0, remain: 0, usageRate: 0 };
-    const used = Object.values(budget.used || {}).reduce((a, b) => a + b, 0);
-    const limit = Object.values(budget.limits).reduce((a, b) => a + b, 0);
-    const remain = Math.max(0, limit - used);
-    const usageRate = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-    return { monthUsed: used, monthLimit: limit, remain, usageRate };
-  }, [budget]);
-  
-  const loading = propsLoading || layoutLoading;
-
-  const handleSaveLayout = () => {
-    setIsEditing(false);
-    console.log("Saving layout:", localLayout);
-  };
-  
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-  };
-
-  if (loading || !localLayout) {
-      return (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-              <div className="md:col-span-6 flex justify-end gap-2 mb-2">
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-32" />
-              </div>
-              <Skeleton className="h-48 md:col-span-6" />
-              <Skeleton className="h-24 md:col-span-3" />
-              <Skeleton className="h-24 md:col-span-3" />
-          </div>
-      )
-  }
-
-  const sortedWidgets = localLayout.widgets.sort((a, b) => a.order - b.order);
-
-  const widgetProps = {
-      todaySpend: { todaySpend, setTab },
-      monthlyBudget: { remain, usageRate, monthUsed },
-      advice: { transactions, budget },
-      quickActions: { onOpenGoalForm, setTab },
-      goals: { goals },
-      recentTransactions: { transactions },
-  };
-
-  return (
-    <div>
-        <div className="flex justify-end gap-2 mb-4">
-            {isEditing ? (
-                <>
-                    <Button onClick={handleCancelEdit} variant="ghost">キャンセル</Button>
-                    <Button onClick={handleSaveLayout}>
-                        <Save className="h-4 w-4 mr-2" />
-                        レイアウトを保存
-                    </Button>
-                </>
-            ) : (
-                <>
-                    <Button onClick={() => onOpenTransactionForm()} variant="outline">
-                        <Plus className="h-4 w-4 mr-2" />
-                        手入力
-                    </Button>
-                    <Button onClick={onOpenOcr}>
-                        <ScanLine className="h-4 w-4 mr-2" />
-                        レシート読取
-                    </Button>
-                    <Button onClick={() => setIsEditing(true)} variant="outline" disabled>
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        編集
-                    </Button>
-                </>
-            )}
-        </div>
-
-        <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">タスク</h2>
+    return (
+        <div className="p-4 md:p-6 space-y-6">
             <TasksOverview tasks={tasks} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {currentLayout.widgets
+                    .sort((a, b) => a.order - b.order)
+                    .map(widget => {
+                        const Widget = widgetComponents[widget.id];
+                        const colSpan = widget.size === 'full' ? 'md:col-span-3' : 'md:col-span-1';
+                        return (
+                            <div key={widget.id} className={colSpan}>
+                                <Widget />
+                            </div>
+                        );
+                })}
+            </div>
         </div>
+    );
+}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
-            {sortedWidgets.map((widget) => {
-                const WidgetComponent = WidgetMap[widget.id];
-                if (!WidgetComponent) return null;
-
-                const componentProps = widgetProps[widget.id] as any;
-                const className = sizeToClassMap[widget.size] || 'md:col-span-6';
-
-                const widgetContent = <WidgetComponent {...componentProps} />;
-
-                return (
-                    <div key={widget.id} className={className}>
-                        {widgetContent}
-                    </div>
-                )
-            })}
-        </div>
-    </div>
-  );
+function TodaySpendCard({ todaySpend, setTab }: { todaySpend: number, setTab: (t:string) => void }) {
+    return <Card><CardHeader><CardTitle>今日の支出</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">¥{todaySpend.toLocaleString()}</p></CardContent></Card>
+}
+function MonthlyBudgetCard({ remain, usageRate, monthUsed }: { remain: number, usageRate: number, monthUsed: number }) {
+    return <Card><CardHeader><CardTitle>今月の残り予算</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">¥{remain.toLocaleString()}</p></CardContent></Card>
+}
+function QuickActionsCard({ onNavigate }: { onNavigate: (path: string) => void }) {
+    return <Card><CardHeader><CardTitle>クイックアクション</CardTitle></CardHeader><CardContent><Button onClick={() => onNavigate('/app/transactions')}>取引を見る</Button></CardContent></Card>
+}
+function GoalsCard({ goals }: { goals: Goal[] }) {
+    return <Card><CardHeader><CardTitle>目標</CardTitle></CardHeader><CardContent><p>{goals.length}個の目標</p></CardContent></Card>
+}
+function RecentTransactionsCard({ transactions }: { transactions: Transaction[] }) {
+    return <Card><CardHeader><CardTitle>最近の取引</CardTitle></CardHeader><CardContent><p>{transactions.length}件の取引</p></CardContent></Card>
 }

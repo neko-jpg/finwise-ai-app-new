@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
-import { collection, query, where, orderBy, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Transaction } from '@/lib/types';
+import type { Transaction } from '@/domain';
+import { txConverter } from '@/repo';
 
 interface UseTransactionsReturn {
     transactions: Transaction[];
@@ -10,7 +11,6 @@ interface UseTransactionsReturn {
     error: FirestoreError | undefined;
 }
 
-// Hookの引数にuserIdを追加します。呼び出し元でuser.uidを渡す必要があります。
 export function useTransactions(familyId: string | undefined, userId: string | undefined): UseTransactionsReturn {
     const [sharedTransactions, setSharedTransactions] = useState<Transaction[]>([]);
     const [personalTransactions, setPersonalTransactions] = useState<Transaction[]>([]);
@@ -18,18 +18,15 @@ export function useTransactions(familyId: string | undefined, userId: string | u
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<FirestoreError | undefined>(undefined);
 
-    // 共有トランザクションと個人トランザクションをマージしてソートします
+    // Merge shared and personal transactions and sort them
     useEffect(() => {
         const allTransactions = [...sharedTransactions, ...personalTransactions];
-        // Mapを使ってIDの重複を排除します
         const uniqueTransactions = Array.from(new Map(allTransactions.map(t => [t.id, t])).values());
-        // 日付で降順にソートします
         uniqueTransactions.sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime());
         setTransactions(uniqueTransactions);
     }, [sharedTransactions, personalTransactions]);
 
     useEffect(() => {
-        // familyIdまたはuserIdがない場合は何もしません
         if (!familyId || !userId) {
             setLoading(false);
             setSharedTransactions([]);
@@ -38,27 +35,15 @@ export function useTransactions(familyId: string | undefined, userId: string | u
         }
 
         setLoading(true);
-        const transactionsCollectionRef = collection(db, `families/${familyId}/transactions`);
+        const transactionsCollectionRef = collection(db, `families/${familyId}/transactions`).withConverter(txConverter);
 
-        // --- クエリ1: 共有トランザクションを取得 ---
-        // 'scope'が'shared'のものを取得します
+        // --- Query 1: Get shared transactions ---
         const sharedQuery = query(transactionsCollectionRef, where('scope', '==', 'shared'));
         const unsubscribeShared = onSnapshot(sharedQuery,
             (querySnapshot) => {
-                const fetched = querySnapshot.docs.map(doc => {
-                    const data = doc.data() as DocumentData;
-                    return {
-                        id: doc.id,
-                        ...data,
-                        bookedAt: data.bookedAt?.toDate(),
-                        createdAt: data.createdAt,
-                        updatedAt: data.updatedAt,
-                        deletedAt: data.deletedAt?.toDate(),
-                        clientUpdatedAt: data.clientUpdatedAt?.toDate(),
-                    } as Transaction;
-                });
+                const fetched = querySnapshot.docs.map(doc => doc.data());
                 setSharedTransactions(fetched);
-                setLoading(false); // どちらかのクエリが終われば一旦ローディングを解除
+                setLoading(false);
             },
             (err) => {
                 console.error("useTransactions (shared) error:", err);
@@ -67,25 +52,13 @@ export function useTransactions(familyId: string | undefined, userId: string | u
             }
         );
 
-        // --- クエリ2: 個人のトランザクションを取得 ---
-        // 'createdBy'が自分のIDで、'scope'が'personal'のものを取得します
+        // --- Query 2: Get personal transactions ---
         const personalQuery = query(transactionsCollectionRef, where('createdBy', '==', userId), where('scope', '==', 'personal'));
         const unsubscribePersonal = onSnapshot(personalQuery,
             (querySnapshot) => {
-                const fetched = querySnapshot.docs.map(doc => {
-                    const data = doc.data() as DocumentData;
-                    return {
-                        id: doc.id,
-                        ...data,
-                        bookedAt: data.bookedAt?.toDate(),
-                        createdAt: data.createdAt,
-                        updatedAt: data.updatedAt,
-                        deletedAt: data.deletedAt?.toDate(),
-                        clientUpdatedAt: data.clientUpdatedAt?.toDate(),
-                    } as Transaction;
-                });
+                const fetched = querySnapshot.docs.map(doc => doc.data());
                 setPersonalTransactions(fetched);
-                setLoading(false); // どちらかのクエリが終われば一旦ローディングを解除
+                setLoading(false);
             },
             (err) => {
                 console.error("useTransactions (personal) error:", err);
@@ -94,8 +67,6 @@ export function useTransactions(familyId: string | undefined, userId: string | u
             }
         );
 
-
-        // コンポーネントがアンマウントされた時に購読を解除します
         return () => {
             unsubscribeShared();
             unsubscribePersonal();
