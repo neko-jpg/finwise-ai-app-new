@@ -57,6 +57,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
       displayName: user.displayName,
       primaryCurrency: 'JPY', // Default to JPY
       createdAt: serverTimestamp(),
+      hasCompletedOnboarding: false, // Initialize onboarding flag
     };
     await setDoc(userRef, newUser);
 

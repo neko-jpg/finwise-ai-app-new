@@ -6,8 +6,9 @@ import { OfflineBanner } from './offline-banner';
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useToast, showErrorToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { applyRulesToTransaction } from "@/lib/rule-engine";
+import { InteractiveTutorial } from "./InteractiveTutorial";
 import { createTransactionHash } from "@/lib/utils";
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
@@ -45,6 +46,7 @@ export function AppContainer({ children }: AppContainerProps) {
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
   const isOnline = useOnlineStatus();
   const { toast } = useToast();
+  const [onboardingComplete, setOnboardingComplete] = useState(true); // Default to true to avoid flash
 
   useEffect(() => {
     const syncPendingTransactions = async () => {
@@ -128,10 +130,28 @@ export function AppContainer({ children }: AppContainerProps) {
   const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
 
   useEffect(() => {
+    if (userProfile) {
+      setOnboardingComplete(userProfile.hasCompletedOnboarding ?? false);
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
     if (!authLoading && !user) {
       router.push('/entry');
     }
   }, [user, authLoading, router]);
+
+  const handleCompleteOnboarding = async () => {
+    if (!user) return;
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { hasCompletedOnboarding: true });
+      setOnboardingComplete(true);
+    } catch (e) {
+      console.error("Failed to update onboarding status:", e);
+      showErrorToast(new Error("チュートリアル状態の更新に失敗しました。"));
+    }
+  };
 
   const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
     setTransactionInitialData(initialData);
@@ -243,6 +263,12 @@ export function AppContainer({ children }: AppContainerProps) {
           // setGoals(prev => [...(prev || []), newGoal]);
         }}
       />
+      {!onboardingComplete && (
+        <InteractiveTutorial
+          onStartOcr={() => setOcrOpen(true)}
+          onComplete={handleCompleteOnboarding}
+        />
+      )}
     </div>
   );
 }

@@ -84,6 +84,7 @@ export interface UserProfile {
     primaryCurrency: string;
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    hasCompletedOnboarding?: boolean;
 }
 
 export interface Family {
