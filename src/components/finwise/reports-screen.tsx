@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResponsiveSankey } from '@nivo/sankey';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader, Award, TrendingUp, AlertTriangle } from 'lucide-react';
 import { generateWeeklySummary } from '@/ai/flows/generate-weekly-summary';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,7 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
   const [isGenerating, startGeneration] = useTransition();
   const [summary, setSummary] = useState<any>(null);
   const { toast } = useToast();
+  const [selectedTaxYear, setSelectedTaxYear] = useState<string>(new Date().getFullYear().toString());
 
   const filteredTransactions = useMemo(() => {
     if (!dateRange?.from) return transactions;
@@ -180,9 +182,45 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
             </Card>
         </TabsContent>
         <TabsContent value="tax">
-           <div className="mt-4">
-            <TaxReport transactions={filteredTransactions} />
-           </div>
+            <Card className="mt-4">
+                <CardHeader>
+                    <CardTitle>確定申告用レポート</CardTitle>
+                    <CardDescription>対象年を選択して、医療費控除などの対象となる取引をまとめたPDFをエクスポートします。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        <Select value={selectedTaxYear} onValueChange={setSelectedTaxYear}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="対象年を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {/* Generate last 5 years */}
+                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                    <SelectItem key={year} value={year.toString()}>{year}年</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button onClick={() => {
+                            const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+                            if (!projectId) {
+                                toast({ title: "エラー", description: "プロジェクトIDが設定されていません。", variant: "destructive"});
+                                return;
+                            }
+                            // Assuming us-central1, which is common for Firebase Functions
+                            const url = `https://us-central1-${projectId}.cloudfunctions.net/exportTaxReport?year=${selectedTaxYear}`;
+                            window.open(url, '_blank');
+                        }}>
+                            PDFをエクスポート
+                        </Button>
+                    </div>
+                    <div className="mt-6">
+                        <h4 className="font-medium mb-2">レポートプレビュー</h4>
+                        <div className="p-4 border rounded-lg bg-muted min-h-[200px]">
+                             <TaxReport transactions={filteredTransactions.filter(t => new Date(t.bookedAt).getFullYear().toString() === selectedTaxYear)} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
         <TabsContent value="contribution">
            <div className="mt-4">

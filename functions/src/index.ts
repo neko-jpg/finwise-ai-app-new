@@ -107,3 +107,4 @@ export * from "./crypto";
 export * from "./stocks";
 export * from "./notifications";
 export * from "./security";
+export * from "./tax-report";
