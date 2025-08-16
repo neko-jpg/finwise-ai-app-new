@@ -195,3 +195,19 @@ export interface DashboardLayout {
     id: string; // Should be user's UID
     widgets: WidgetConfig[];
 }
+
+export type BadgeId = 'one_month_user' | 'first_budget_met';
+
+export interface Badge {
+    id: BadgeId;
+    name: string;
+    description: string;
+    icon: LucideIcon;
+}
+
+export interface UserBadge {
+    id: string; // Document ID
+    userId: string;
+    badgeId: BadgeId;
+    createdAt: Timestamp;
+}

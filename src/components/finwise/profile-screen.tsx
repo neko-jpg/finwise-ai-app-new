@@ -7,6 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { ChevronRight, LogIn, LogOut, Upload, Loader, Users, ShieldCheck } from "lucide-react";
 import type { User } from 'firebase/auth';
 import Link from 'next/link';
+import { useUserBadges } from '@/hooks/use-user-badges';
+import { BADGES } from '@/data/badges';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TwoFactorAuthSetupDialog } from './two-factor-auth-setup-dialog';
 import { useToast } from "@/hooks/use-toast";
 import { signOut, linkToGoogle } from "@/lib/auth";
@@ -28,6 +31,7 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
   const [isImporting, setIsImporting] = useState(false);
   const [is2faDialogOpen, setIs2faDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userBadges, loading: badgesLoading } = useUserBadges(user?.uid);
   
   if (!user) {
       return null;
@@ -147,6 +151,49 @@ export function ProfileScreen({ user, offline, setOffline = () => {} }: ProfileS
                   <LogOut className="mr-2 h-4 w-4" />
                   ログアウト
                 </Button>
+            )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>実績バッジ</CardTitle>
+          <CardDescription>
+            特定の条件を達成して、新しいバッジを集めましょう！
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {badgesLoading ? (
+                <div className="flex gap-4"><Loader className="animate-spin" /> <p>バッジを読み込み中...</p></div>
+            ) : userBadges.length === 0 ? (
+                <p className="text-muted-foreground">まだ獲得したバッジはありません。</p>
+            ) : (
+                <TooltipProvider>
+                    <div className="flex flex-wrap gap-4">
+                        {userBadges.map(userBadge => {
+                            const badgeInfo = BADGES[userBadge.badgeId];
+                            if (!badgeInfo) return null;
+                            const Icon = badgeInfo.icon;
+                            return (
+                                <Tooltip key={userBadge.id}>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex flex-col items-center gap-2 p-3 border rounded-lg w-24 h-24 justify-center bg-secondary/50">
+                                            <Icon className="h-8 w-8 text-amber-500" />
+                                            <span className="text-xs text-center font-medium truncate w-full">{badgeInfo.name}</span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="font-bold">{badgeInfo.name}</p>
+                                        <p>{badgeInfo.description}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            獲得日: {format(userBadge.createdAt.toDate(), 'yyyy/MM/dd')}
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )
+                        })}
+                    </div>
+                </TooltipProvider>
             )}
         </CardContent>
       </Card>
