@@ -8,10 +8,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle, FilePlus2 } from "lucide-react";
+import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle, FilePlus2, RefreshCw } from "lucide-react";
 import { CATEGORIES, TAX_TAGS } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
+import { syncAllTransactions } from '@/ai/flows/plaid-flows';
 import { useToast, showErrorToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
 import { DuplicateReviewCard } from './DuplicateReviewCard';
@@ -26,10 +27,11 @@ interface TransactionsScreenProps {
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   user?: User;
+  familyId?: string;
   onOpenTransactionForm?: () => void;
 }
 
-export function TransactionsScreen({ loading, transactions = [], setTransactions, user, onOpenTransactionForm = () => {} }: TransactionsScreenProps) {
+export function TransactionsScreen({ loading, transactions = [], setTransactions, user, familyId, onOpenTransactionForm = () => {} }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
   const [scopeFilter, setScopeFilter] = useState<'all' | 'shared' | 'personal'>('all');
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -38,6 +40,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   const [isPending, startTransition] = useTransition();
   const [aiMessage, setAiMessage] = useState('AIで分析');
   const [isDetecting, setIsDetecting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [potentialDuplicates, setPotentialDuplicates] = useState<DetectDuplicatesOutput['potentialDuplicates']>([]);
   const { toast } = useToast();
 
@@ -74,6 +77,26 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
         setAiMessage('AIで分析');
     }
   }, [isPending]);
+
+  const handleSyncTransactions = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    toast({ title: "取引の同期を開始します...", description: "連携済み口座から最新の取引を取得します。" });
+    try {
+        if (!familyId) {
+            showErrorToast(new Error("Family IDが見つかりません。"));
+            return;
+        }
+
+        const result = await syncAllTransactions({ familyId });
+        toast({ title: "同期が完了しました", description: `${result.syncedItems}件の口座を同期しました。` });
+    } catch (e: any) {
+        showErrorToast(new Error("取引の同期に失敗しました。"));
+        console.error(e);
+    } finally {
+        setIsSyncing(false);
+    }
+  };
 
   const handleAnalyze = () => {
     const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString()}));
@@ -292,6 +315,10 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
             <div className="flex justify-between items-center">
                 <CardTitle className="font-headline text-xl">取引明細</CardTitle>
                 <div className="flex items-center gap-2">
+                   <Button variant="secondary" size="sm" onClick={handleSyncTransactions} disabled={isSyncing || loading}>
+                      {isSyncing ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                      同期
+                  </Button>
                    <Button variant="ghost" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
                     {showDeleted ? "一覧に戻る" : "削除済みを表示"}
                   </Button>
