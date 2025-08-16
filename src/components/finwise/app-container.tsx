@@ -129,6 +129,11 @@ export function AppContainer({ children }: AppContainerProps) {
 
   const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
 
+  const currentBalance = useMemo(() => {
+    // This is a simplified calculation. A real app would also include manual accounts, crypto, etc.
+    return plaidAccounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
+  }, [plaidAccounts]);
+
   useEffect(() => {
     if (userProfile) {
       setOnboardingComplete(userProfile.hasCompletedOnboarding ?? false);
@@ -207,6 +212,7 @@ export function AppContainer({ children }: AppContainerProps) {
                   goals,
                   rules,
                   accounts: plaidAccounts,
+                  currentBalance,
                   personalBudget,
                   sharedBudget,
                   setPersonalBudget,
