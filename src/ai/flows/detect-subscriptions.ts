@@ -25,6 +25,7 @@ const SubscriptionSchema = z.object({
   wasteScore: z.number().min(0).max(1).describe('A score from 0 to 1 indicating how likely this subscription is to be wasteful, based on usage patterns or redundancy. 1.0 means very likely wasteful.'),
   nextDate: z.string().describe('The estimated next payment date in YYYY-MM-DD format.'),
   suggestion: z.string().describe('A concrete, actionable suggestion for the user if there is potential for optimization. E.g., "Consider switching to an annual plan to save money." or "You have multiple video streaming services." If no specific suggestion, provide a general summary.'),
+  transactionIds: z.array(z.string()).describe('An array of transaction IDs that belong to this subscription.'),
 });
 
 const DetectSubscriptionsOutputSchema = z.object({
@@ -59,6 +60,7 @@ prompt: `あなたは賢い家計簿アシスタントです。以下の取引�
   - 同じカテゴリに複数のサブスクがある場合は、統合を提案します。（例：「動画配信サービスに複数登録しています。一つに絞ると節約できます。」）
   - 特に提案がない場合は、そのサービスに関する一般的な情報を提供します。（例：「定額で映画やドラマが見放題のサービスです。」）
   - 提案は、ユーザーが次に行うべきアクションが分かるように、具体的で短い一文にしてください。
+- **重要**: 特定した各サブスクリプションについて、その判断の根拠となった取引の`id`をすべて`transactionIds`という配列に含めてください。
 
 結果を構造化されたJSONオブジェクトとして日本語で返してください。`,
 });
