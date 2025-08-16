@@ -3,6 +3,12 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
+import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useToast, showErrorToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { applyRulesToTransaction } from "@/lib/rule-engine";
+import { createTransactionHash } from "@/lib/utils";
 import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
@@ -37,20 +43,76 @@ export function AppContainer({ children }: AppContainerProps) {
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
-  const [isOffline, setIsOffline] = useState(typeof window !== 'undefined' ? !window.navigator.onLine : false);
+  const isOnline = useOnlineStatus();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const syncPendingTransactions = async () => {
+        if (!isOnline) return;
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+        const pendingTxs = JSON.parse(localStorage.getItem('pending_transactions') || '[]');
+        if (pendingTxs.length === 0) return;
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+        toast({
+            title: 'オンラインに復帰しました',
+            description: `予約された${pendingTxs.length}件の取引を同期中です...`,
+        });
+
+        let successCount = 0;
+        const failedTxs = [];
+
+        for (const tx of pendingTxs) {
+            try {
+                // Recreate the data structure for Firestore
+                const newTxData: Omit<Transaction, 'id' | 'hash' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' | 'deletedAt'> = {
+                    amount: tx.amount,
+                    originalAmount: tx.amount, // Assuming offline txns are in primary currency for simplicity
+                    originalCurrency: userProfile?.primaryCurrency || 'JPY',
+                    merchant: tx.merchant,
+                    bookedAt: new Date(tx.bookedAt),
+                    category: { major: tx.categoryMajor },
+                    source: 'manual-offline',
+                    scope: tx.scope,
+                    taxTag: tx.taxTag || '',
+                    familyId: tx.familyId,
+                    createdBy: tx.userId,
+                };
+
+                const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
+                const hash = createTransactionHash(ruledTxData);
+
+                const docData = {
+                    ...ruledTxData,
+                    bookedAt: Timestamp.fromDate(ruledTxData.bookedAt),
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    clientUpdatedAt: new Date(tx.clientTimestamp),
+                    deletedAt: null,
+                    hash,
+                };
+
+                await addDoc(collection(db, `families/${tx.familyId}/transactions`), docData);
+                successCount++;
+            } catch (error) {
+                console.error("Failed to sync pending transaction:", error);
+                failedTxs.push(tx);
+            }
+        }
+
+        if (failedTxs.length > 0) {
+            localStorage.setItem('pending_transactions', JSON.stringify(failedTxs));
+            showErrorToast(new Error(`${failedTxs.length}件の取引の同期に失敗しました。後ほど再試行されます。`));
+        } else {
+            localStorage.removeItem('pending_transactions');
+            toast({
+                title: '同期が完了しました',
+                description: `${successCount}件の取引を保存しました。`,
+            });
+        }
     };
-  }, []);
+
+    syncPendingTransactions();
+  }, [isOnline, familyId, user, rules, setTransactions, toast, userProfile]);
 
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;
@@ -114,7 +176,7 @@ export function AppContainer({ children }: AppContainerProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader user={user} onOcr={() => setOcrOpen(true)} notifications={notifications} />
-      {isOffline && <OfflineBanner />}
+      {!isOnline && <OfflineBanner />}
       <main className="flex-1 pb-24 pt-16">
         {React.Children.map(children, child =>
             React.isValidElement(child)
