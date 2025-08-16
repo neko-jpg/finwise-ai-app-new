@@ -1,18 +1,17 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Loader, Sparkles, NotebookPen, BotMessageSquare } from 'lucide-react';
+import { NotebookPen, BotMessageSquare } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Budget } from '@/domain';
-import type { Transaction } from '@/domain';
+import type { Budget, Transaction } from '@/domain';
 import { CATEGORIES } from "@/data/dummy-data";
 import { proactiveBudgetSuggestion } from '@/ai/flows/proactive-budget-suggestion';
 
@@ -24,7 +23,6 @@ interface BudgetScreenProps {
   setPersonalBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   setSharedBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   loading?: boolean;
-  onOpenBudgetPlanner?: () => void;
 }
 
 export function BudgetScreen({
@@ -35,11 +33,9 @@ export function BudgetScreen({
   setPersonalBudget,
   setSharedBudget,
   loading,
-  onOpenBudgetPlanner = () => {},
 }: BudgetScreenProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
-  const [isSaving, setIsSaving] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
 
   const activeBudget = activeTab === 'personal' ? personalBudget : sharedBudget;
@@ -70,7 +66,6 @@ export function BudgetScreen({
     // Optimistic update
     setActiveBudget(prev => (prev ? { ...prev, limits: newLimits } : null));
 
-    setIsSaving(true);
     try {
       const docRef = doc(db, `families/${familyId}/budgets`, activeBudget.id);
       await setDoc(docRef, { limits: newLimits, updatedAt: serverTimestamp() }, { merge: true });
@@ -79,8 +74,6 @@ export function BudgetScreen({
       console.error(e);
       toast({ title: "予算の更新に失敗しました", variant: "destructive" });
       // TODO: Revert optimistic update on failure
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -149,7 +142,11 @@ export function BudgetScreen({
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => {
+          if (v === 'personal' || v === 'shared') {
+            setActiveTab(v);
+          }
+        }} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="personal">個人</TabsTrigger>
           <TabsTrigger value="shared">共有</TabsTrigger>

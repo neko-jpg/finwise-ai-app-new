@@ -44,12 +44,12 @@ interface SpeechRecognition extends EventTarget {
   stop(): void;
 }
 
-declare var SpeechRecognition: {
+declare const SpeechRecognition: {
   prototype: SpeechRecognition;
   new(): SpeechRecognition;
 };
 
-declare var webkitSpeechRecognition: {
+declare let webkitSpeechRecognition: {
   prototype: SpeechRecognition;
   new(): SpeechRecognition;
 };

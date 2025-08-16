@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { collection, query, where, onSnapshot, Unsubscribe, DocumentData, FirestoreError } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, query, where, onSnapshot, FirestoreError } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Transaction } from '@/domain';
 import { txConverter } from '@/repo';

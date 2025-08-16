@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Lightbulb, PiggyBank, Target, Repeat, PlusCircle, ArrowRight } from "lucide-react";
 import { AdviceCard } from './advice-card';
 import { TasksOverview } from './tasks-overview';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
-import type { Budget, Goal, Transaction, Task, DashboardLayout, WidgetConfig, WidgetId } from '@/domain';
+import type { Budget, Goal, Transaction, Task, DashboardLayout } from '@/domain';
 
 interface HomeDashboardProps {
   user?: User;
@@ -16,12 +15,11 @@ interface HomeDashboardProps {
   transactions: Transaction[];
   budget: Budget | null;
   goals: Goal[];
-  loading?: boolean;
 }
 
-export function HomeDashboard({ user, tasks, transactions, budget, goals, loading }: HomeDashboardProps) {
+export function HomeDashboard({ user, tasks, transactions, budget, goals }: HomeDashboardProps) {
     const router = useRouter();
-    const [layout, setLayout] = useState<DashboardLayout | null>(null);
+    const [layout] = useState<DashboardLayout | null>(null);
 
     const todaySpend = useMemo(() => {
         const today = new Date();
@@ -52,8 +50,8 @@ export function HomeDashboard({ user, tasks, transactions, budget, goals, loadin
 
     const widgetComponents = {
         advice: () => <AdviceCard transactions={transactions} budget={budget} currentBalance={0} />,
-        todaySpend: () => <TodaySpendCard todaySpend={todaySpend} setTab={() => router.push('/app/transactions')} />,
-        monthlyBudget: () => <MonthlyBudgetCard remain={monthLimit - monthUsed} usageRate={monthLimit > 0 ? (monthUsed / monthLimit) * 100 : 0} monthUsed={monthUsed} />,
+        todaySpend: () => <TodaySpendCard todaySpend={todaySpend} />,
+        monthlyBudget: () => <MonthlyBudgetCard remain={monthLimit - monthUsed} />,
         quickActions: () => <QuickActionsCard onNavigate={(path: string) => router.push(path)} />,
         goals: () => <GoalsCard goals={goals} />,
         recentTransactions: () => <RecentTransactionsCard transactions={transactions} />,
@@ -79,10 +77,10 @@ export function HomeDashboard({ user, tasks, transactions, budget, goals, loadin
     );
 }
 
-function TodaySpendCard({ todaySpend, setTab }: { todaySpend: number, setTab: (t:string) => void }) {
+function TodaySpendCard({ todaySpend }: { todaySpend: number }) {
     return <Card><CardHeader><CardTitle>今日の支出</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">¥{todaySpend.toLocaleString()}</p></CardContent></Card>
 }
-function MonthlyBudgetCard({ remain, usageRate, monthUsed }: { remain: number, usageRate: number, monthUsed: number }) {
+function MonthlyBudgetCard({ remain }: { remain: number }) {
     return <Card><CardHeader><CardTitle>今月の残り予算</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">¥{remain.toLocaleString()}</p></CardContent></Card>
 }
 function QuickActionsCard({ onNavigate }: { onNavigate: (path: string) => void }) {

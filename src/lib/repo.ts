@@ -1,5 +1,4 @@
 import { Timestamp, FirestoreDataConverter, DocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
-import { z } from 'zod';
 import {
     TransactionSchema, type Transaction,
     FamilySchema, type Family,
@@ -33,7 +32,7 @@ const txToDoc = (tx: Partial<Transaction>): Record<string, any> => {
 
 export const txConverter: FirestoreDataConverter<Transaction> = {
   toFirestore: (tx: Transaction) => txToDoc(tx),
-  fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions) => txFromDoc(snapshot)
+  fromFirestore: (snapshot: DocumentSnapshot, _options: SnapshotOptions) => txFromDoc(snapshot)
 };
 
 
@@ -57,7 +56,7 @@ const familyToDoc = (family: Partial<Family>): Record<string, any> => {
 
 export const familyConverter: FirestoreDataConverter<Family> = {
   toFirestore: (family: Family) => familyToDoc(family),
-  fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions) => familyFromDoc(snapshot)
+  fromFirestore: (snapshot: DocumentSnapshot, _options: SnapshotOptions) => familyFromDoc(snapshot)
 };
 
 // --- AppUser Converter ---
@@ -86,7 +85,7 @@ const userToDoc = (user: Partial<AppUser>): Record<string, any> => {
 
 export const userConverter: FirestoreDataConverter<AppUser> = {
   toFirestore: (user: AppUser) => userToDoc(user),
-  fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions) => userFromDoc(snapshot)
+  fromFirestore: (snapshot: DocumentSnapshot, _options: SnapshotOptions) => userFromDoc(snapshot)
 };
 
 // --- Budget Converter ---
@@ -115,5 +114,5 @@ const budgetToDoc = (budget: Partial<Budget>): Record<string, any> => {
 
 export const budgetConverter: FirestoreDataConverter<Budget> = {
   toFirestore: (budget: Budget) => budgetToDoc(budget),
-  fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions) => budgetFromDoc(snapshot)
+  fromFirestore: (snapshot: DocumentSnapshot, _options: SnapshotOptions) => budgetFromDoc(snapshot)
 };

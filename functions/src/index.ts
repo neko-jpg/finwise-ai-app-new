@@ -25,7 +25,7 @@ const createNotification = async (notification: Omit<Notification, "id" | "creat
  */
 export const dailyFinancialCheck = functions.pubsub
   .schedule("every 24 hours")
-  .onRun(async (context) => {
+  .onRun(async () => {
     functions.logger.info("Starting daily financial check...");
     const now = new Date();
 

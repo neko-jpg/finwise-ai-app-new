@@ -14,7 +14,6 @@ export const markNotificationsAsRead = functions.https.onCall(async (data: { not
         throw new functions.https.HttpsError("invalid-argument", "notificationIds must be a non-empty array.");
     }
 
-    const uid = context.auth.uid;
     const batch = db.batch();
 
     for (const id of data.notificationIds) {

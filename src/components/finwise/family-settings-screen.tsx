@@ -10,11 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, runTransaction, arrayUnion } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc, runTransaction, arrayUnion } from 'firebase/firestore';
 import { useInvitations } from '@/hooks/use-invitations';
 import { useFamily } from '@/hooks/use-family';
 import type { User } from 'firebase/auth';
-import type { Invitation, Family } from '@/domain';
+import type { Invitation } from '@/domain';
 
 const FormSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
@@ -67,7 +67,7 @@ export function FamilySettingsScreen({ user, familyId }: FamilySettingsScreenPro
     }
   };
 
-  const { invitations, loading: invitationsLoading } = useInvitations(user?.email);
+  const { invitations } = useInvitations(user?.email);
   const { family, loading: familyLoading } = useFamily(familyId);
 
   const handleAccept = async (invitation: Invitation) => {

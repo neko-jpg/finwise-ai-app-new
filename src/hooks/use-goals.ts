@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, query, orderBy, DocumentData, FirestoreError, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Goal } from '@/domain';

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, Children, isValidElement, cloneElement } from "react";
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useToast, showErrorToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { applyRulesToTransaction } from "@/lib/rule-engine";
 import { InteractiveTutorial } from "./InteractiveTutorial";
 import { createTransactionHash } from "@/lib/utils";
@@ -14,21 +14,36 @@ import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
-import type { Budget, Goal, Transaction, Rule, AppUser, Account } from "@/domain";
+import type { Transaction, Goal, Rule, Account, Budget } from "@/domain";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRules } from "@/hooks/use-rules";
 import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
 import { useNotifications } from '@/hooks/use-notifications';
-import { format } from "date-fns";
-import type { User } from 'firebase/auth';
 import { useBudget } from "@/hooks/use-budget";
 import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { txConverter } from "@/repo";
+import { User } from "firebase/auth";
+
+interface InjectedPageProps {
+  user: User;
+  familyId?: string;
+  transactions: Transaction[];
+  goals: Goal[];
+  rules: Rule[];
+  accounts: Account[];
+  currentBalance: number;
+  personalBudget: Budget | null;
+  sharedBudget: Budget | null;
+  setPersonalBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
+  setSharedBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
+  loading: boolean;
+  onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
+}
 
 interface AppContainerProps {
     children: React.ReactNode;
@@ -172,9 +187,9 @@ export function AppContainer({ children }: AppContainerProps) {
       <AppHeader user={user} onOcr={() => setOcrOpen(true)} notifications={notifications} />
       {!isOnline && <OfflineBanner />}
       <main className="flex-1 pb-24 pt-16">
-        {React.Children.map(children, child =>
-            React.isValidElement(child)
-              ? React.cloneElement(child, {
+        {Children.map(children, child =>
+            isValidElement(child)
+              ? cloneElement(child, {
                   user,
                   familyId,
                   transactions,
@@ -188,7 +203,7 @@ export function AppContainer({ children }: AppContainerProps) {
                   setSharedBudget,
                   loading,
                   onOpenTransactionForm: handleOpenTransactionForm,
-                } as any)
+                } as InjectedPageProps)
               : child
           )}
       </main>
@@ -233,7 +248,7 @@ export function AppContainer({ children }: AppContainerProps) {
         onOpenChange={setGoalFormOpen}
         familyId={familyId!}
         user={user}
-        onGoalAction={(newGoal) => {}}
+        onGoalAction={(_newGoal) => {}}
       />
       {!onboardingComplete && (
         <InteractiveTutorial

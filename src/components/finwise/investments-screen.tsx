@@ -14,8 +14,6 @@ import { PlusCircle } from 'lucide-react';
 import { CryptoForm } from './crypto-form';
 import { DividendTracker } from './dividend-tracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Image from 'next/image';
-import type { Account, Holding, Security } from '@/domain';
 
 const functions = getFunctions();
 const cryptoApiProxy = httpsCallable(functions, 'cryptoApiProxy');

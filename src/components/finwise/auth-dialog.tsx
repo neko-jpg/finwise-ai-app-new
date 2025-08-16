@@ -1,13 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { signInGuest, signInWithGoogle, signUpWithEmail, signInWithEmail, createUserProfile } from '@/lib/auth';
-import { Loader } from 'lucide-react';
+import { createUserProfile } from '@/lib/auth';
 import { getAdditionalUserInfo, UserCredential } from 'firebase/auth';
 
 interface AuthDialogProps {
@@ -18,11 +13,8 @@ interface AuthDialogProps {
 
 export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     const { toast } = useToast();
-    const [loading, setLoading] = useState<string | null>(null);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
 
-    const handleAuth = async (authPromise: Promise<UserCredential | null>) => {
+    const _handleAuth = async (authPromise: Promise<UserCredential | null>) => {
         try {
             const userCred = await authPromise;
             if (userCred && getAdditionalUserInfo(userCred)?.isNewUser) {
@@ -30,10 +22,11 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
             }
             toast({ title: "ログインしました" });
             onSignin();
-        } catch (e: any) {
-            toast({ variant: "destructive", title: "エラー", description: e.message });
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            toast({ variant: "destructive", title: "エラー", description: message });
         } finally {
-            setLoading(null);
+            // setLoading(null);
         }
     };
 

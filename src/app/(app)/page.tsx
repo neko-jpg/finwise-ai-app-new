@@ -16,9 +16,9 @@ export default function AppPage() {
 
   const today = new Date();
 
-  const { family, loading: familyLoading } = useFamily(familyId);
+  const { loading: familyLoading } = useFamily(familyId);
   const { transactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
-  const { personalBudget, sharedBudget, loading: budgetLoading } = useBudget(familyId, today, user?.uid);
+  const { sharedBudget, loading: budgetLoading } = useBudget(familyId, today, user?.uid);
   const { goals, loading: goalsLoading } = useGoals(familyId);
   const { tasks, loading: tasksLoading } = useTasks(transactions, sharedBudget);
 
@@ -31,7 +31,6 @@ export default function AppPage() {
       transactions={transactions}
       budget={sharedBudget}
       goals={goals ?? []}
-      loading={loading}
     />
   );
 }

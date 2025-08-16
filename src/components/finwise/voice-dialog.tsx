@@ -1,15 +1,11 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useRef, useCallback } from 'react';
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Mic, Search, Bot, Loader, AlertTriangle } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
 import { assistant } from '@/ai/flows/assistant';
 import { speechToTransaction } from '@/ai/flows/speech-to-transaction';
 import type { TransactionFormValues } from './transaction-form';
 import type { Budget, Goal, Transaction } from '@/domain';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { useToast } from '@/hooks/use-toast';
 
 interface VoiceDialogProps {
@@ -21,16 +17,14 @@ interface VoiceDialogProps {
   goals: Goal[];
 }
 
-const QUICK_QUERIES = ["今日の支出は？", "食費の残額", "今週の無駄遣いを教えて", "台湾旅行の進捗はどう？"];
-
 type MicStatus = 'idle' | 'listening' | 'processing' | 'error';
 
 export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budget, goals }: VoiceDialogProps) {
   const { toast } = useToast();
-  const [query, setQuery] = useState('');
-  const [response, setResponse] = useState('');
+  const [_query, setQuery] = useState('');
+  const [_response, setResponse] = useState('');
   const [micStatus, setMicStatus] = useState<MicStatus>('idle');
-  const [isPending, startTransition] = useTransition();
+  const [_isPending, startTransition] = useTransition();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const handleSubmit = useCallback((currentQuery: string) => {
@@ -85,7 +79,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
     recognitionRef.current = recognition;
   }, [toast, handleSubmit]);
 
-  const handleMicClick = () => {
+  const _handleMicClick = () => {
     if (!recognitionRef.current) {
         toast({ variant: 'destructive', title: '音声認識はサポートされていません', description: 'お使いのブラウザでは音声認識機能をご利用いただけません。' });
         return;
@@ -97,7 +91,7 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
     }
   };
   
-  const handleQueryClick = (q: string) => {
+  const _handleQueryClick = (q: string) => {
     setQuery(q);
     handleSubmit(q);
   }

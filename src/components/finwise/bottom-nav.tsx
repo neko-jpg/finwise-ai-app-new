@@ -13,7 +13,6 @@ export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: str
   ];
 
   const mainNavItems = navItems.filter(item => ["home", "transactions", "reports", "investments"].includes(item.key));
-  const otherNavItems = navItems.filter(item => !["home", "transactions", "reports", "investments"].includes(item.key));
 
 
   const NavItem = ({ itemKey, label, Icon }: { itemKey: string; label: string; Icon: React.ElementType }) => (

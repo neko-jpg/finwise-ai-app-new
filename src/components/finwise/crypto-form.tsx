@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,15 +13,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 // import { Combobox } from '@/components/ui/combobox'; // Assuming a combobox component exists
-
-const functions = getFunctions();
-// const getCoinListFn = httpsCallable(functions, 'getCoinList');
-const getCoinListFn = () => Promise.resolve({ data: [] }); // Mock function
 
 interface CryptoFormProps {
   open: boolean;
@@ -38,23 +33,9 @@ interface Coin {
 
 export function CryptoForm({ open, onOpenChange, user, familyId }: CryptoFormProps) {
   const { toast } = useToast();
-  const [coinList, setCoinList] = useState<Coin[]>([]);
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
   const [quantity, setQuantity] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    const fetchCoinList = async () => {
-      try {
-        const result = await getCoinListFn();
-        setCoinList(result.data as Coin[]);
-      } catch (e) {
-        console.error("Failed to fetch coin list", e);
-        toast({ title: "コインリストの取得に失敗しました", variant: "destructive" });
-      }
-    };
-    fetchCoinList();
-  }, [toast]);
 
   const handleSubmit = async () => {
     if (!user || !familyId || !selectedCoin || quantity <= 0) {
@@ -95,11 +76,6 @@ export function CryptoForm({ open, onOpenChange, user, familyId }: CryptoFormPro
       setIsSaving(false);
     }
   };
-
-  const comboboxOptions = coinList.map(coin => ({
-    value: coin.id,
-    label: `${coin.name} (${coin.symbol.toUpperCase()})`,
-  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

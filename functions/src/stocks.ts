@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 
-// @ts-ignore - Assuming global fetch is available in Node.js 18+ environment
+// @ts-expect-error - Assuming global fetch is available in Node.js 18+ environment
 const fetch = global.fetch;
 
 const FINNHUB_API_KEY = functions.config().finnhub?.key;
@@ -8,7 +8,7 @@ const FINNHUB_API_KEY = functions.config().finnhub?.key;
 /**
  * Fetches dividend data for a given stock symbol from the Finnhub API.
  */
-export const getDividendData = functions.https.onCall(async (data: { symbol: string }, context: functions.https.CallableContext) => {
+export const getDividendData = functions.https.onCall(async (data: { symbol: string }) => {
     if (!FINNHUB_API_KEY) {
         throw new functions.https.HttpsError("failed-precondition", "The Finnhub API key is not configured.");
     }

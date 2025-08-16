@@ -12,16 +12,15 @@ const firebaseConfig = {
 };
 
 let firebaseApp: FirebaseApp;
+let db: any;
 if (typeof window !== 'undefined') {
     if (!getApps().length) {
         firebaseApp = initializeApp(firebaseConfig);
     } else {
         firebaseApp = getApp();
     }
+    db = getFirestore(firebaseApp);
 }
-
-// @ts-ignore
-const db = getFirestore(firebaseApp);
 
 if (typeof window !== 'undefined') {
     try {
@@ -34,5 +33,4 @@ if (typeof window !== 'undefined') {
         }
     }
 }
-// @ts-ignore
 export { firebaseApp, db };

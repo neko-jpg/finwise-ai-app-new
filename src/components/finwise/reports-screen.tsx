@@ -14,19 +14,16 @@ import { useToast } from '@/hooks/use-toast';
 import { TaxReport } from './tax-report';
 import { ContributionTracker } from './contribution-tracker';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
-import type { User } from 'firebase/auth';
 import type { Account } from '@/domain';
 import type { Transaction } from '@/domain';
 import { CATEGORIES } from '@/data/dummy-data';
 
 interface ReportsScreenProps {
-  user?: User;
   transactions: Transaction[];
   accounts: Account[];
-  loading?: boolean;
 }
 
-export function ReportsScreen({ user, transactions, accounts, loading }: ReportsScreenProps) {
+export function ReportsScreen({ transactions, accounts }: ReportsScreenProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),
