@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Camera, Loader, AlertTriangle, ScanLine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TransactionFormValues } from './transaction-form';
-import { receiptOcr } from '@/ai/flows/receipt-ocr';
+import { processReceipt } from '@/app/actions';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 interface OcrScannerProps {
@@ -75,22 +75,22 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const dataUri = canvas.toDataURL('image/jpeg');
 
-        try {
-            const result = await receiptOcr({ photoDataUri: dataUri });
-            const [year, month, day] = result.bookedAt.split('-').map(Number);
+        const result = await processReceipt({ photoDataUri: dataUri });
+
+        if (result.success && result.data) {
+            const [year, month, day] = result.data.bookedAt.split('-').map(Number);
             onComplete({
-                merchant: result.merchant,
-                amount: result.amount,
+                merchant: result.data.merchant,
+                amount: result.data.amount,
                 bookedAt: new Date(year, month - 1, day),
             });
             toast({ title: 'レシートを読み取りました', description: '内容を確認して保存してください。' });
             onOpenChange(false);
-        } catch (e) {
-            console.error("OCR failed", e);
-            toast({ variant: 'destructive', title: '読み取り失敗', description: 'レシートの解析に失敗しました。もう一度試してください。'});
-        } finally {
-            setIsProcessing(false);
+        } else {
+            toast({ variant: 'destructive', title: '読み取り失敗', description: result.error || 'レシートの解析に失敗しました。もう一度試してください。'});
         }
+
+        setIsProcessing(false);
 
     }, [onComplete, onOpenChange, toast]);
     
