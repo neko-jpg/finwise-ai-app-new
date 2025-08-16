@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import type { Transaction } from '@/domain';
+import type { Transaction } from '@/lib/domain';
 import { detectSubscriptions, DetectSubscriptionsOutput } from '@/ai/flows/detect-subscriptions';
 import { Button } from '@/components/ui/button';
 import { Loader } from 'lucide-react';

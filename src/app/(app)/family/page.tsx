@@ -1,15 +1,12 @@
 'use client';
 
 import { FamilySettingsScreen } from '@/components/finwise/family-settings-screen';
-import type { User } from 'firebase/auth';
+import { Suspense } from 'react';
 
-interface FamilyPageProps {
-  user?: User;
-  familyId?: string;
-}
-
-export default function FamilyPage(props: FamilyPageProps) {
+export default function FamilyPage() {
   return (
-    <FamilySettingsScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <FamilySettingsScreen />
+    </Suspense>
   );
 }

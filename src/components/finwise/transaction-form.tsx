@@ -9,15 +9,15 @@ import { Form } from "@/components/ui/form";
 import { CATEGORIES } from '@/data/dummy-data';
 import { useToast, showErrorToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { addDoc, collection } from 'firebase/firestore';
-import type { Transaction, Rule } from '@/domain';
+import type { Transaction, Rule } from '@/lib/domain';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
 import { applyRulesToTransaction } from '@/lib/rule-engine';
 import type { User } from 'firebase/auth';
 import { createTransactionHash } from '@/lib/utils';
-import { txConverter } from '@/repo';
+import { txConverter } from '@/lib/repo';
 
 const formSchema = z.object({
     amount: z.coerce.number().positive('金額は正の数で入力してください'),

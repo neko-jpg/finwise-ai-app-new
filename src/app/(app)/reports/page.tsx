@@ -1,15 +1,12 @@
 'use client';
 
 import { ReportsScreen } from '@/components/finwise/reports-screen';
-import type { Transaction, Account } from '@/domain';
+import { Suspense } from 'react';
 
-interface ReportsPageProps {
-  transactions: Transaction[];
-  accounts: Account[];
-}
-
-export default function ReportsPage(props: ReportsPageProps) {
+export default function ReportsPage() {
   return (
-    <ReportsScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <ReportsScreen />
+    </Suspense>
   );
 }

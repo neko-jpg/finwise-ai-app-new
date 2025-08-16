@@ -1,4 +1,4 @@
-import { Category, QuickActionDefinition, Goal, Transaction } from '@/domain';
+import { Category, QuickActionDefinition, Goal, Transaction } from '@/lib/domain';
 import { Coffee, ShoppingBasket, Bus, Gamepad2, Zap, Bell, Rocket, Target, Wallet, Link } from "lucide-react";
 import { createElement } from 'react';
 import { makeTransaction, makeGoal } from '@/lib/factory';

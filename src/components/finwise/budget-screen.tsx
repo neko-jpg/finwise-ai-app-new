@@ -7,11 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { NotebookPen, BotMessageSquare } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Budget, Transaction } from '@/domain';
+import type { Budget, Transaction } from '@/lib/domain';
 import { CATEGORIES } from "@/data/dummy-data";
 import { proactiveBudgetSuggestion } from '@/ai/flows/proactive-budget-suggestion';
 

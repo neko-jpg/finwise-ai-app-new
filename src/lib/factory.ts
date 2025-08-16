@@ -1,4 +1,4 @@
-import { TransactionSchema, type Transaction, GoalSchema, type Goal } from "@/domain";
+import { TransactionSchema, type Transaction, GoalSchema, type Goal } from "@/lib/domain";
 import { faker } from '@faker-js/faker';
 
 /**

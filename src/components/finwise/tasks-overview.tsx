@@ -1,6 +1,6 @@
 import React from 'react';
 import { TaskCard } from './task-card';
-import type { Task } from '@/domain';
+import type { Task } from '@/lib/domain';
 
 interface TasksOverviewProps {
   tasks: Task[];

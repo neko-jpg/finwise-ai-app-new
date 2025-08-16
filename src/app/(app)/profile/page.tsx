@@ -1,16 +1,12 @@
-
 'use client';
 
 import { ProfileScreen } from '@/components/finwise/profile-screen';
-import type { User } from 'firebase/auth';
+import { Suspense } from 'react';
 
-interface ProfilePageProps {
-  user?: User;
-  loading?: boolean;
-}
-
-export default function ProfilePage(props: ProfilePageProps) {
+export default function ProfilePage() {
   return (
-    <ProfileScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfileScreen />
+    </Suspense>
   );
 }

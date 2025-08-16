@@ -6,17 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { signOut } from '@/lib/auth';
-import type { User } from 'firebase/auth';
+import { useAuthState } from '@/hooks/use-auth-state';
 import { useRouter } from 'next/navigation';
 import { TwoFactorAuthSetupDialog } from './two-factor-auth-setup-dialog';
 import { format } from 'date-fns';
 
-interface ProfileScreenProps {
-  user?: User;
-}
+interface ProfileScreenProps {}
 
-export function ProfileScreen({ user }: ProfileScreenProps) {
+export function ProfileScreen({}: ProfileScreenProps) {
   const router = useRouter();
+  const { user } = useAuthState();
   const { userProfile, loading } = useUserProfile(user?.uid);
   const [is2faDialogOpen, setIs2faDialogOpen] = useState(false);
 

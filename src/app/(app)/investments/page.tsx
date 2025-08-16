@@ -1,18 +1,12 @@
 'use client';
 
 import { InvestmentsScreen } from '@/components/finwise/investments-screen';
-import type { Account } from '@/domain';
-import type { User } from 'firebase/auth';
+import { Suspense } from 'react';
 
-interface InvestmentsPageProps {
-  user?: User;
-  familyId?: string;
-  accounts: Account[];
-  loading?: boolean;
-}
-
-export default function InvestmentsPage(props: InvestmentsPageProps) {
+export default function InvestmentsPage() {
   return (
-    <InvestmentsScreen {...props} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <InvestmentsScreen />
+    </Suspense>
   );
 }

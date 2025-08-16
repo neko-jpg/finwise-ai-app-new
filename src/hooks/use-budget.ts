@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { doc, FirestoreError, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Budget } from '@/domain';
-import { budgetConverter } from '@/repo';
+import { db } from '@/lib/firebase/client';
+import type { Budget } from '@/lib/domain';
+import { budgetConverter } from '@/lib/repo';
 import { CATEGORIES } from "@/data/dummy-data";
 import { format } from 'date-fns';
 

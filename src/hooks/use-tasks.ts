@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { differenceInHours } from 'date-fns';
-import type { Budget, Task } from '@/domain';
-import type { Transaction } from '@/domain';
+import type { Budget, Task } from '@/lib/domain';
+import type { Transaction } from '@/lib/domain';
 import { useAuthState } from './use-auth-state';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 
 export function useTasks(transactions: Transaction[], budget: Budget | null): { tasks: Task[], loading: boolean } {
   const { user } = useAuthState();

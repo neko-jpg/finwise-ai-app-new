@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { addDoc, collection, doc, updateDoc, runTransaction, arrayUnion } from 'firebase/firestore';
 import { useInvitations } from '@/hooks/use-invitations';
 import { useFamily } from '@/hooks/use-family';
-import type { User } from 'firebase/auth';
-import type { Invitation } from '@/domain';
+import { useAuthState } from '@/hooks/use-auth-state';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import type { Invitation } from '@/lib/domain';
 
 const FormSchema = z.object({
   email: z.string().email({ message: "有効なメールアドレスを入力してください。" }),
@@ -22,15 +23,17 @@ const FormSchema = z.object({
 
 export type InviteFormValues = z.infer<typeof FormSchema>;
 
-interface FamilySettingsScreenProps {
-  user?: User;
-  familyId?: string;
-}
+// This component is now self-contained and fetches its own data.
+interface FamilySettingsScreenProps {}
 
-export function FamilySettingsScreen({ user, familyId }: FamilySettingsScreenProps) {
+export function FamilySettingsScreen({}: FamilySettingsScreenProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingInvite, setIsProcessingInvite] = useState<string | null>(null);
+
+  const { user } = useAuthState();
+  const { userProfile } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(FormSchema),
@@ -71,7 +74,7 @@ export function FamilySettingsScreen({ user, familyId }: FamilySettingsScreenPro
   const { family, loading: familyLoading } = useFamily(familyId);
 
   const handleAccept = async (invitation: Invitation) => {
-    if (!user) return;
+    if (!user || !db) return;
     setIsProcessingInvite(invitation.id);
     try {
       await runTransaction(db, async (transaction) => {
@@ -92,6 +95,7 @@ export function FamilySettingsScreen({ user, familyId }: FamilySettingsScreenPro
   };
 
   const handleDecline = async (invitationId: string) => {
+    if (!db) return;
     setIsProcessingInvite(invitationId);
     try {
       const invRef = doc(db, 'invitations', invitationId);

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, FirestoreError } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Transaction } from '@/domain';
-import { txConverter } from '@/repo';
+import { db } from '@/lib/firebase/client';
+import type { Transaction } from '@/lib/domain';
+import { txConverter } from '@/lib/repo';
 
 interface UseTransactionsReturn {
     transactions: Transaction[];

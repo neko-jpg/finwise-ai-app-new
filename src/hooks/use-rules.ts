@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, Unsubscribe } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Rule } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { Rule } from '@/lib/domain';
 
 interface UseRulesReturn {
     rules: Rule[];

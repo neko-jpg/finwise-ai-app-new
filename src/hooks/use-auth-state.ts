@@ -1,7 +1,7 @@
 
 import { useAuthState as useFirebaseAuthState } from 'react-firebase-hooks/auth';
 import { getAuth } from 'firebase/auth';
-import { firebaseApp } from '@/lib/firebase';
+import { app as firebaseApp } from '@/lib/firebase/client';
 import { useEffect } from 'react';
 
 export function useAuthState() {

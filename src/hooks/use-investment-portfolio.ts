@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, getDocs, FirestoreError } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Holding, Security, Account as PlaidAccount } from '@/domain';
+import { db } from '@/lib/firebase/client';
+import type { Holding, Security, Account as PlaidAccount } from '@/lib/domain';
 
 export interface EnrichedHolding extends Holding {
   security: Security | null;
