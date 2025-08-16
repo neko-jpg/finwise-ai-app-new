@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Loader, Sparkles } from 'lucide-react';
+import { Loader, Sparkles, NotebookPen } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
@@ -20,6 +20,7 @@ interface BudgetScreenProps {
   setPersonalBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   setSharedBudget?: React.Dispatch<React.SetStateAction<Budget | null>>;
   loading?: boolean;
+  onOpenBudgetPlanner?: () => void;
 }
 
 export function BudgetScreen({
@@ -29,6 +30,7 @@ export function BudgetScreen({
   setPersonalBudget,
   setSharedBudget,
   loading,
+  onOpenBudgetPlanner = () => {},
 }: BudgetScreenProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
@@ -61,7 +63,18 @@ export function BudgetScreen({
 
   const renderBudgetContent = (budget: Budget | null) => {
     if (!budget) {
-      return <div className="text-center py-10"><p className="text-muted-foreground">この月の予算データはありません。</p></div>
+        return (
+            <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg m-4">
+                <NotebookPen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="font-bold text-lg">予算を立てて支出を管理しよう</h3>
+                <p className="text-sm mt-2 mb-4">AIに提案させるか、手動でカテゴリごとに予算を設定できます。</p>
+                 <Button onClick={() => {
+                    // TODO: Implement budget creation/planning flow
+                    toast({ title: "機能は準備中です", description: "AIによる予算提案機能は現在開発中です。" });
+                    // onOpenBudgetPlanner();
+                 }} size="lg">予算を作成する</Button>
+            </div>
+        )
     }
 
     const totalLimit = Object.values(budget.limits || {}).reduce((a, b) => a + b, 0);

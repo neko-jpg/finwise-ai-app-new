@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle } from "lucide-react";
+import { Search, Filter, Sparkles, Loader, Trash2, Undo2, AlertCircle, FilePlus2 } from "lucide-react";
 import { CATEGORIES, TAX_TAGS } from "@/data/dummy-data";
 import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
@@ -26,9 +26,10 @@ interface TransactionsScreenProps {
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   user?: User;
+  onOpenTransactionForm?: () => void;
 }
 
-export function TransactionsScreen({ loading, transactions = [], setTransactions, user }: TransactionsScreenProps) {
+export function TransactionsScreen({ loading, transactions = [], setTransactions, user, onOpenTransactionForm = () => {} }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
   const [scopeFilter, setScopeFilter] = useState<'all' | 'shared' | 'personal'>('all');
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -200,9 +201,21 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     }
 
     if (filteredTx.length === 0) {
+      // Only show the big empty state if there are NO transactions at all and no filters are active.
+      if (transactions.length === 0 && !q && !catFilter) {
+        return (
+            <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg m-4">
+                <FilePlus2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="font-bold text-lg">最初の取引を追加しましょう</h3>
+                <p className="text-sm mt-2 mb-4">レシートを撮影するか、手動で入力して家計管理を始めましょう。</p>
+                 <Button onClick={onOpenTransactionForm} size="lg">取引を追加する</Button>
+            </div>
+        )
+      }
+      // Otherwise, show a simpler "not found" message.
       return (
         <div className="text-center py-16 text-muted-foreground">
-          <p>{showDeleted ? "削除済みの取引はありません。" : "取引が見つかりません。"}</p>
+          <p>{showDeleted ? "削除済みの取引はありません。" : "該当する取引が見つかりません。"}</p>
         </div>
       );
     }
