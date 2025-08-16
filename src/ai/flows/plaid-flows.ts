@@ -1,6 +1,7 @@
 'use server';
 
-import { defineFlow, run, startFlow } from '@genkit-ai/flow';
+// ★★★ 変更点: インポートパスを '@genkit-ai/core' に修正 ★★★
+import { defineFlow, run, startFlow } from '@genkit-ai/core';
 import { z } from 'zod';
 import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode } from 'plaid';
 import { doc, setDoc, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
@@ -40,8 +41,16 @@ export const createLinkToken = defineFlow(
     const request = {
       user: { client_user_id: userId },
       client_name: 'Finwise AI',
-      products: [Products.Investments],
-      country_codes: [CountryCode.Us],
+      products: [Products.Investments, Products.Transactions],
+      country_codes: [
+        CountryCode.Us,
+        CountryCode.Ca,
+        CountryCode.Gb,
+        CountryCode.Fr,
+        CountryCode.Es,
+        CountryCode.Ie,
+        CountryCode.Nl,
+      ],
       language: 'en',
     };
     try {
@@ -74,7 +83,7 @@ export const exchangePublicToken = defineFlow(
 
       const itemResponse = await plaidClient.itemGet({ access_token: accessToken });
       const institutionName = itemResponse.data.item.institution_id
-        ? (await plaidClient.institutionsGetById({ institution_id: itemResponse.data.item.institution_id, country_codes: [CountryCode.Us] })).data.institution.name
+        ? (await plaidClient.institutionsGetById({ institution_id: itemResponse.data.item.institution_id, country_codes: [CountryCode.Us, CountryCode.Ca, CountryCode.Gb, CountryCode.Fr, CountryCode.Es, CountryCode.Ie, CountryCode.Nl] })).data.institution.name
         : 'Unknown Institution';
 
       const plaidItemRef = doc(db, 'plaid_items', itemId);

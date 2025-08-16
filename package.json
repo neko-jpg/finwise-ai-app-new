@@ -66,6 +66,8 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@genkit-ai/firebase": "^1.16.1",
+    "@opentelemetry/exporter-jaeger": "^2.0.1",
     "@tailwindcss/container-queries": "^0.1.0",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",

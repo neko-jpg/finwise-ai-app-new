@@ -1,6 +1,6 @@
 'use server';
 
-import { defineFlow } from '@genkit-ai/flow';
+import { defineFlow } from '@genkit-ai/core';
 import { z } from 'zod';
 
 const ExchangeRateInputSchema = z.object({
