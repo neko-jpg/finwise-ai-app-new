@@ -1,6 +1,6 @@
 'use server';
 
-import { defineFlow } from '@genkit-ai/core';
+import { defineFlow } from '@/ai/compat';
 import { z } from 'zod';
 
 const ExchangeRateInputSchema = z.object({
@@ -8,17 +8,19 @@ const ExchangeRateInputSchema = z.object({
   target: z.string().length(3).describe("The target currency code (e.g., 'JPY')"),
 });
 
+type ExchangeRateInput = z.infer<typeof ExchangeRateInputSchema>;
+
 /**
  * Flow to get the exchange rate between two currencies.
  * Uses the exchangerate.host API.
  */
 export const getExchangeRate = defineFlow(
+  'getExchangeRate',
   {
-    name: 'getExchangeRate',
-    inputSchema: ExchangeRateInputSchema,
-    outputSchema: z.number(),
+    input: ExchangeRateInputSchema,
+    output: z.number(),
   },
-  async ({ base, target }) => {
+  async ({ base, target }: ExchangeRateInput) => {
     // In a real application, this API key would be stored securely as an environment variable.
     const apiKey = process.env.EXCHANGERATE_API_KEY || 'YOUR_API_KEY_HERE';
     const url = `https://api.exchangerate.host/live?access_key=${apiKey}&source=${base}&currencies=${target}`;

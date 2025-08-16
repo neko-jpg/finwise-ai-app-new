@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { differenceInHours, startOfMonth, isSameMonth } from 'date-fns';
-import type { Transaction, Budget, Task } from '@/lib/types';
+import type { Budget, Task } from '@/domain';
+import type { Transaction } from '@/domain';
 import { useAuthState } from './use-auth-state';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

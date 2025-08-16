@@ -14,6 +14,8 @@ import { PlusCircle } from 'lucide-react';
 import { CryptoForm } from './crypto-form';
 import { DividendTracker } from './dividend-tracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from 'next/image';
+import type { Account, Holding, Security } from '@/domain';
 
 const functions = getFunctions();
 const cryptoApiProxy = httpsCallable(functions, 'cryptoApiProxy');
@@ -31,7 +33,7 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const coinIds = cryptoHoldings.map(h => h.security?.id).filter(Boolean) as string[];
+      const coinIds = cryptoHoldings.map(h => h.securityId).filter(Boolean);
       if (coinIds.length === 0) return;
 
       try {
@@ -39,10 +41,10 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
           path: 'simple/price',
           params: { ids: coinIds.join(','), vs_currencies: 'jpy' }
         });
-        const prices = Object.entries(result.data).reduce((acc, [id, data]) => {
-          acc[id] = (data as { jpy: number }).jpy;
+        const prices = Object.entries(result.data as Record<string, { jpy: number }>).reduce((acc, [id, data]) => {
+          acc[id] = data.jpy;
           return acc;
-        }, {});
+        }, {} as Record<string, number>);
         setCryptoPrices(prices);
       } catch (e) {
         console.error("Failed to fetch crypto prices", e);
@@ -64,9 +66,7 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
         <AccordionItem value={account.id} key={account.id}>
           <AccordionTrigger><div className="flex justify-between w-full pr-4"><span>{account.name} ({account.mask})</span><span className="font-mono">¥{account.currentBalance.toLocaleString()}</span></div></AccordionTrigger>
           <AccordionContent>
-            <Table><TableHeader><TableRow><TableHead>銘柄</TableHead><TableHead className="text-right">現在価値</TableHead></TableRow></TableHeader>
-              <TableBody>{account.holdings.map(holding => (<TableRow key={holding.id}><TableCell>{holding.security?.name}</TableCell><TableCell className="text-right font-mono">¥{holding.institutionValue?.toLocaleString()}</TableCell></TableRow>))}</TableBody>
-            </Table>
+            {/* Plaid holdings display would go here if available */}
           </AccordionContent>
         </AccordionItem>
       ))}
@@ -83,8 +83,8 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
           return (
             <TableRow key={holding.id}>
               <TableCell className="flex items-center">
-                {holding.security?.logoUrl && <img src={holding.security.logoUrl} alt="" className="w-6 h-6 mr-2 rounded-full" />}
-                <div><div className="font-medium">{holding.security?.name}</div><div className="text-sm text-muted-foreground">{holding.security?.tickerSymbol?.toUpperCase()}</div></div>
+                {/* We need a way to get security details like logo and name from securityId */}
+                <div><div className="font-medium">{holding.securityId}</div></div>
               </TableCell>
               <TableCell className="text-right font-mono">{holding.quantity.toFixed(4)}</TableCell>
               <TableCell className="text-right font-mono">¥{Math.round(value).toLocaleString()}</TableCell>
@@ -100,10 +100,7 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader><div className="flex justify-between items-center"><CardTitle>総資産</CardTitle><span className="text-2xl font-bold font-mono">¥{Math.round(totalValue).toLocaleString()}</span></div></CardHeader>
-      </Card>
-
+      <Card><CardHeader><div className="flex justify-between items-center"><CardTitle>総資産</CardTitle><span className="text-2xl font-bold font-mono">¥{Math.round(totalValue).toLocaleString()}</span></div></CardHeader></Card>
       <Tabs defaultValue="stocks" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="stocks">株式/投資信託</TabsTrigger>
@@ -127,17 +124,11 @@ export function InvestmentsScreen({ user }: InvestmentsScreenProps) {
         </TabsContent>
         <TabsContent value="dividends">
             <Card>
-                <CardHeader>
-                    <CardTitle>配当履歴</CardTitle>
-                    <CardDescription>保有する株式の配当金支払い履歴です。</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <DividendTracker accounts={plaidAccounts} />
-                </CardContent>
+                <CardHeader><CardTitle>配当履歴</CardTitle><CardDescription>保有する株式の配当金支払い履歴です。</CardDescription></CardHeader>
+                <CardContent><DividendTracker accounts={plaidAccounts} /></CardContent>
             </Card>
         </TabsContent>
       </Tabs>
-
       <CryptoForm open={isFormOpen} onOpenChange={setIsFormOpen} user={user} familyId={familyId} />
     </div>
   );

@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Transaction } from './types';
+import type { Transaction } from '@/domain';
 import { SHA256 } from 'crypto-js';
 import { format } from 'date-fns';
 
@@ -11,10 +11,10 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Creates a SHA256 hash from transaction details to identify potential duplicates.
- * @param tx The transaction object (without id or existing hash).
+ * @param tx An object with the core fields for hashing.
  * @returns A SHA256 hash string.
  */
-export function createTransactionHash(tx: Omit<Transaction, 'id' | 'hash' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' | 'deletedAt' | 'recurring' | 'attachment' | 'plaidTransactionId' | 'plaidAccountId'>): string {
+export function createTransactionHash(tx: { bookedAt: Date, merchant: string, amount: number, originalCurrency: string }): string {
   // Use a consistent date format to ensure the hash is the same regardless of timezones.
   const dateString = format(tx.bookedAt, 'yyyy-MM-dd');
   

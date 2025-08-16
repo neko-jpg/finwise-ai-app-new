@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { Transaction } from '@/lib/types';
 
 const AssistantInputSchema = z.object({
   query: z.string().describe('The user\'s question about their finances.'),

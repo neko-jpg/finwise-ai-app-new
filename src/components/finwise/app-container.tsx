@@ -14,7 +14,7 @@ import { BottomNav } from './bottom-nav';
 import { VoiceDialog } from './voice-dialog';
 import { OcrScanner } from './ocr-scanner';
 import { TransactionForm, TransactionFormValues } from './transaction-form';
-import type { Budget, Goal, Transaction } from "@/lib/types";
+import type { Budget, Goal, Transaction, Rule, AppUser, Account } from "@/domain";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useGoals } from "@/hooks/use-goals";
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -28,6 +28,7 @@ import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { txConverter } from "@/repo";
 
 interface AppContainerProps {
     children: React.ReactNode;
@@ -38,62 +39,58 @@ export function AppContainer({ children }: AppContainerProps) {
   const pathname = usePathname();
   
   const { user, loading: authLoading } = useAuthState();
+  const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
+  const familyId = userProfile?.familyId;
+
+  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
+  const { goals, loading: goalsLoading } = useGoals(familyId);
+  const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date(), user?.uid);
+  const { rules, loading: rulesLoading } = useRules(user?.uid);
+  const { plaidAccounts, loading: accountsLoading } = useInvestmentPortfolio(familyId, user?.uid);
+  const { notifications, loading: notificationsLoading } = useNotifications(familyId, user?.uid);
 
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const [goalFormOpen, setGoalFormOpen] = useState(false);
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
+  const [onboardingComplete, setOnboardingComplete] = useState(true);
+
   const isOnline = useOnlineStatus();
   const { toast } = useToast();
-  const [onboardingComplete, setOnboardingComplete] = useState(true); // Default to true to avoid flash
 
   useEffect(() => {
     const syncPendingTransactions = async () => {
-        if (!isOnline) return;
-
+        if (!isOnline || !familyId || !user || !rules || !userProfile) return;
         const pendingTxs = JSON.parse(localStorage.getItem('pending_transactions') || '[]');
         if (pendingTxs.length === 0) return;
 
-        toast({
-            title: 'オンラインに復帰しました',
-            description: `予約された${pendingTxs.length}件の取引を同期中です...`,
-        });
-
+        toast({ title: 'オンラインに復帰しました', description: `予約された${pendingTxs.length}件の取引を同期中です...` });
         let successCount = 0;
         const failedTxs = [];
 
         for (const tx of pendingTxs) {
             try {
-                // Recreate the data structure for Firestore
-                const newTxData: Omit<Transaction, 'id' | 'hash' | 'createdAt' | 'updatedAt' | 'clientUpdatedAt' | 'deletedAt'> = {
+                const newTxData: Omit<Transaction, 'id' | 'hash'> = {
                     amount: tx.amount,
-                    originalAmount: tx.amount, // Assuming offline txns are in primary currency for simplicity
-                    originalCurrency: userProfile?.primaryCurrency || 'JPY',
+                    originalAmount: tx.amount,
+                    originalCurrency: userProfile.primaryCurrency || 'JPY',
                     merchant: tx.merchant,
                     bookedAt: new Date(tx.bookedAt),
                     category: { major: tx.categoryMajor },
                     source: 'manual-offline',
                     scope: tx.scope,
-                    taxTag: tx.taxTag || '',
                     familyId: tx.familyId,
                     createdBy: tx.userId,
+                    createdAt: new Date(tx.clientTimestamp),
+                    updatedAt: new Date(tx.clientTimestamp),
                 };
-
                 const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
                 const hash = createTransactionHash(ruledTxData);
+                const finalTxData = { ...ruledTxData, hash, id: `offline_${Date.now()}` };
 
-                const docData = {
-                    ...ruledTxData,
-                    bookedAt: Timestamp.fromDate(ruledTxData.bookedAt),
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                    clientUpdatedAt: new Date(tx.clientTimestamp),
-                    deletedAt: null,
-                    hash,
-                };
-
-                await addDoc(collection(db, `families/${tx.familyId}/transactions`), docData);
+                const txCollectionRef = collection(db, `families/${familyId}/transactions`).withConverter(txConverter);
+                await addDoc(txCollectionRef, finalTxData);
                 successCount++;
             } catch (error) {
                 console.error("Failed to sync pending transaction:", error);
@@ -106,31 +103,16 @@ export function AppContainer({ children }: AppContainerProps) {
             showErrorToast(new Error(`${failedTxs.length}件の取引の同期に失敗しました。後ほど再試行されます。`));
         } else {
             localStorage.removeItem('pending_transactions');
-            toast({
-                title: '同期が完了しました',
-                description: `${successCount}件の取引を保存しました。`,
-            });
+            toast({ title: '同期が完了しました', description: `${successCount}件の取引を保存しました。` });
         }
     };
 
     syncPendingTransactions();
-  }, [isOnline, familyId, user, rules, setTransactions, toast, userProfile]);
-
-  const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
-  const familyId = userProfile?.familyId;
-
-  // 修正点: useTransactionsフックにuser.uidを渡すように変更しました
-  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
-  const { goals, loading: goalsLoading } = useGoals(familyId);
-  const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date());
-  const { rules, loading: rulesLoading } = useRules(user?.uid);
-  const { plaidAccounts, loading: accountsLoading } = useInvestmentPortfolio(familyId, user?.uid);
-  const { notifications, loading: notificationsLoading } = useNotifications(familyId, user?.uid);
+  }, [isOnline, familyId, user, rules, toast, userProfile, setTransactions]);
 
   const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
 
   const currentBalance = useMemo(() => {
-    // This is a simplified calculation. A real app would also include manual accounts, crypto, etc.
     return plaidAccounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
   }, [plaidAccounts]);
 
@@ -168,9 +150,9 @@ export function AppContainer({ children }: AppContainerProps) {
   };
 
   const activeTab = useMemo(() => {
-    const path = pathname.split('/').pop();
-    if (['transactions', 'budget', 'goals', 'rules', 'profile', 'link', 'subscriptions', 'reviews'].includes(path || '')) {
-      return path;
+    const path = pathname.split('/').pop() || 'home';
+    if (['transactions', 'budget', 'goals', 'rules', 'profile', 'link', 'subscriptions', 'reviews', ''].includes(path)) {
+        return path === '' ? 'home' : path;
     }
     return 'home';
   }, [pathname]);
@@ -178,22 +160,9 @@ export function AppContainer({ children }: AppContainerProps) {
   if (loading || !user) {
     return (
       <div className="flex flex-col h-screen">
-        <header className="p-4 border-b">
-          <Skeleton className="h-8 w-32" />
-        </header>
-        <main className="flex-1 p-4">
-          <Skeleton className="h-32 w-full mb-4" />
-          <Skeleton className="h-64 w-full" />
-        </main>
-        <footer className="p-4 border-t">
-          <div className="flex justify-around">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-16 w-16 rounded-full relative -top-4" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </footer>
+        <header className="p-4 border-b"><Skeleton className="h-8 w-32" /></header>
+        <main className="flex-1 p-4"><Skeleton className="h-32 w-full mb-4" /><Skeleton className="h-64 w-full" /></main>
+        <footer className="p-4 border-t"><div className="flex justify-around"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-16 w-16 rounded-full relative -top-4" /><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-10 w-10 rounded-full" /></div></footer>
       </div>
     );
   }
@@ -250,10 +219,10 @@ export function AppContainer({ children }: AppContainerProps) {
       <TransactionForm 
         open={transactionFormOpen} 
         onOpenChange={setTransactionFormOpen}
-        familyId={familyId}
+        familyId={familyId!}
         user={user}
         primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
-        rules={rules}
+        rules={rules || []}
         initialData={transactionInitialData}
         onTransactionAction={(newTx) => {
             setTransactions(prev => [newTx, ...(prev || [])].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
@@ -262,12 +231,9 @@ export function AppContainer({ children }: AppContainerProps) {
       <GoalForm
         open={goalFormOpen}
         onOpenChange={setGoalFormOpen}
-        familyId={familyId}
+        familyId={familyId!}
         user={user}
-        onGoalAction={(newGoal) => {
-          // This is a simplified update. You might want a more robust state management.
-          // setGoals(prev => [...(prev || []), newGoal]);
-        }}
+        onGoalAction={(newGoal) => {}}
       />
       {!onboardingComplete && (
         <InteractiveTutorial

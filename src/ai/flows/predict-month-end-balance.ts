@@ -1,20 +1,23 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { Transaction } from '@/lib/types';
 import { endOfMonth, getDaysInMonth, differenceInDays } from 'date-fns';
+import { defineFlow, definePrompt } from '@/ai/compat'; // Use the compatibility layer
 
 const PredictionInputSchema = z.object({
   transactions: z.array(z.any()).describe("A list of transactions from the current month so far."),
   currentBalance: z.number().describe("The user's current total balance across all accounts."),
 });
+type PredictionInput = z.infer<typeof PredictionInputSchema>;
 
 const PredictionOutputSchema = z.object({
     prediction: z.string().describe("A friendly, natural language prediction of the user's month-end balance, in Japanese."),
 });
+export type PredictMonthEndBalanceOutput = z.infer<typeof PredictionOutputSchema>;
 
-const predictionPrompt = ai.definePrompt(
+// Note: The custom numberFormat helper has been removed. Formatting should be done
+// before calling the prompt, or the LLM should be instructed to format it.
+const predictionPrompt = definePrompt(
     {
         name: 'monthEndBalancePredictionPrompt',
         input: { schema: z.object({
@@ -26,9 +29,9 @@ const predictionPrompt = ai.definePrompt(
         prompt: `あなたは、データを元に未来を予測するAIアシスタントです。以下の情報に基づき、ユーザーの月末の推定残高について、自然で分かりやすい日本語の文章を生成してください。
 
 情報:
-- 現在の合計残高: ¥{{{numberFormat currentBalance}}}
-- 今月の予測支出合計: ¥{{{numberFormat projectedSpending}}}
-- これまでの1日あたりの平均支出額: ¥{{{numberFormat avgDailySpending}}}
+- 現在の合計残高: ¥{{currentBalance}}
+- 今月の予測支出合計: ¥{{projectedSpending}}
+- これまでの1日あたりの平均支出額: ¥{{avgDailySpending}}
 
 上記の情報を元に、以下のような形式で、ポジティブまたは中立的なトーンで予測を伝えてください。
 
@@ -37,22 +40,17 @@ const predictionPrompt = ai.definePrompt(
 - 「現在のペースだと、月末には残高が約〇〇円になる予測です。この調子で支出を管理していきましょう。」
 
 予測:`,
-    },
-    (input) => {
-        // Add a custom helper to format numbers with commas for the prompt
-        (global as any).numberFormat = (num: number) => Math.round(num).toLocaleString();
-        return;
     }
 );
 
 
-export const predictMonthEndBalance = ai.defineFlow(
+export const predictMonthEndBalance = defineFlow(
+  'predictMonthEndBalance',
   {
-    name: 'predictMonthEndBalance',
-    inputSchema: PredictionInputSchema,
-    outputSchema: PredictionOutputSchema,
+    input: PredictionInputSchema,
+    output: PredictionOutputSchema,
   },
-  async ({ transactions, currentBalance }) => {
+  async ({ transactions, currentBalance }: PredictionInput) => {
     if (transactions.length === 0) {
         return { prediction: "今月の取引データがまだありません。支出を記録して、未来予測を始めましょう！" };
     }
@@ -75,10 +73,11 @@ export const predictMonthEndBalance = ai.defineFlow(
     const projectedTotalSpending = totalSpending + projectedFutureSpending;
 
     try {
+        // Format numbers before sending to the prompt
         const { output } = await predictionPrompt({
-            currentBalance,
-            projectedSpending: projectedTotalSpending,
-            avgDailySpending
+            currentBalance: Math.round(currentBalance).toLocaleString(),
+            projectedSpending: Math.round(projectedTotalSpending).toLocaleString(),
+            avgDailySpending: Math.round(avgDailySpending).toLocaleString()
         });
         return output!;
     } catch (error) {

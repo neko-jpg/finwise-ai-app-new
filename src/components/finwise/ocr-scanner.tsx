@@ -47,11 +47,13 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
         };
         getCameraPermission();
         
+        const currentVideoRef = videoRef.current;
         return () => {
-            if (videoRef.current && videoRef.current.srcObject) {
-                const stream = videoRef.current.srcObject as MediaStream;
+            if (currentVideoRef && currentVideoRef.srcObject) {
+                const stream = currentVideoRef.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
-                videoRef.current.srcObject = null;
+                // In some browsers, setting srcObject to null is not enough to release the camera.
+                // We've already stopped the tracks, which is the main thing.
             }
         }
 

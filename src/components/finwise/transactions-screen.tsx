@@ -1,6 +1,5 @@
-
 'use client';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,11 +13,11 @@ import { analyzeSpending } from '@/ai/flows/spending-insights';
 import { detectDuplicates, DetectDuplicatesOutput } from '@/ai/flows/detect-duplicates';
 import { syncAllTransactions } from '@/ai/flows/plaid-flows';
 import { useToast, showErrorToast } from '@/hooks/use-toast';
-import type { Transaction } from '@/lib/types';
+import type { Transaction } from '@/domain';
 import { DuplicateReviewCard } from './DuplicateReviewCard';
 import { format } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
-import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 
@@ -30,6 +29,13 @@ interface TransactionsScreenProps {
   familyId?: string;
   onOpenTransactionForm?: () => void;
 }
+
+const aiAnalyzeMessages = [
+  "AIが分析中...",
+  "取引データを集計しています...",
+  "支出の傾向を特定中...",
+  "インサイトを生成しています...",
+];
 
 export function TransactionsScreen({ loading, transactions = [], setTransactions, user, familyId, onOpenTransactionForm = () => {} }: TransactionsScreenProps) {
   const [q, setQ] = useState("");
@@ -57,13 +63,6 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     });
   }, [transactions, catFilter, q, showDeleted, scopeFilter, user?.uid]);
 
-  const aiAnalyzeMessages = [
-    "AIが分析中...",
-    "取引データを集計しています...",
-    "支出の傾向を特定中...",
-    "インサイトを生成しています...",
-  ];
-
   useEffect(() => {
     if (isPending) {
         let index = 0;
@@ -79,15 +78,10 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   }, [isPending]);
 
   const handleSyncTransactions = async () => {
-    if (!user) return;
+    if (!user || !familyId) return;
     setIsSyncing(true);
     toast({ title: "取引の同期を開始します...", description: "連携済み口座から最新の取引を取得します。" });
     try {
-        if (!familyId) {
-            showErrorToast(new Error("Family IDが見つかりません。"));
-            return;
-        }
-
         const result = await syncAllTransactions({ familyId });
         toast({ title: "同期が完了しました", description: `${result.syncedItems}件の口座を同期しました。` });
     } catch (e: any) {
@@ -99,7 +93,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   };
 
   const handleAnalyze = () => {
-    const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toDate().toISOString(), updatedAt: t.updatedAt.toDate().toISOString()}));
+    const txToAnalyze = filteredTx.map(t => ({...t, bookedAt: t.bookedAt.toISOString(), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString()}));
 
     if (txToAnalyze.length === 0) {
         toast({
@@ -162,12 +156,11 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
   };
 
   const handleToggleDelete = async (txId: string, isDeleted: boolean) => {
-    if (!user) return;
+    if (!user || !familyId) return;
     
-    // Optimistic Update
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? null : Timestamp.fromDate(new Date()) } : t));
+    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? undefined : new Date() } : t));
 
-    const docRef = doc(db, `users/${user.uid}/transactions`, txId);
+    const docRef = doc(db, `families/${familyId}/transactions`, txId);
     try {
       await updateDoc(docRef, {
         deletedAt: isDeleted ? null : serverTimestamp()
@@ -178,29 +171,20 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
       });
     } catch (e) {
       console.error(e);
-      // Revert optimistic update on failure
-      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? Timestamp.fromDate(new Date()) : null } : t));
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, deletedAt: isDeleted ? new Date() : undefined } : t));
       toast({ variant: "destructive", title: "更新に失敗しました"});
     }
   };
   
   const handleMerge = async (winnerId: string, loserId: string) => {
-    if (!user) return;
+    if (!user || !familyId) return;
 
-    // For V1, merging is simply soft-deleting the "loser" transaction.
-    // A more advanced implementation could merge details from the loser into the winner.
-
-    // We can reuse the handleToggleDelete logic, but we need to call it directly
-    // to avoid optimistic UI issues when merging multiple items.
-    const docRef = doc(db, `users/${user.uid}/transactions`, loserId);
+    const docRef = doc(db, `families/${familyId}/transactions`, loserId);
     try {
       await updateDoc(docRef, {
         deletedAt: serverTimestamp()
       });
-
-      // Update local state by removing the loser
       setTransactions(prev => prev.filter(t => t.id !== loserId));
-
       toast({
         title: "取引を統合しました",
         description: `取引 ${loserId.substring(0, 6)} は削除済みとしてマークされました。`,
@@ -208,11 +192,7 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "統合に失敗しました"});
-      // Don't revert UI state here as it could be complex if multiple merges are happening.
-      // A full refresh might be a safer, albeit less ideal, recovery strategy.
     }
-
-    // Finally, dismiss the card from the review UI
     handleDismiss(winnerId, loserId);
   };
 
@@ -242,7 +222,6 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
     }
 
     if (filteredTx.length === 0) {
-      // Only show the big empty state if there are NO transactions at all and no filters are active.
       if (transactions.length === 0 && !q && !catFilter) {
         return (
             <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg m-4">
@@ -253,7 +232,6 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
             </div>
         )
       }
-      // Otherwise, show a simpler "not found" message.
       return (
         <div className="text-center py-16 text-muted-foreground">
           <p>{showDeleted ? "削除済みの取引はありません。" : "該当する取引が見つかりません。"}</p>
@@ -306,7 +284,6 @@ export function TransactionsScreen({ loading, transactions = [], setTransactions
       </div>
     ));
   };
-
 
   return (
     <div className="space-y-4">

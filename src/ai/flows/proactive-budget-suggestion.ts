@@ -1,20 +1,21 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { Budget, Transaction } from '@/lib/types';
 import { CATEGORIES } from '@/data/dummy-data';
+import { defineFlow, definePrompt } from '@/ai/compat';
 
 const SuggestionInputSchema = z.object({
   budget: z.any().describe("The user's budget object, containing limits and used amounts per category."),
   transactions: z.array(z.any()).describe("A list of recent transactions."),
 });
+type SuggestionInput = z.infer<typeof SuggestionInputSchema>;
+
 
 const SuggestionOutputSchema = z.object({
     suggestion: z.string().nullable().describe("A helpful, non-judgmental suggestion in Japanese, or null if no suggestion is warranted."),
 });
 
-const suggestionPrompt = ai.definePrompt(
+const suggestionPrompt = definePrompt(
     {
         name: 'proactiveBudgetSuggestionPrompt',
         input: { schema: z.object({ categoryLabel: z.string(), usageRate: z.number(), totalSpent: z.number() }) },
@@ -37,13 +38,13 @@ const suggestionPrompt = ai.definePrompt(
 );
 
 
-export const proactiveBudgetSuggestion = ai.defineFlow(
+export const proactiveBudgetSuggestion = defineFlow(
+  'proactiveBudgetSuggestion',
   {
-    name: 'proactiveBudgetSuggestion',
-    inputSchema: SuggestionInputSchema,
-    outputSchema: SuggestionOutputSchema,
+    input: SuggestionInputSchema,
+    output: SuggestionOutputSchema,
   },
-  async ({ budget }) => {
+  async ({ budget }: SuggestionInput) => {
     if (!budget || !budget.limits || !budget.used) {
         return { suggestion: null };
     }

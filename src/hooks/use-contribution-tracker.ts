@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import type { Account, Transaction } from '@/lib/types';
+import type { Account } from '@/domain';
+import type { Transaction } from '@/domain';
 
 // For 2024. In a real app, this would come from a configuration or be year-dependent.
 const IRA_CONTRIBUTION_LIMIT = 7000;

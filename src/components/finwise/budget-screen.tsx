@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,8 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { BudgetInput } from './budget-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Budget, Transaction } from '@/lib/types';
+import type { Budget } from '@/domain';
+import type { Transaction } from '@/domain';
 import { CATEGORIES } from "@/data/dummy-data";
 import { proactiveBudgetSuggestion } from '@/ai/flows/proactive-budget-suggestion';
 
@@ -154,10 +155,10 @@ export function BudgetScreen({
           <TabsTrigger value="shared">共有</TabsTrigger>
         </TabsList>
         <TabsContent value="personal" className="pt-4">
-          {renderBudgetContent(personalBudget)}
+          {renderBudgetContent(personalBudget ?? null)}
         </TabsContent>
         <TabsContent value="shared" className="pt-4">
-          {renderBudgetContent(sharedBudget)}
+          {renderBudgetContent(sharedBudget ?? null)}
         </TabsContent>
       </Tabs>
       <Dialog open={!!suggestion} onOpenChange={() => setSuggestion(null)}>

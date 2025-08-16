@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Target, PlusCircle } from "lucide-react";
-import type { Goal } from "@/lib/types";
+import type { Goal } from "@/domain";
 import { format } from "date-fns";
 import { Skeleton } from "../ui/skeleton";
 

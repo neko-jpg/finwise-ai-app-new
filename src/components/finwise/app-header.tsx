@@ -7,7 +7,7 @@ import { Bell, PiggyBank, Settings, Camera } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { User } from 'firebase/auth';
-import type { Notification } from '@/lib/types';
+import type { Notification } from '@/domain';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
@@ -77,7 +77,7 @@ export function AppHeader({ user, onOcr, notifications = [] }: AppHeaderProps) {
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium leading-none">{n.message}</p>
                                     <p className="text-sm text-muted-foreground">
-                                        {formatDistanceToNow(n.createdAt.toDate(), { addSuffix: true, locale: ja })}
+                                        {formatDistanceToNow(n.createdAt, { addSuffix: true, locale: ja })}
                                     </p>
                                 </div>
                             </div>

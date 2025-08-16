@@ -15,7 +15,8 @@ import { TaxReport } from './tax-report';
 import { ContributionTracker } from './contribution-tracker';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { User } from 'firebase/auth';
-import type { Transaction, Account } from '@/lib/types';
+import type { Account } from '@/domain';
+import type { Transaction } from '@/domain';
 import { CATEGORIES } from '@/data/dummy-data';
 
 interface ReportsScreenProps {
@@ -155,7 +156,7 @@ export function ReportsScreen({ user, transactions, accounts, loading }: Reports
 
                     {summary && !isGenerating && (
                         <div className="mt-6 text-left space-y-4 animate-in fade-in-50">
-                            <p className="text-lg text-center p-4 bg-muted rounded-lg">"{summary.positiveInsight}"</p>
+                            <p className="text-lg text-center p-4 bg-muted rounded-lg">&quot;{summary.positiveInsight}&quot;</p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <Card>
                                     <CardHeader className="pb-2">
