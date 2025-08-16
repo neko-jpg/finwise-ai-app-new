@@ -3,6 +3,16 @@ import * as tseslint from "typescript-eslint";
 
 export default [
   {
+    ignores: [
+      "node_modules",
+      ".next",
+      "dist",
+      "public/*",
+      "src/types/*.d.ts",
+      "functions/"
+    ],
+  },
+  {
     plugins: {
       "@typescript-eslint": tseslint.plugin,
     },

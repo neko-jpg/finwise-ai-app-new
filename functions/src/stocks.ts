@@ -1,6 +1,5 @@
 import * as functions from "firebase-functions";
 
-// @ts-expect-error - Assuming global fetch is available in Node.js 18+ environment
 const fetch = global.fetch;
 
 const FINNHUB_API_KEY = functions.config().finnhub?.key;

@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
-import type { Budget, Notification, Transaction } from "../../src/lib/types";
+import type { Budget, Notification, Transaction } from "./types";
 
 // admin.initializeApp()は一度だけでOKです
 if (admin.apps.length === 0) {
@@ -75,7 +76,7 @@ export const dailyFinancialCheck = functions.pubsub
         if (!tx.recurring || !tx.bookedAt) continue;
 
         let nextDueDate: Date;
-        const lastDate = tx.bookedAt.toDate();
+        const lastDate = (tx.bookedAt as unknown as Timestamp).toDate();
 
         switch (tx.recurring.interval) {
           case 'weekly': nextDueDate = addWeeks(lastDate, 1); break;
