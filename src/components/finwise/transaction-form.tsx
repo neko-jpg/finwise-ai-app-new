@@ -16,10 +16,11 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { CATEGORIES, TAX_TAGS } from '@/data/dummy-data';
-import { useToast } from '@/hooks/use-toast';
+import { useToast, showErrorToast } from '@/hooks/use-toast';
 import { useState, useTransition, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useOnlineStatus } from '@/hooks/use-online-status';
 import type { Transaction, Rule } from '@/lib/types';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
@@ -53,6 +54,7 @@ const SUPPORTED_CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD'];
 
 export function TransactionForm({ open, onOpenChange, familyId, user, primaryCurrency, rules, initialData, onTransactionAction }: TransactionFormProps) {
     const { toast } = useToast();
+    const isOnline = useOnlineStatus();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiCategorizing, startAiCategorization] = useTransition();
     const [selectedCurrency, setSelectedCurrency] = useState(primaryCurrency);
@@ -121,6 +123,37 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
 
     const onSubmit = async (values: TransactionFormValues) => {
         setIsSubmitting(true);
+
+        // Offline logic
+        if (!isOnline) {
+            try {
+                const pendingTx = {
+                    ...values,
+                    id: `pending_${Date.now()}`,
+                    familyId,
+                    userId: user.uid,
+                    status: 'pending',
+                    clientTimestamp: new Date().toISOString(),
+                };
+                const pendingTxs = JSON.parse(localStorage.getItem('pending_transactions') || '[]');
+                pendingTxs.push(pendingTx);
+                localStorage.setItem('pending_transactions', JSON.stringify(pendingTxs));
+
+                toast({
+                    title: 'オフラインのため取引を予約しました',
+                    description: 'オンラインになったら自動で同期されます。',
+                });
+                onOpenChange(false);
+                form.reset();
+            } catch (e) {
+                showErrorToast(new Error("オフライン取引の保存に失敗しました。"));
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
+
+        // Online logic
         try {
             let finalAmount = values.amount;
             if (selectedCurrency !== primaryCurrency) {
@@ -143,10 +176,8 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
                 familyId: familyId,
                 createdBy: user.uid,
             };
-
-            // 修正点: 保存する前にルールを適用します
-            const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
             
+            const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
             const hash = createTransactionHash(ruledTxData);
             
             const docData = {
@@ -180,11 +211,7 @@ export function TransactionForm({ open, onOpenChange, familyId, user, primaryCur
             form.reset();
         } catch (error) {
             console.error("Error adding document: ", error);
-            toast({
-                title: 'エラーが発生しました',
-                description: '取引の保存中にエラーが発生しました。',
-                variant: 'destructive',
-            });
+            showErrorToast(error);
         } finally {
             setIsSubmitting(false);
         }
