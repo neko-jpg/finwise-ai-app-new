@@ -19,7 +19,8 @@ export default [
       "public/*",
       // 型定義ファイルの警告を黙らせたい場合は次行を残す/調整
       "src/types/*.d.ts",
-      "functions/"
+      "functions/",
+      "scripts/"
     ],
   },
 

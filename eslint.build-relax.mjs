@@ -9,7 +9,8 @@ export default [
       "dist",
       "public/*",
       "src/types/*.d.ts",
-      "functions/"
+      "functions/",
+      "scripts/"
     ],
   },
   {
