@@ -32,7 +32,6 @@ export function SubscriptionsScreen({ transactions, familyId: _familyId }: Subsc
             {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
             Detect Subscriptions
         </Button>
-        {/* ... rest of the component */}
     </div>
   );
 }
