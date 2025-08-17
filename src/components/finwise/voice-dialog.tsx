@@ -108,7 +108,6 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
   // ... (rest of the component is the same)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        {/* ... */}
     </Dialog>
   )
 }

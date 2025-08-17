@@ -16,9 +16,9 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.string().email(),
   FIREBASE_PRIVATE_KEY: z.string().min(1),
   EXCHANGERATE_API_KEY: z.string().optional(),
-  PLAID_ENV: z.enum(['sandbox', 'development', 'production']),
-  PLAID_CLIENT_ID: z.string().min(1),
-  PLAID_SECRET: z.string().min(1),
+  PLAID_ENV: z.enum(['sandbox', 'development', 'production']).optional(),
+  PLAID_CLIENT_ID: z.string().optional(),
+  PLAID_SECRET: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']),
 });
 

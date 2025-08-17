@@ -1,4 +1,5 @@
 
+import "../lib/env";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Inter, Noto_Sans_JP } from 'next/font/google';
