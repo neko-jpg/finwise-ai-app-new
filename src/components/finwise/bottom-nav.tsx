@@ -19,10 +19,13 @@ export function BottomNav({ tab, setTab, onMic }: { tab: string; setTab: (t: str
     <button
       onClick={() => setTab(itemKey)}
       aria-current={tab === itemKey}
-      className={`flex flex-1 flex-col items-center justify-center py-2 text-xs transition-colors duration-200 ${tab === itemKey ? "text-primary font-medium" : "text-muted-foreground hover:text-primary/80"}`}
+      className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs transition-colors duration-200 ${tab === itemKey ? "text-primary" : "text-muted-foreground hover:text-primary/80"}`}
     >
-      <Icon className="h-5 w-5 mb-1" />
+      <Icon className="h-5 w-5" />
       <span>{label}</span>
+      {tab === itemKey && (
+        <div className="absolute bottom-0 h-1 w-6 rounded-t-full bg-primary transition-all duration-200" />
+      )}
     </button>
   );
 
