@@ -6,9 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { createUserProfile } from '@/lib/auth';
-import { getAdditionalUserInfo, UserCredential, getIdToken } from 'firebase/auth';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '@/lib/auth'; // 必要な関数をインポート
+import { handleAuth, signInWithGoogle, signInWithEmail, signUpWithEmail } from '@/lib/auth';
 import { Loader } from 'lucide-react';
 
 // Googleアイコンのコンポーネントを追加
@@ -76,28 +74,13 @@ function AuthForm({ type, onAuth, onGoogleAuth }: { type: 'login' | 'signup', on
 export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
     const { toast } = useToast();
 
-    const _handleAuth = async (authPromise: Promise<UserCredential | null>) => {
-        try {
-            const userCred = await authPromise;
-            if (userCred) {
-                if (getAdditionalUserInfo(userCred)?.isNewUser) {
-                    await createUserProfile(userCred.user);
-                }
-
-                const idToken = await getIdToken(userCred.user);
-                const base = process.env.NEXT_PUBLIC_API_BASE ?? '/api';
-                await fetch(`${base}/sessionLogin`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken }),
-                });
-
-                toast({ title: "ログインしました" });
-                onSignin();
-            }
-        } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            toast({ variant: "destructive", title: "エラー", description: message });
+    const processAuth = async (authPromise: Promise<any>) => {
+        const result = await handleAuth(authPromise);
+        if (result.success) {
+            toast({ title: result.message });
+            onSignin();
+        } else {
+            toast({ variant: "destructive", title: "エラー", description: result.message });
         }
     };
 
@@ -114,17 +97,17 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
                         <TabsTrigger value="signup">登録</TabsTrigger>
                     </TabsList>
                     <TabsContent value="login">
-                        <AuthForm 
+                        <AuthForm
                             type="login"
-                            onAuth={(email, pass) => _handleAuth(signInWithEmail(email, pass))}
-                            onGoogleAuth={() => _handleAuth(signInWithGoogle())}
+                            onAuth={(email, pass) => processAuth(signInWithEmail(email, pass))}
+                            onGoogleAuth={() => processAuth(signInWithGoogle())}
                         />
                     </TabsContent>
                     <TabsContent value="signup">
-                       <AuthForm 
+                       <AuthForm
                             type="signup"
-                            onAuth={(email, pass) => _handleAuth(signUpWithEmail(email, pass))}
-                            onGoogleAuth={() => _handleAuth(signInWithGoogle())}
+                            onAuth={(email, pass) => processAuth(signUpWithEmail(email, pass))}
+                            onGoogleAuth={() => processAuth(signInWithGoogle())}
                         />
                     </TabsContent>
                 </Tabs>

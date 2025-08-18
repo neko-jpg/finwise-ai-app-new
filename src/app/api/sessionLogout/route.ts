@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
+    expires: new Date(0),
   });
 
   return applyCorsHeaders(res, req);

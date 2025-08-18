@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
 
-// It's recommended to load this from environment variables
-// for better flexibility between environments.
-const ALLOWED_ORIGINS = [
-  'https://finwise-ai-app-new-djt7.vercel.app', // Production
-  'http://localhost:3000', // Local development
-  // Vercel Preview URLs can be dynamic. A more robust solution for preview
-  // environments might involve checking the origin against a pattern
-  // or using environment variables provided by the Vercel platform.
-  // For now, any specific preview URLs must be added here.
-];
+// Load allowed origins from environment variables.
+// The variable should be a comma-separated string of URLs.
+// e.g., "http://localhost:3000,https://your-production-domain.com"
+const allowedOriginsStr = process.env.ALLOWED_ORIGINS ?? "http://localhost:3000";
+const ALLOWED_ORIGINS = allowedOriginsStr.split(',').map(origin => origin.trim());
 
 /**
  * Generates CORS headers based on the request's origin.
@@ -21,12 +16,13 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Credentials': 'true',
+    'Vary': 'Origin',
   };
 
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    headers['Access-Control-Allow-Origin'] = origin;
-  } else if (origin && new RegExp(`^https://finwise-ai-app-new-djt7-.*\\.vercel\\.app$`).test(origin)) {
-    // Dynamically allow Vercel preview deployments
+  // Dynamically allow Vercel preview deployments
+  const isVercelPreview = origin && new RegExp(`^https://.*-.*\\.vercel\\.app$`).test(origin);
+
+  if (origin && (ALLOWED_ORIGINS.includes(origin) || isVercelPreview)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
 
