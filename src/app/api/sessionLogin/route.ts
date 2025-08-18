@@ -1,33 +1,33 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/server/firebaseAdmin";
+import { NextResponse, type NextRequest } from 'next/server';
+import { createSessionCookie } from '@/lib/firebase/admin';
 import { applyCorsHeaders, optionsResponse } from "@/lib/cors";
 
 export async function OPTIONS(req: Request) {
   return optionsResponse(req);
 }
 
-export async function POST(req: Request) {
-  let res: NextResponse;
+export async function POST(request: NextRequest) {
   try {
-    const { idToken } = await req.json();
-    // 5 days
-    const expiresIn = 1000 * 60 * 60 * 24 * 5;
-    const sessionCookie = await auth().createSessionCookie(idToken, { expiresIn });
-    res = NextResponse.json({ ok: true });
-    const fiveDaysInSeconds = 60 * 60 * 24 * 5;
-    res.cookies.set("__session", sessionCookie, {
+    const { idToken } = await request.json();
+    if (!idToken) {
+        return NextResponse.json({ success: false, error: 'idToken is required' }, { status: 400 });
+    }
+
+    const { sessionCookie, expiresIn } = await createSessionCookie(idToken);
+
+    const res = NextResponse.json({ success: true });
+    res.cookies.set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: "lax",
-      path: "/",
-      maxAge: fiveDaysInSeconds,
+      maxAge: expiresIn / 1000, // maxAge is in seconds
+      path: '/',
     });
+
+    return applyCorsHeaders(res, request);
+
   } catch (error) {
-    console.error("Session login error:", error);
-    res = NextResponse.json(
-      { ok: false, error: "Failed to create session" },
-      { status: 401 }
-    );
+    console.error('Failed to create session:', error);
+    const res = NextResponse.json({ success: false, error: 'Failed to create session' }, { status: 401 });
+    return applyCorsHeaders(res, request);
   }
-  return applyCorsHeaders(res, req);
 }

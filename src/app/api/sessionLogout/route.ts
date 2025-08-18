@@ -1,22 +1,26 @@
-import { NextResponse } from 'next/server';
-import { applyCorsHeaders, optionsResponse } from '@/lib/cors';
+import { NextResponse, type NextRequest } from 'next/server';
+import { revokeRefreshTokens } from '@/lib/firebase/admin';
+import { applyCorsHeaders, optionsResponse } from "@/lib/cors";
 
 export async function OPTIONS(req: Request) {
   return optionsResponse(req);
 }
 
-export async function POST(req: Request) {
-  const res = NextResponse.json({ ok: true });
+export async function POST(request: NextRequest) {
+    const sessionCookie = request.cookies.get('session')?.value;
 
-  // Invalidate the session cookie.
-  res.cookies.set('__session', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-    expires: new Date(0),
-  });
+    if (sessionCookie) {
+        await revokeRefreshTokens(sessionCookie);
+    }
 
-  return applyCorsHeaders(res, req);
+    const res = NextResponse.json({ success: true });
+    res.cookies.set('session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 0,
+        path: '/',
+        expires: new Date(0),
+    });
+
+    return applyCorsHeaders(res, request);
 }
