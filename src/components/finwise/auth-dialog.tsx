@@ -85,7 +85,8 @@ export function AuthDialog({ open, onOpenChange, onSignin }: AuthDialogProps) {
                 }
 
                 const idToken = await getIdToken(userCred.user);
-                await fetch('/api/sessionLogin', {
+                const base = process.env.NEXT_PUBLIC_API_BASE ?? '/api';
+                await fetch(`${base}/sessionLogin`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken }),
