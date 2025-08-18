@@ -35,10 +35,10 @@ export default function RootLayout({
             <AuthProvider>
               <AnimationProvider>
                 {children}
+                <Toaster />
               </AnimationProvider>
             </AuthProvider>
           </GoogleOAuthProvider>
-          <Toaster />
       </body>
     </html>
   );

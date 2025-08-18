@@ -77,7 +77,7 @@ interface InjectedPageProps {
 
 interface AppContainerProps {
     children: React.ReactNode;
-    serverUser: DecodedIdToken;
+    serverUser?: DecodedIdToken;
 }
 
 export function AppContainer({ children, serverUser }: AppContainerProps) {

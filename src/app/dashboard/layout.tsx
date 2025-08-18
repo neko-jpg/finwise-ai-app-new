@@ -1,37 +1,30 @@
-import { ReactNode } from "react";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { AppContainer } from "@/components/finwise/app-container";
-import { auth } from "@/server/firebaseAdmin";
-import { DecodedIdToken } from "firebase-admin/auth";
+'use client';
 
-export const dynamic = "force-dynamic";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { AppContainer } from '@/components/finwise/app-container';
 
-async function verifySession(sessionCookie: string | null): Promise<DecodedIdToken | null> {
-  if (!sessionCookie) {
-    return null;
-  }
-  try {
-    // trueの指定で、セッションが失効しているかもチェック
-    return await auth().verifySessionCookie(sessionCookie, true);
-  } catch (error) {
-    console.error("セッションクッキーの検証に失敗しました:", error);
-    return null;
-  }
-}
-
-export default async function AppLayout({
+export default function DashboardLayout({
   children,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("__session")?.value ?? null;
-  const serverUser = await verifySession(sessionCookie);
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (!serverUser) {
-    redirect("/entry");
+  useEffect(() => {
+    // 読み込みが完了し、ユーザーが未認証であればエントリーページにリダイレクト
+    if (!loading && !user) {
+      router.push('/entry');
+    }
+  }, [user, loading, router]);
+
+  // 読み込み中、またはユーザーがいない場合はローディング画面などを表示
+  if (loading || !user) {
+    return <div>Loading...</div>; // または適切なローディングコンポーネント
   }
 
-  return <AppContainer serverUser={serverUser}>{children}</AppContainer>;
+  // ユーザーがいればダッシュボードの内容を表示
+  return <AppContainer>{children}</AppContainer>;
 }
