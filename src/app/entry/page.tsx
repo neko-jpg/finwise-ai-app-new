@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthDialog from '@/components/finwise/auth-dialog';
-
+import { AuthDialog } from '@/components/finwise/auth-dialog';
 export default function EntryPage() {
   const { user } = useAuth();
   const router = useRouter();
