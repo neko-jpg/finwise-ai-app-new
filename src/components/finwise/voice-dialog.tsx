@@ -37,7 +37,8 @@ export function VoiceDialog({ open, onOpenChange, onComplete, transactions, budg
         if (result.type === 'transaction') {
             onComplete({ merchant: result.merchant, amount: result.amount });
         } else {
-            const response = await fetch('/api/ai/assistant', {
+            const base = process.env.NEXT_PUBLIC_API_BASE ?? '/api';
+            const response = await fetch(`${base}/ai/assistant`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
