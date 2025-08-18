@@ -3,7 +3,9 @@ import "../lib/env";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Inter, Noto_Sans_JP } from 'next/font/google';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import AnimationProvider from '@/components/animation-provider';
+import { AuthProvider } from "@/contexts/AuthContext";
 
 
 const inter = Inter({
@@ -25,12 +27,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
   return (
     <html lang="ja" className={`${inter.variable} ${noto.variable}`}>
       <body className="font-body">
-           <AnimationProvider>
-              {children}
-            </AnimationProvider>
+          <GoogleOAuthProvider clientId={clientId}>
+            <AuthProvider>
+              <AnimationProvider>
+                {children}
+              </AnimationProvider>
+            </AuthProvider>
+          </GoogleOAuthProvider>
           <Toaster />
       </body>
     </html>
