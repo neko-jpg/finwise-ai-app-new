@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // onAuthStateChanged は非同期でユーザーの状態を通知する
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
@@ -33,14 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // クリーンアップ関数
     return () => unsubscribe();
   }, []);
 
   const logout = async () => {
     try {
       await auth.signOut();
-      // サーバーサイドのセッションも破棄する
       await fetch('/api/sessionLogout', { method: 'POST' });
       router.push('/entry');
     } catch (error) {
@@ -63,10 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export const useAuth = () => useContext(AuthContext);
 
-// アプリケーション全体のローディング画面
 const GlobalLoader = () => {
   return (
-    <div className="flex h-screen w-screen items-center justify-center">
+    <div className="flex h-screen w-screen items-center justify-center bg-background">
+      {/* ここにオシャレなローディングスピナーなどを置くこともできます */}
       <p>Loading...</p>
     </div>
   );
