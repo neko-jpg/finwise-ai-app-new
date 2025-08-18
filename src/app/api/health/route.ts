@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
-export async function GET() {
-  return NextResponse.json({ ok: true, ts: Date.now() });
+import { applyCorsHeaders } from '@/lib/cors';
+
+export async function GET(req: Request) {
+  const res = NextResponse.json({ ok: true, ts: Date.now() });
+  return applyCorsHeaders(res, req);
 }

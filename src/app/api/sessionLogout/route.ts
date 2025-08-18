@@ -1,15 +1,21 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { applyCorsHeaders, optionsResponse } from '@/lib/cors';
 
-export async function POST() {
-  const cookieStore = await cookies();
-  // Invalidate the session cookie by setting a new one with a past expiration date.
-  cookieStore.set('__session', '', {
-    path: '/',
+export async function OPTIONS(req: Request) {
+  return optionsResponse(req);
+}
+
+export async function POST(req: Request) {
+  const res = NextResponse.json({ ok: true });
+
+  // Invalidate the session cookie.
+  res.cookies.set('__session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
+    path: '/',
     maxAge: 0,
   });
-  return NextResponse.json({ ok: true }, { status: 200 });
+
+  return applyCorsHeaders(res, req);
 }
