@@ -1,77 +1,86 @@
-import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, FirestoreError } from 'firebase/firestore';
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
-import type { Transaction } from '@/lib/domain';
-import { txConverter } from '@/lib/repo';
+import { useAuth } from '@/contexts/AuthContext';
+import { Transaction } from '@/lib/domain';
 
-interface UseTransactionsReturn {
-    transactions: Transaction[];
-    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-    loading: boolean;
-    error: FirestoreError | undefined;
-}
+export function useTransactions() {
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export function useTransactions(familyId: string | undefined, userId: string | undefined): UseTransactionsReturn {
-    const [sharedTransactions, setSharedTransactions] = useState<Transaction[]>([]);
-    const [personalTransactions, setPersonalTransactions] = useState<Transaction[]>([]);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<FirestoreError | undefined>(undefined);
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    // Merge shared and personal transactions and sort them
-    useEffect(() => {
-        const allTransactions = [...sharedTransactions, ...personalTransactions];
-        const uniqueTransactions = Array.from(new Map(allTransactions.map(t => [t.id, t])).values());
-        uniqueTransactions.sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime());
-        setTransactions(uniqueTransactions);
-    }, [sharedTransactions, personalTransactions]);
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', user.uid),
+    );
 
-    useEffect(() => {
-        if (!familyId || !userId) {
-            setLoading(false);
-            setSharedTransactions([]);
-            setPersonalTransactions([]);
-            return;
-        }
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const transactionsData: Transaction[] = [];
+        querySnapshot.forEach((doc) => {
+          transactionsData.push({ id: doc.id, ...doc.data() } as Transaction);
+        });
+        setTransactions(transactionsData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching transactions:', error);
+        setLoading(false);
+      },
+    );
 
-        setLoading(true);
-        const transactionsCollectionRef = collection(db, `families/${familyId}/transactions`).withConverter(txConverter);
+    return () => unsubscribe();
+  }, [user]);
 
-        // --- Query 1: Get shared transactions ---
-        const sharedQuery = query(transactionsCollectionRef, where('scope', '==', 'shared'));
-        const unsubscribeShared = onSnapshot(sharedQuery,
-            (querySnapshot) => {
-                const fetched = querySnapshot.docs.map(doc => doc.data());
-                setSharedTransactions(fetched);
-                setLoading(false);
-            },
-            (err) => {
-                console.error("useTransactions (shared) error:", err);
-                setError(err);
-                setLoading(false);
-            }
-        );
+  const createTransaction = useCallback(
+    async (transaction: Omit<Transaction, 'id'>) => {
+      if (!user) return;
+      await addDoc(collection(db, 'transactions'), {
+        ...transaction,
+        userId: user.uid,
+      });
+    },
+    [user],
+  );
 
-        // --- Query 2: Get personal transactions ---
-        const personalQuery = query(transactionsCollectionRef, where('createdBy', '==', userId), where('scope', '==', 'personal'));
-        const unsubscribePersonal = onSnapshot(personalQuery,
-            (querySnapshot) => {
-                const fetched = querySnapshot.docs.map(doc => doc.data());
-                setPersonalTransactions(fetched);
-                setLoading(false);
-            },
-            (err) => {
-                console.error("useTransactions (personal) error:", err);
-                setError(err);
-                setLoading(false);
-            }
-        );
+  const updateTransaction = useCallback(
+    async (id: string, updates: Partial<Transaction>) => {
+      const transactionDoc = doc(db, 'transactions', id);
+      await updateDoc(transactionDoc, updates);
+    },
+    [],
+  );
 
-        return () => {
-            unsubscribeShared();
-            unsubscribePersonal();
-        };
-    }, [familyId, userId]);
+  const deleteTransaction = useCallback(async (id: string) => {
+    const transactionDoc = doc(db, 'transactions', id);
+    await deleteDoc(transactionDoc);
+  }, []);
 
-    return { transactions, setTransactions, loading, error };
+  // ★★★ 修正点 ★★★
+  // create, update, delete関数を return するように変更
+  return {
+    transactions,
+    loading,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+  };
 }
