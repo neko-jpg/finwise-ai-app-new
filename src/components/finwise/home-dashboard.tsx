@@ -84,7 +84,7 @@ function MonthlyBudgetCard({ remain }: { remain: number }) {
     return <Card><CardHeader><CardTitle>今月の残り予算</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">¥{remain.toLocaleString()}</p></CardContent></Card>
 }
 function QuickActionsCard({ onNavigate }: { onNavigate: (path: string) => void }) {
-    return <Card><CardHeader><CardTitle>クイックアクション</CardTitle></CardHeader><CardContent><Button onClick={() => onNavigate('/app/transactions')}>取引を見る</Button></CardContent></Card>
+    return <Card><CardHeader><CardTitle>クイックアクション</CardTitle></CardHeader><CardContent><Button onClick={() => onNavigate('/transactions')}>取引を見る</Button></CardContent></Card>
 }
 function GoalsCard({ goals }: { goals: Goal[] }) {
     return <Card><CardHeader><CardTitle>目標</CardTitle></CardHeader><CardContent><p>{goals.length}個の目標</p></CardContent></Card>
