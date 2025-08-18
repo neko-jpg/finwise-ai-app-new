@@ -1,33 +1,32 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthDialog } from '@/components/finwise/auth-dialog';
-import { useAuthState } from '@/hooks/use-auth-state';
+import { useAuth } from '@/contexts/AuthContext'; // Use the new context
 import { Loader } from 'lucide-react';
 
 export default function EntryPage() {
   const [dialogOpen, setDialogOpen] = useState(true);
   const router = useRouter();
-  const { user, loading } = useAuthState();
+  const { user, loading, isAuthenticated } = useAuth(); // Use the new hook
 
   useEffect(() => {
-    if (!loading && user) {
-      // router.replace('/') を window.location.assign('/') に変更
-      // クッキーがセットされるのを待つため
-      window.location.assign('/');
+    if (!loading && isAuthenticated) {
+      // Redirect to the dashboard now at /dashboard
+      router.push('/dashboard');
     }
-  }, [user, loading]);
+  }, [isAuthenticated, loading, router]);
   
   useEffect(() => {
-      if(!dialogOpen && !user) {
+      // If the user closes the dialog, send them to the marketing page (now at root)
+      if(!dialogOpen && !isAuthenticated) {
           router.push('/');
       }
-  }, [dialogOpen, user, router]);
+  }, [dialogOpen, isAuthenticated, router]);
 
 
-  if (loading || user) {
+  if (loading || (!loading && isAuthenticated)) {
      return (
       <div className="flex h-screen w-screen items-center justify-center bg-background dark">
         <div className="flex flex-col items-center gap-4">
@@ -44,7 +43,7 @@ export default function EntryPage() {
             <AuthDialog 
                 open={dialogOpen} 
                 onOpenChange={setDialogOpen} 
-                onSignin={() => window.location.assign('/')}
+                onSignin={() => router.push('/dashboard')} // Use router push on signin to /dashboard
             />
         </div>
       </main>
