@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import type { LucideIcon } from 'lucide-react';
 
 // --- Core Schemas ---
@@ -26,50 +26,54 @@ export const AppUserSchema = z.object({
 export type AppUser = z.infer<typeof AppUserSchema>;
 
 export const FamilySchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    members: z.array(z.string()),
-    admins: z.array(z.string()),
-    createdAt: z.coerce.date(),
+  id: z.string(),
+  name: z.string(),
+  members: z.array(z.string()),
+  admins: z.array(z.string()),
+  createdAt: z.coerce.date(),
 });
 export type Family = z.infer<typeof FamilySchema>;
 
-export const TransactionSchema = z.object({
-  id: z.string(),
-  familyId: z.string(),
-  amount: z.number(),
-  originalAmount: z.number(),
-  originalCurrency: z.string(),
-  merchant: z.string(),
-  bookedAt: z.coerce.date(),
-  category: z.object({
-      major: z.string(),
-      minor: z.string().optional(),
-      confidence: z.number().optional(),
-  }),
-  source: z.enum(['manual', 'voice', 'ocr', 'csv', 'plaid', 'manual-offline']),
-  note: z.string().optional(),
-  attachment: z.object({
-    filePath: z.string(),
-    mime: z.string(),
-  }).optional(),
-  recurring: z.object({
-    interval: z.enum(['weekly', 'monthly', 'yearly']),
-    anchor: z.coerce.date().optional(),
-  }).optional(),
-  hash: z.string(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-  clientUpdatedAt: z.coerce.date().optional(),
-  deletedAt: z.date().optional(), // No coerce, allows undefined
-  scope: z.enum(['personal', 'shared']).optional(),
-  createdBy: z.string().optional(),
-  taxTag: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  plaidTransactionId: z.string().optional(),
-  plaidAccountId: z.string().optional(),
-});
-export type Transaction = z.infer<typeof TransactionSchema>;
+// ★★★ ここからが修正箇所です ★★★
+// Zodスキーマからではなく、シンプルなInterfaceでTransactionの型を定義します。
+// これにより、FirestoreのTimestamp型をフロントエンドで安全にDate型として扱えるようになります。
+export interface Transaction {
+  id: string;
+  userId: string; // FirebaseのUIDと紐付けるために追加
+  familyId: string;
+  amount: number;
+  originalAmount?: number;
+  originalCurrency?: string;
+  merchant: string;
+  bookedAt: Date; // FirestoreのTimestampから変換されるDate型
+  category: {
+    major: string;
+    minor?: string;
+    confidence?: number;
+  };
+  source?: 'manual' | 'voice' | 'ocr' | 'csv' | 'plaid' | 'manual-offline';
+  note?: string;
+  attachment?: {
+    filePath: string;
+    mime: string;
+  };
+  recurring?: {
+    interval: 'weekly' | 'monthly' | 'yearly';
+    anchor?: Date;
+  };
+  hash?: string;
+  createdAt: Date; // FirestoreのTimestampから変換されるDate型
+  updatedAt: Date; // FirestoreのTimestampから変換されるDate型
+  clientUpdatedAt?: Date;
+  deletedAt?: Date;
+  scope?: 'personal' | 'shared';
+  createdBy?: string;
+  taxTag?: string;
+  tags?: string[];
+  plaidTransactionId?: string;
+  plaidAccountId?: string;
+}
+// ★★★ ここまでが修正箇所です ★★★
 
 export const GoalSchema = z.object({
   id: z.string(),
@@ -86,16 +90,16 @@ export const GoalSchema = z.object({
 export type Goal = z.infer<typeof GoalSchema>;
 
 export const BudgetSchema = z.object({
-    id: z.string(),
-    familyId: z.string(),
-    year: z.number(),
-    month: z.number(),
-    limits: z.record(z.string(), z.number()),
-    used: z.record(z.string(), z.number()),
-    scope: z.enum(['personal', 'shared']),
-    createdBy: z.string(),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
+  id: z.string(),
+  familyId: z.string(),
+  year: z.number(),
+  month: z.number(),
+  limits: z.record(z.string(), z.number()),
+  used: z.record(z.string(), z.number()),
+  scope: z.enum(['personal', 'shared']),
+  createdBy: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
 
@@ -132,56 +136,59 @@ export const NotificationSchema = z.object({
 export type Notification = z.infer<typeof NotificationSchema>;
 
 export const TaskSchema = z.object({
-    id: z.string(),
-    type: z.enum(['duplicate_transactions', 'subscription_review', 'budget_review']),
-    title: z.string(),
-    description: z.string(),
-    cta: z.string(),
-    link: z.string(),
-    data: z.any().optional(),
+  id: z.string(),
+  type: z.enum([
+    'duplicate_transactions',
+    'subscription_review',
+    'budget_review',
+  ]),
+  title: z.string(),
+  description: z.string(),
+  cta: z.string(),
+  link: z.string(),
+  data: z.any().optional(),
 });
 export type Task = z.infer<typeof TaskSchema>;
-
 
 // --- Plaid-related Schemas ---
 
 export const PlaidAccountSchema = z.object({
-    id: z.string(),
-    familyId: z.string(),
-    plaidItemId: z.string(),
-    name: z.string(),
-    mask: z.string().nullable(),
-    type: z.string(),
-    subtype: z.string(),
-    currentBalance: z.number(),
-    updatedAt: z.coerce.date(),
+  id: z.string(),
+  familyId: z.string(),
+  plaidItemId: z.string(),
+  name: z.string(),
+  mask: z.string().nullable(),
+  type: z.string(),
+  subtype: z.string(),
+  currentBalance: z.number(),
+  updatedAt: z.coerce.date(),
 });
 export type Account = z.infer<typeof PlaidAccountSchema>;
 
 export const HoldingSchema = z.object({
-    id: z.string(),
-    familyId: z.string(),
-    userId: z.string(),
-    securityId: z.string(),
-    quantity: z.number(),
-    plaidAccountId: z.string().optional(),
-    institutionValue: z.number().optional(),
-    costBasis: z.number().nullable().optional(),
-    notes: z.string().optional(),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
+  id: z.string(),
+  familyId: z.string(),
+  userId: z.string(),
+  securityId: z.string(),
+  quantity: z.number(),
+  plaidAccountId: z.string().optional(),
+  institutionValue: z.number().optional(),
+  costBasis: z.number().nullable().optional(),
+  notes: z.string().optional(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 export type Holding = z.infer<typeof HoldingSchema>;
 
 export const SecuritySchema = z.object({
-    id:z.string(),
-    assetType: z.enum(['stock', 'crypto']),
-    name: z.string().nullable(),
-    tickerSymbol: z.string().nullable(),
-    securityType: z.string().nullable().optional(),
-    closePrice: z.number().nullable(),
-    logoUrl: z.string().url().optional(),
-    updatedAt: z.coerce.date(),
+  id: z.string(),
+  assetType: z.enum(['stock', 'crypto']),
+  name: z.string().nullable(),
+  tickerSymbol: z.string().nullable(),
+  securityType: z.string().nullable().optional(),
+  closePrice: z.number().nullable(),
+  logoUrl: z.string().url().optional(),
+  updatedAt: z.coerce.date(),
 });
 export type Security = z.infer<typeof SecuritySchema>;
 
@@ -196,7 +203,6 @@ export const InvitationSchema = z.object({
 });
 export type Invitation = z.infer<typeof InvitationSchema>;
 
-
 // --- UI-related Types (Not Zod Schemas as they don't come from a DB) ---
 
 export interface Category {
@@ -206,36 +212,42 @@ export interface Category {
 }
 
 export interface QuickActionDefinition {
-    key: string;
-    text: string;
-    icon: LucideIcon;
+  key: string;
+  text: string;
+  icon: LucideIcon;
 }
 
-export type WidgetId = 'todaySpend' | 'monthlyBudget' | 'advice' | 'quickActions' | 'goals' | 'recentTransactions';
+export type WidgetId =
+  | 'todaySpend'
+  | 'monthlyBudget'
+  | 'advice'
+  | 'quickActions'
+  | 'goals'
+  | 'recentTransactions';
 
 export interface WidgetConfig {
-    id: WidgetId;
-    order: number;
-    size: 'full' | 'half' | 'third';
+  id: WidgetId;
+  order: number;
+  size: 'full' | 'half' | 'third';
 }
 
 export interface DashboardLayout {
-    id: string; // Should be user's UID
-    widgets: WidgetConfig[];
+  id: string; // Should be user's UID
+  widgets: WidgetConfig[];
 }
 
 export type BadgeId = 'one_month_user' | 'first_budget_met';
 
 export interface Badge {
-    id: BadgeId;
-    name: string;
-    description: string;
-    icon: LucideIcon;
+  id: BadgeId;
+  name: string;
+  description: string;
+  icon: LucideIcon;
 }
 
 export interface UserBadge {
-    id: string; // Document ID
-    userId: string;
-    badgeId: BadgeId;
-    createdAt: Date;
+  id: string; // Document ID
+  userId: string;
+  badgeId: BadgeId;
+  createdAt: Date;
 }
