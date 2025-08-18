@@ -1,34 +1,23 @@
 'use client';
 
-import { HomeDashboard } from "@/components/finwise/home-dashboard";
-import { useAuthState } from '@/hooks/use-auth-state';
-import { useUserProfile } from '@/hooks/use-user-profile';
-import { useFamily } from '@/hooks/use-family';
-import { useTransactions } from '@/hooks/use-transactions';
-import { useBudget } from '@/hooks/use-budget';
-import { useGoals } from '@/hooks/use-goals';
+import { HomeDashboard } from '@/components/finwise/home-dashboard';
 import { useTasks } from '@/hooks/use-tasks';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function AppPage() {
-  const { user, loading: _authLoading } = useAuthState();
-  const { userProfile, loading: _profileLoading } = useUserProfile(user?.uid);
-  const familyId = userProfile?.familyId;
+export default function DashboardPage() {
+  const { tasks, loading } = useTasks();
 
-  const today = new Date();
+  if (loading) {
+    return (
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
 
-  const { loading: _familyLoading } = useFamily(familyId);
-  const { transactions, loading: _transactionsLoading } = useTransactions(familyId, user?.uid);
-  const { sharedBudget, loading: _budgetLoading } = useBudget(familyId, today, user?.uid);
-  const { goals, loading: _goalsLoading } = useGoals(familyId);
-  const { tasks, loading: _tasksLoading } = useTasks(transactions, sharedBudget);
-
-  return (
-    <HomeDashboard
-      user={user ?? undefined}
-      tasks={tasks}
-      transactions={transactions}
-      budget={sharedBudget}
-      goals={goals ?? []}
-    />
-  );
+  return <HomeDashboard tasks={tasks} />;
 }
