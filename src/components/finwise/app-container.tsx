@@ -28,9 +28,10 @@ import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { txConverter } from "@/lib/repo";
 import { User } from "firebase/auth";
+import { DecodedIdToken } from "firebase-admin/auth";
 
 interface InjectedPageProps {
-  user: User;
+  user: User | DecodedIdToken;
   familyId?: string;
   transactions: Transaction[];
   goals: Goal[];
@@ -47,13 +48,18 @@ interface InjectedPageProps {
 
 interface AppContainerProps {
     children: React.ReactNode;
+    serverUser: DecodedIdToken;
 }
 
-export function AppContainer({ children }: AppContainerProps) {
+export function AppContainer({ children, serverUser }: AppContainerProps) {
   const router = useRouter();
   const pathname = usePathname();
   
-  const { user, loading: authLoading } = useAuthState();
+  // サーバーから渡されたユーザー情報を初期値として使用し、クライアントサイドの認証状態も監視します。
+  // これにより、初回読み込み時のチラつきを防ぎつつ、リアルタイムの認証状態の変更にも対応します。
+  const { user: clientUser, loading: authLoading } = useAuthState();
+  const user = clientUser || serverUser;
+
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;
 
@@ -125,7 +131,8 @@ export function AppContainer({ children }: AppContainerProps) {
     void syncPendingTransactions();
   }, [isOnline, familyId, user, rules, toast, userProfile, setTransactions]);
 
-  const loading = authLoading || profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
+  // authLoadingは初回読み込みでは常にfalseになるため、他のローディング状態のみを考慮します。
+  const loading = profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
 
   const currentBalance = useMemo(() => {
     return plaidAccounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
@@ -138,10 +145,12 @@ export function AppContainer({ children }: AppContainerProps) {
   }, [userProfile]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // clientUserがnullになり（例：セッションがクライアントサイドで失効）、
+    // かつauthLoadingが完了した場合にリダイレクトします。
+    if (!authLoading && !clientUser) {
       router.push('/entry');
     }
-  }, [user, authLoading, router]);
+  }, [clientUser, authLoading, router]);
 
   const handleCompleteOnboarding = async () => {
     if (!user) return;
@@ -172,7 +181,7 @@ export function AppContainer({ children }: AppContainerProps) {
     return 'home';
   }, [pathname]);
 
-  if (loading || !user) {
+  if (loading || !user) { // userオブジェクトが利用可能になるまでローディング表示
     return (
       <div className="flex flex-col h-screen">
         <header className="p-4 border-b"><Skeleton className="h-8 w-32" /></header>

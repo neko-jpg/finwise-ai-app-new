@@ -14,9 +14,11 @@ export default function EntryPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/');
+      // router.replace('/') を window.location.assign('/') に変更
+      // クッキーがセットされるのを待つため
+      window.location.assign('/');
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
   
   useEffect(() => {
       if(!dialogOpen && !user) {
@@ -42,7 +44,7 @@ export default function EntryPage() {
             <AuthDialog 
                 open={dialogOpen} 
                 onOpenChange={setDialogOpen} 
-                onSignin={() => router.replace('/')}
+                onSignin={() => window.location.assign('/')}
             />
         </div>
       </main>
