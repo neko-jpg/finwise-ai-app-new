@@ -1,52 +1,73 @@
 'use client';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth, signOut as firebaseSignOut } from '@/lib/auth'; // Import auth and signOut
+import { auth } from '@/lib/firebase/client';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  logout: () => void;
   loading: boolean;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  logout: async () => {},
+});
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // onAuthStateChanged returns an unsubscribe function
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    // onAuthStateChanged は非同期でユーザーの状態を通知する
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
+    // クリーンアップ関数
     return () => unsubscribe();
   }, []);
 
   const logout = async () => {
-    await firebaseSignOut();
-    // The signOut function in lib/auth.js already handles redirect
+    try {
+      await auth.signOut();
+      // サーバーサイドのセッションも破棄する
+      await fetch('/api/sessionLogout', { method: 'POST' });
+      router.push('/entry');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
   };
 
-  const isAuthenticated = !!user;
+  const value = {
+    user,
+    loading,
+    logout,
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, logout, loading }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {loading ? <GlobalLoader /> : children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+export const useAuth = () => useContext(AuthContext);
+
+// アプリケーション全体のローディング画面
+const GlobalLoader = () => {
+  return (
+    <div className="flex h-screen w-screen items-center justify-center">
+      <p>Loading...</p>
+    </div>
+  );
 };
