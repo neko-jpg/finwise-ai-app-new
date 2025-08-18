@@ -1,47 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthDialog } from '@/components/finwise/auth-dialog';
+import AuthDialog from '@/components/finwise/auth-dialog';
 
 export default function EntryPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-  const [dialogOpen, setDialogOpen] = useState(true);
 
   useEffect(() => {
-    // Redirect authenticated users to the dashboard
-    if (!loading && user) {
-      router.push('/dashboard');
+    // AuthProviderでloadingは処理済みなので、userの有無だけチェック
+    if (user) {
+      router.replace('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, router]);
 
-  useEffect(() => {
-    // If the user closes the dialog without authenticating, redirect to the marketing page
-    if (!dialogOpen && !user) {
-        router.push('/');
-    }
-  }, [dialogOpen, user, router]);
-
-  // While loading auth state, show a loading indicator
-  if (loading) {
-    return <div>Loading...</div>;
+  // userがいない場合のみ、ログインダイアログを表示
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <AuthDialog />
+      </div>
+    );
   }
 
-  // If the user is authenticated, they will be redirected, so we can return null.
-  if (user) {
-    return null;
-  }
-
-  // If the user is not authenticated, show the auth dialog.
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <AuthDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSignin={() => router.push('/dashboard')}
-      />
-    </div>
-  );
+  // userがいる場合（リダイレクト待ち）は何も表示しない
+  return null;
 }
