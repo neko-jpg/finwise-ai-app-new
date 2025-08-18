@@ -38,13 +38,13 @@ export const createLinkToken = defineFlow(
   }
 );
 
-const ExchangePublicTokenInputSchema = z.object({ publicToken: z.string(), familyId: z.string() });
+const ExchangePublicTokenInputSchema = z.object({ publicToken: z.string(), familyId: z.string(), userId: z.string() });
 type ExchangePublicTokenInput = z.infer<typeof ExchangePublicTokenInputSchema>;
 
 export const exchangePublicToken = defineFlow(
   'exchangePublicToken',
   { input: ExchangePublicTokenInputSchema, output: z.object({ success: z.boolean() }) },
-  async ({ publicToken, familyId }: ExchangePublicTokenInput) => {
+  async ({ publicToken, familyId, userId }: ExchangePublicTokenInput) => {
     const response = await plaidClient.itemPublicTokenExchange({ public_token: publicToken });
     const { access_token: accessToken, item_id: itemId } = response.data;
     const itemResponse = await plaidClient.itemGet({ access_token: accessToken });
@@ -55,23 +55,24 @@ export const exchangePublicToken = defineFlow(
     await setDoc(plaidItemRef, {
       id: itemId,
       familyId: familyId,
+      userId: userId, // ユーザーIDを保存
       accessToken: accessToken,
       institutionName: institutionName,
       createdAt: serverTimestamp(),
     });
 
-    void syncInvestments({ plaidItemId: itemId, familyId });
+    void syncInvestments({ plaidItemId: itemId, familyId, userId });
     return { success: true };
   }
 );
 
-const SyncInvestmentsInputSchema = z.object({ plaidItemId: z.string(), familyId: z.string() });
+const SyncInvestmentsInputSchema = z.object({ plaidItemId: z.string(), familyId: z.string(), userId: z.string() });
 type SyncInvestmentsInput = z.infer<typeof SyncInvestmentsInputSchema>;
 
 export const syncInvestments = defineFlow(
   'syncInvestments',
   { input: SyncInvestmentsInputSchema, output: z.object({ success: z.boolean() }) },
-  async ({ plaidItemId, familyId }: SyncInvestmentsInput) => {
+  async ({ plaidItemId, familyId, userId }: SyncInvestmentsInput) => {
       const itemRef = doc(db, 'plaid_items', plaidItemId);
       const itemDoc = await getDoc(itemRef);
       if (!itemDoc.exists()) throw new Error(`Plaid item ${plaidItemId} not found.`);
@@ -94,20 +95,20 @@ export const syncInvestments = defineFlow(
       for (const holding of holdings) {
         const holdingId = `${holding.account_id}-${holding.security_id}`;
         const holdingRef = doc(db, 'holdings', holdingId);
-        batch.set(holdingRef, { ...holding, id: holdingId, familyId, updatedAt: now });
+        batch.set(holdingRef, { ...holding, id: holdingId, familyId, userId, updatedAt: now });
       }
       await batch.commit();
       return { success: true };
   }
 );
 
-const SyncTransactionsInputSchema = z.object({ plaidItemId: z.string(), familyId: z.string() });
+const SyncTransactionsInputSchema = z.object({ plaidItemId: z.string(), familyId: z.string(), userId: z.string() });
 type SyncTransactionsInput = z.infer<typeof SyncTransactionsInputSchema>;
 
 export const syncTransactions = defineFlow(
   'syncTransactions',
   { input: SyncTransactionsInputSchema, output: z.object({ success: z.boolean(), added: z.number() }) },
-  async ({ plaidItemId, familyId }: SyncTransactionsInput) => {
+  async ({ plaidItemId, familyId, userId }: SyncTransactionsInput) => {
     const itemRef = doc(db, 'plaid_items', plaidItemId);
     const itemDoc = await getDoc(itemRef);
     if (!itemDoc.exists()) throw new Error(`Plaid item ${plaidItemId} not found.`);
@@ -128,6 +129,7 @@ export const syncTransactions = defineFlow(
 
     for (const plaidTx of added) {
       const txData: Omit<Transaction, 'id' | 'hash'> = {
+        userId, // Add userId
         familyId,
         amount: plaidTx.amount * -1,
         originalAmount: plaidTx.amount,
@@ -142,7 +144,12 @@ export const syncTransactions = defineFlow(
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const hash = createTransactionHash(txData);
+      const hash = createTransactionHash({
+        bookedAt: txData.bookedAt,
+        merchant: txData.merchant,
+        amount: txData.amount,
+        originalCurrency: txData.originalCurrency,
+      });
       const docRef = doc(txCollectionRef);
       batch.set(docRef, { ...txData, id: docRef.id, hash });
     }
@@ -153,18 +160,18 @@ export const syncTransactions = defineFlow(
   }
 );
 
-const SyncAllTransactionsInputSchema = z.object({ familyId: z.string() });
+const SyncAllTransactionsInputSchema = z.object({ familyId: z.string(), userId: z.string() });
 type SyncAllTransactionsInput = z.infer<typeof SyncAllTransactionsInputSchema>;
 
 export const syncAllTransactions = defineFlow(
     'syncAllTransactions',
     { input: SyncAllTransactionsInputSchema, output: z.object({ success: z.boolean(), syncedItems: z.number() }) },
-    async ({ familyId }: SyncAllTransactionsInput) => {
+    async ({ familyId, userId }: SyncAllTransactionsInput) => {
         const plaidItemsRef = collection(db, 'plaid_items');
         const q = query(plaidItemsRef, where("familyId", "==", familyId));
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) return { success: true, syncedItems: 0 };
-        const syncPromises = querySnapshot.docs.map(doc => syncTransactions({ plaidItemId: doc.id, familyId }));
+        const syncPromises = querySnapshot.docs.map(doc => syncTransactions({ plaidItemId: doc.id, familyId, userId }));
         await Promise.all(syncPromises);
         return { success: true, syncedItems: querySnapshot.size };
     }

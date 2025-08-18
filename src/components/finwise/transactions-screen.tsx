@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   TableHeader,
@@ -9,86 +9,97 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
-import { Transaction } from '@/lib/domain';
+import { type Transaction, type AuthUser, type Rule } from '@/lib/domain';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
-import { DateRange } from 'react-day-picker';
+import { type DateRange } from 'react-day-picker';
 import { addDays, isWithinInterval } from 'date-fns';
 import { TransactionForm } from './transaction-form';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
-// 親コンポーネントから受け取る props の型を定義します
 interface TransactionsScreenProps {
   transactions: Transaction[];
+  familyId: string;
+  user: AuthUser;
+  rules: Rule[];
+  primaryCurrency: string;
   updateTransaction: (
     id: string,
-    updates: Partial<Transaction>,
+    updates: Partial<Omit<Transaction, 'id'>>,
   ) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  createTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  createTransaction: (
+    transaction: Omit<Transaction, 'id' | 'hash'>,
+  ) => Promise<void>;
 }
 
 export function TransactionsScreen({
   transactions,
+  familyId,
+  user,
+  rules,
+  primaryCurrency,
   updateTransaction,
   deleteTransaction,
   createTransaction,
 }: TransactionsScreenProps) {
+  const { toast } = useToast();
   const [filter, setFilter] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
-  const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isCreateFormOpen, setCreateFormOpen] = useState(false);
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
 
     if (dateRange?.from && dateRange?.to) {
+      const start = dateRange.from;
+      const end = dateRange.to;
       filtered = filtered.filter((t) =>
-        isWithinInterval(new Date(t.date), {
-          start: dateRange.from!,
-          end: dateRange.to!,
-        }),
+        isWithinInterval(new Date(t.bookedAt), { start, end }),
       );
     }
 
     if (filter) {
+      const lowercasedFilter = filter.toLowerCase();
       filtered = filtered.filter(
         (t) =>
-          t.description.toLowerCase().includes(filter.toLowerCase()) ||
-          t.category.toLowerCase().includes(filter.toLowerCase()),
+          t.merchant.toLowerCase().includes(lowercasedFilter) ||
+          t.category.major.toLowerCase().includes(lowercasedFilter),
       );
     }
 
-    return filtered.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
+    return filtered.sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime());
   }, [transactions, filter, dateRange]);
 
-  const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-  };
+  const handleTransactionAction = useCallback(
+    async (tx: Transaction, isUpdate: boolean) => {
+      if (isUpdate) {
+        await updateTransaction(tx.id, tx);
+        setEditingTransaction(null);
+      } else {
+        await createTransaction(tx);
+        setCreateFormOpen(false);
+      }
+    },
+    [createTransaction, updateTransaction],
+  );
 
-  const handleSave = async (updatedTransaction: Transaction) => {
-    if (updatedTransaction.id) {
-      await updateTransaction(updatedTransaction.id, updatedTransaction);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+      toast({ title: 'Transaction deleted' });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete transaction.',
+      });
     }
-    setEditingTransaction(null);
-  };
-
-  const handleCreate = async (newTransaction: Omit<Transaction, 'id'>) => {
-    await createTransaction(newTransaction);
-    setCreateDialogOpen(false);
   };
 
   return (
@@ -107,20 +118,12 @@ export function TransactionsScreen({
             onDateChange={setDateRange}
             className="w-full md:w-auto"
           />
-          <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">Add Transaction</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
-              </DialogHeader>
-              <TransactionForm
-                onSave={handleCreate}
-                onCancel={() => setCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button
+            onClick={() => setCreateFormOpen(true)}
+            className="w-full md:w-auto"
+          >
+            Add Transaction
+          </Button>
         </div>
       </div>
       <div className="border rounded-lg overflow-hidden">
@@ -128,7 +131,7 @@ export function TransactionsScreen({
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Merchant</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Actions</TableHead>
@@ -138,35 +141,33 @@ export function TransactionsScreen({
             {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
                 <TableCell>
-                  {new Date(transaction.date).toLocaleDateString()}
+                  {new Date(transaction.bookedAt).toLocaleDateString()}
                 </TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
+                <TableCell>{transaction.merchant}</TableCell>
+                <TableCell>{transaction.category.major}</TableCell>
                 <TableCell
                   className={`text-right font-medium ${
-                    transaction.type === 'expense'
-                      ? 'text-red-500'
-                      : 'text-green-500'
+                    transaction.amount < 0 ? 'text-red-500' : 'text-green-500'
                   }`}
                 >
-                  {transaction.type === 'expense' ? '-' : ''}$
-                  {transaction.amount.toFixed(2)}
+                  {transaction.amount.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: transaction.originalCurrency || 'JPY',
+                  })}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 justify-end">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleEdit(transaction)}
+                      onClick={() => setEditingTransaction(transaction)}
                     >
                       Edit
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() =>
-                        transaction.id && deleteTransaction(transaction.id)
-                      }
+                      onClick={() => handleDelete(transaction.id)}
                     >
                       Delete
                     </Button>
@@ -177,22 +178,30 @@ export function TransactionsScreen({
           </TableBody>
         </Table>
       </div>
+
+      {/* Create Transaction Form */}
+      <TransactionForm
+        open={isCreateFormOpen}
+        onOpenChange={setCreateFormOpen}
+        familyId={familyId}
+        user={user}
+        primaryCurrency={primaryCurrency}
+        rules={rules}
+        onTransactionAction={handleTransactionAction}
+      />
+
+      {/* Edit Transaction Form */}
       {editingTransaction && (
-        <Dialog
+        <TransactionForm
           open={!!editingTransaction}
           onOpenChange={() => setEditingTransaction(null)}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Transaction</DialogTitle>
-            </DialogHeader>
-            <TransactionForm
-              transaction={editingTransaction}
-              onSave={handleSave}
-              onCancel={() => setEditingTransaction(null)}
-            />
-          </DialogContent>
-        </Dialog>
+          initialData={editingTransaction}
+          familyId={familyId}
+          user={user}
+          primaryCurrency={primaryCurrency}
+          rules={rules}
+          onTransactionAction={handleTransactionAction}
+        />
       )}
     </div>
   );

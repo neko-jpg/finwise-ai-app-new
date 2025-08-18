@@ -80,11 +80,10 @@ export function OcrScanner({ open, onOpenChange, onComplete }: OcrScannerProps) 
         const result = await processReceipt({ photoDataUri: dataUri });
 
         if (result.success && result.data) {
-            const [year, month, day] = result.data.bookedAt.split('-').map(Number);
             onComplete({
                 merchant: result.data.merchant,
                 amount: result.data.amount,
-                bookedAt: new Date(year, month - 1, day),
+                bookedAt: result.data.bookedAt, // Keep as string 'YYYY-MM-DD'
             });
             toast({ title: 'レシートを読み取りました', description: '内容を確認して保存してください。' });
             onOpenChange(false);
