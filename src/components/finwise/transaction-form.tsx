@@ -15,7 +15,8 @@ import type { Transaction, Rule } from '@/lib/domain';
 import { categorizeTransaction } from '@/ai/flows/categorize-transaction';
 import { getExchangeRate } from '@/ai/flows/exchange-rate';
 import { applyRulesToTransaction } from '@/lib/rule-engine';
-import type { User } from 'firebase/auth';
+// import type { User } from 'firebase/auth';
+import type { AuthUser } from '@/lib/domain';
 import { createTransactionHash } from '@/lib/utils';
 import { txConverter } from '@/lib/repo';
 
@@ -34,7 +35,7 @@ interface TransactionFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     familyId: string;
-    user: User;
+    user: AuthUser;
     primaryCurrency: string;
     rules: Rule[];
     initialData?: Partial<TransactionFormValues>;
