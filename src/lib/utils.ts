@@ -13,13 +13,13 @@ export function cn(...inputs: ClassValue[]) {
  * @param tx An object with the core fields for hashing.
  * @returns A SHA256 hash string.
  */
-export function createTransactionHash(tx: { bookedAt: Date, merchant: string, amount: number, originalCurrency: string }): string {
+export function createTransactionHash(tx: { bookedAt: Date, merchant: string, amount: number, originalCurrency: string | undefined | null }): string {
   // Use a consistent date format to ensure the hash is the same regardless of timezones.
   const dateString = format(tx.bookedAt, 'yyyy-MM-dd');
   
   // Create a consistent string from the core details of the transaction.
   // This helps identify duplicates even if they are entered seconds apart.
-  const sourceString = `${dateString}-${tx.merchant}-${tx.amount}-${tx.originalCurrency}`;
+  const sourceString = `${dateString}-${tx.merchant}-${tx.amount}-${tx.originalCurrency || 'N/A'}`;
   
   return SHA256(sourceString).toString();
 }

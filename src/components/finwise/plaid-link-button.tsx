@@ -41,8 +41,12 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({ user, familyId
         toast({ title: '家族情報が見つかりません', variant: 'destructive' });
         return;
       }
+      if (!user) {
+        toast({ title: 'ユーザー情報が見つかりません', variant: 'destructive' });
+        return;
+      }
       try {
-        await exchangePublicToken({ publicToken: public_token, familyId });
+        await exchangePublicToken({ publicToken: public_token, familyId, userId: user.uid });
         toast({
           title: '口座が正常に連携されました',
           description: `${metadata.institution?.name} が接続されました。`,

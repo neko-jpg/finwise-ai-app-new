@@ -1,300 +1,62 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, Children, isValidElement, cloneElement } from "react";
+import React from 'react';
 import { AppHeader } from './app-header';
 import { OfflineBanner } from './offline-banner';
-import { useOnlineStatus } from "@/hooks/use-online-status";
-import { useToast, showErrorToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase/client";
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
-import { applyRulesToTransaction } from "@/lib/rule-engine";
-import { InteractiveTutorial } from "./InteractiveTutorial";
-import { createTransactionHash } from "@/lib/utils";
+import { useOnlineStatus } from '@/hooks/use-online-status';
 import { BottomNav } from './bottom-nav';
-import { VoiceDialog } from './voice-dialog';
-import { OcrScanner } from './ocr-scanner';
-import { TransactionForm, TransactionFormValues } from './transaction-form';
-import type { Transaction, Goal, Rule, Account, Budget } from "@/lib/domain";
-import { useTransactions } from "@/hooks/use-transactions";
-import { useGoals } from "@/hooks/use-goals";
-import { useUserProfile } from '@/hooks/use-user-profile';
-import { useRules } from "@/hooks/use-rules";
-import { useInvestmentPortfolio } from '@/hooks/use-investment-portfolio';
-import { useNotifications } from '@/hooks/use-notifications';
-import { useBudget } from "@/hooks/use-budget";
-import { GoalForm } from "./goal-form";
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuthState } from '@/hooks/use-auth-state';
-import { Skeleton } from '@/components/ui/skeleton';
-import { txConverter } from "@/lib/repo";
-// import { User } from "firebase/auth";
-// import { DecodedIdToken } from "firebase-admin/auth";
-import type { User as ClientUser } from 'firebase/auth';
-import type { DecodedIdToken } from 'firebase-admin/auth';
-import type { AuthUser } from '@/lib/domain';
+import { AppDataProvider, useAppData } from '@/contexts/app-data-context';
 
-// どちらの入力でも共通 AuthUser に正規化
-function toAuthUser(u: ClientUser | DecodedIdToken | null | undefined): AuthUser | null {
-  if (!u) return null;
-
-  // クライアントUser（firebase/auth）
-  if ('providerData' in (u as any)) {
-    const cu = u as ClientUser;
-    return {
-      uid: cu.uid,
-      email: cu.email ?? null,
-      displayName: cu.displayName ?? null,
-      photoURL: cu.photoURL ?? null,
-    };
-  }
-
-  // サーバDecodedIdToken（firebase-admin）
-  const su = u as DecodedIdToken;
-  return {
-    uid: su.uid,
-    email: su.email ?? null,
-    displayName: su.name ?? null,
-    photoURL: su.picture ?? null,
-  };
-}
-
-
-interface InjectedPageProps {
-  user: AuthUser;
-  familyId?: string;
-  transactions: Transaction[];
-  goals: Goal[];
-  rules: Rule[];
-  accounts: Account[];
-  currentBalance: number;
-  personalBudget: Budget | null;
-  sharedBudget: Budget | null;
-  setPersonalBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
-  setSharedBudget: React.Dispatch<React.SetStateAction<Budget | null>>;
-  loading: boolean;
-  onOpenTransactionForm: (initialData?: Partial<TransactionFormValues>) => void;
-}
-
-interface AppContainerProps {
-    children: React.ReactNode;
-    serverUser?: DecodedIdToken;
-}
-
-export function AppContainer({ children, serverUser }: AppContainerProps) {
+function AppContainerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  // サーバーから渡されたユーザー情報を初期値として使用し、クライアントサイドの認証状態も監視します。
-  // これにより、初回読み込み時のチラつきを防ぎつつ、リアルタイムの認証状態の変更にも対応します。
-  const { user: clientUser, loading: authLoading } = useAuthState();
-  // サーバーからのユーザー情報とクライアントの認証状態を正規化してマージ
-  const user = toAuthUser(clientUser) || toAuthUser(serverUser);
-
-  const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
-  const familyId = userProfile?.familyId;
-
-  const { transactions, setTransactions, loading: transactionsLoading } = useTransactions(familyId, user?.uid);
-  const { goals, loading: goalsLoading } = useGoals(familyId);
-  const { personalBudget, sharedBudget, setPersonalBudget, setSharedBudget, loading: budgetLoading } = useBudget(familyId, new Date(), user?.uid);
-  const { rules, loading: rulesLoading } = useRules(user?.uid);
-  const { plaidAccounts, loading: accountsLoading } = useInvestmentPortfolio(familyId, user?.uid);
-  const { notifications, loading: notificationsLoading } = useNotifications(familyId, user?.uid);
-
-  const [voiceOpen, setVoiceOpen] = useState(false);
-  const [ocrOpen, setOcrOpen] = useState(false);
-  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
-  const [goalFormOpen, setGoalFormOpen] = useState(false);
-  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormValues> | undefined>(undefined);
-  const [onboardingComplete, setOnboardingComplete] = useState(true);
-
+  const { notifications, setVoiceOpen } = useAppData();
   const isOnline = useOnlineStatus();
-  const { toast } = useToast();
 
-  useEffect(() => {
-    const syncPendingTransactions = async () => {
-        if (!isOnline || !familyId || !user || !rules || !userProfile) return;
-        const pendingTxs = JSON.parse(localStorage.getItem('pending_transactions') || '[]');
-        if (pendingTxs.length === 0) return;
-
-        toast({ title: 'オンラインに復帰しました', description: `予約された${pendingTxs.length}件の取引を同期中です...` });
-        let successCount = 0;
-        const failedTxs = [];
-
-        for (const tx of pendingTxs) {
-            try {
-                const newTxData: Omit<Transaction, 'id' | 'hash'> = {
-                    amount: tx.amount,
-                    originalAmount: tx.amount,
-                    originalCurrency: userProfile.primaryCurrency || 'JPY',
-                    merchant: tx.merchant,
-                    bookedAt: new Date(tx.bookedAt),
-                    category: { major: tx.categoryMajor },
-                    source: 'manual-offline',
-                    scope: tx.scope,
-                    familyId: tx.familyId,
-                    createdBy: tx.userId,
-                    createdAt: new Date(tx.clientTimestamp),
-                    updatedAt: new Date(tx.clientTimestamp),
-                };
-                const ruledTxData = applyRulesToTransaction(newTxData as Transaction, rules);
-                const hash = createTransactionHash(ruledTxData);
-                const finalTxData = { ...ruledTxData, hash, id: `offline_${Date.now()}` };
-
-                const txCollectionRef = collection(db, `families/${familyId}/transactions`).withConverter(txConverter);
-                await addDoc(txCollectionRef, finalTxData);
-                successCount++;
-            } catch (error) {
-                console.error("Failed to sync pending transaction:", error);
-                failedTxs.push(tx);
-            }
-        }
-
-        if (failedTxs.length > 0) {
-            localStorage.setItem('pending_transactions', JSON.stringify(failedTxs));
-            showErrorToast(new Error(`${failedTxs.length}件の取引の同期に失敗しました。後ほど再試行されます。`));
-        } else {
-            localStorage.removeItem('pending_transactions');
-            toast({ title: '同期が完了しました', description: `${successCount}件の取引を保存しました。` });
-        }
-    };
-
-    void syncPendingTransactions();
-  }, [isOnline, familyId, user, rules, toast, userProfile, setTransactions]);
-
-  // authLoadingは初回読み込みでは常にfalseになるため、他のローディング状態のみを考慮します。
-  const loading = profileLoading || transactionsLoading || goalsLoading || budgetLoading || rulesLoading || accountsLoading || notificationsLoading;
-
-  const currentBalance = useMemo(() => {
-    return plaidAccounts.reduce((sum, acc) => sum + acc.currentBalance, 0);
-  }, [plaidAccounts]);
-
-  useEffect(() => {
-    if (userProfile) {
-      setOnboardingComplete(userProfile.hasCompletedOnboarding ?? false);
-    }
-  }, [userProfile]);
-
-  useEffect(() => {
-    // clientUserがnullになり（例：セッションがクライアントサイドで失効）、
-    // かつauthLoadingが完了した場合にリダイレクトします。
-    if (!authLoading && !clientUser) {
-      router.push('/entry');
-    }
-  }, [clientUser, authLoading, router]);
-
-  const handleCompleteOnboarding = async () => {
-    if (!user) return;
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, { hasCompletedOnboarding: true });
-      setOnboardingComplete(true);
-    } catch (e) {
-      console.error("Failed to update onboarding status:", e);
-      showErrorToast(new Error("チュートリアル状態の更新に失敗しました。"));
-    }
-  };
-
-  const handleOpenTransactionForm = (initialData?: Partial<TransactionFormValues>) => {
-    setTransactionInitialData(initialData);
-    setTransactionFormOpen(true);
-  };
-
-  const handleNavigation = (path: string) => {
-    router.push(path);
-  };
-
-  const activeTab = useMemo(() => {
-    const path = pathname.split('/').pop() || 'home';
-    if (['transactions', 'budget', 'goals', 'rules', 'profile', 'link', 'subscriptions', 'reviews', ''].includes(path)) {
-        return path === '' ? 'home' : path;
+  const activeTab = React.useMemo(() => {
+    const path = pathname.split('/').pop() || 'dashboard';
+    if (
+      [
+        'transactions',
+        'budget',
+        'goals',
+        'rules',
+        'profile',
+        'link',
+        'subscriptions',
+        'reviews',
+        'dashboard',
+      ].includes(path)
+    ) {
+      return path === 'dashboard' ? 'home' : path;
     }
     return 'home';
   }, [pathname]);
 
-  if (loading || !user) { // userオブジェクトが利用可能になるまでローディング表示
-    return (
-      <div className="flex flex-col h-screen">
-        <header className="p-4 border-b"><Skeleton className="h-8 w-32" /></header>
-        <main className="flex-1 p-4"><Skeleton className="h-32 w-full mb-4" /><Skeleton className="h-64 w-full" /></main>
-        <footer className="p-4 border-t"><div className="flex justify-around"><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-16 w-16 rounded-full relative -top-4" /><Skeleton className="h-10 w-10 rounded-full" /><Skeleton className="h-10 w-10 rounded-full" /></div></footer>
-      </div>
-    );
-  }
+  const handleNavigation = (path: string) => {
+    const finalPath = path === 'home' ? '/dashboard' : `/dashboard/${path}`;
+    router.push(finalPath);
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader onOcr={() => setOcrOpen(true)} notifications={notifications} />
+      <AppHeader onOcr={() => {}} notifications={notifications} />
       {!isOnline && <OfflineBanner />}
-      <main className="flex-1 pb-24 pt-16">
-        {Children.map(children, child =>
-            isValidElement(child)
-              ? cloneElement(child, {
-                  user,
-                  familyId,
-                  transactions,
-                  goals,
-                  rules,
-                  accounts: plaidAccounts,
-                  currentBalance,
-                  personalBudget,
-                  sharedBudget,
-                  setPersonalBudget,
-                  setSharedBudget,
-                  loading,
-                  onOpenTransactionForm: handleOpenTransactionForm,
-                } as InjectedPageProps)
-              : child
-          )}
-      </main>
+      <main className="flex-1 pb-24 pt-16">{children}</main>
       <BottomNav
         tab={activeTab}
-        setTab={(tab) => handleNavigation(`/${tab === 'home' ? '' : tab}`)}
+        setTab={handleNavigation}
         onMic={() => setVoiceOpen(true)}
       />
-      <VoiceDialog 
-        open={voiceOpen} 
-        onOpenChange={setVoiceOpen} 
-        onComplete={(data) => {
-            setVoiceOpen(false);
-            handleOpenTransactionForm(data);
-        }}
-        transactions={transactions || []}
-        budget={personalBudget}
-        goals={goals || []}
-      />
-      <OcrScanner
-        open={ocrOpen}
-        onOpenChange={setOcrOpen}
-        onComplete={(data) => {
-            setOcrOpen(false);
-            handleOpenTransactionForm(data);
-        }}
-      />
-      <TransactionForm 
-        open={transactionFormOpen} 
-        onOpenChange={setTransactionFormOpen}
-        familyId={familyId!}
-        user={user}
-        primaryCurrency={userProfile?.primaryCurrency || 'JPY'}
-        rules={rules || []}
-        initialData={transactionInitialData}
-        onTransactionAction={(newTx) => {
-            setTransactions(prev => [newTx, ...(prev || [])].sort((a, b) => b.bookedAt.getTime() - a.bookedAt.getTime()));
-        }}
-      />
-      <GoalForm
-        open={goalFormOpen}
-        onOpenChange={setGoalFormOpen}
-        familyId={familyId}
-        user={user}
-        onGoalAction={(_newGoal) => {}}
-      />
-      {!onboardingComplete && (
-        <InteractiveTutorial
-          onStartOcr={() => setOcrOpen(true)}
-          onComplete={handleCompleteOnboarding}
-        />
-      )}
     </div>
+  );
+}
+
+export function AppContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <AppDataProvider>
+      <AppContainerLayout>{children}</AppContainerLayout>
+    </AppDataProvider>
   );
 }

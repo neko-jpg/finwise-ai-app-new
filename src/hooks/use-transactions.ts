@@ -28,22 +28,21 @@ const fromFirestore = (doc: any): Transaction => {
   } as Transaction;
 };
 
-export function useTransactions() {
-  const { user } = useAuth();
+export function useTransactions(familyId?: string, userId?: string) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!familyId) {
       setTransactions([]);
       setLoading(false);
       return;
     }
 
-    const q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', user.uid),
-    );
+    const baseCollection = collection(db, 'families', familyId, 'transactions');
+    const q = userId
+      ? query(baseCollection, where('userId', '==', userId))
+      : query(baseCollection);
 
     const unsubscribe = onSnapshot(
       q,
@@ -59,33 +58,44 @@ export function useTransactions() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [familyId, userId]);
 
   const createTransaction = useCallback(
-    async (transaction: Omit<Transaction, 'id'>) => {
-      if (!user) return;
-      await addDoc(collection(db, 'transactions'), {
+    async (transaction: Omit<Transaction, 'id' | 'hash'>) => {
+      if (!familyId) {
+        throw new Error('Family ID is not available to create transaction.');
+      }
+      const coll = collection(db, 'families', familyId, 'transactions');
+      await addDoc(coll, {
         ...transaction,
-        userId: user.uid,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
     },
-    [user],
+    [familyId],
   );
 
   const updateTransaction = useCallback(
     async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
-      const transactionDoc = doc(db, 'transactions', id);
+      if (!familyId) {
+        throw new Error('Family ID is not available to update transaction.');
+      }
+      const transactionDoc = doc(db, 'families', familyId, 'transactions', id);
       await updateDoc(transactionDoc, { ...updates, updatedAt: new Date() });
     },
-    [],
+    [familyId],
   );
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    const transactionDoc = doc(db, 'transactions', id);
-    await deleteDoc(transactionDoc);
-  }, []);
+  const deleteTransaction = useCallback(
+    async (id: string) => {
+      if (!familyId) {
+        throw new Error('Family ID is not available to delete transaction.');
+      }
+      const transactionDoc = doc(db, 'families', familyId, 'transactions', id);
+      await deleteDoc(transactionDoc);
+    },
+    [familyId],
+  );
 
   return {
     transactions,
@@ -93,5 +103,6 @@ export function useTransactions() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    setTransactions, // Manually update state after offline sync
   };
 }

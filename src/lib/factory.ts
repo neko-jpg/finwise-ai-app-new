@@ -1,4 +1,4 @@
-import { TransactionSchema, type Transaction, GoalSchema, type Goal } from "@/lib/domain";
+import { type Transaction, GoalSchema, type Goal } from "@/lib/domain";
 import { faker } from '@faker-js/faker';
 
 /**
@@ -13,6 +13,7 @@ export function makeTransaction(partial: Partial<Transaction> = {}): Transaction
 
   const base: Transaction = {
     id: partial.id ?? faker.string.uuid(),
+    userId: partial.userId ?? 'dev-user',
     familyId: partial.familyId ?? 'dev-family',
     amount: amount,
     originalAmount: partial.originalAmount ?? amount,
@@ -38,11 +39,8 @@ export function makeTransaction(partial: Partial<Transaction> = {}): Transaction
     plaidAccountId: partial.plaidAccountId,
   };
 
-  // In development, we validate to ensure our factories are correct.
-  // In production, we can skip this for performance.
-  if (process.env.NODE_ENV !== "production") {
-    return TransactionSchema.parse(base);
-  }
+  // Validation is removed as Transaction is now an interface.
+  // The factory is trusted to create valid objects.
   return base;
 }
 

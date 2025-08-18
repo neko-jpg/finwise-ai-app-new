@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Timestamp, FirestoreDataConverter, DocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
 import {
-    TransactionSchema, type Transaction,
+    type Transaction,
     FamilySchema, type Family,
     AppUserSchema, type AppUser,
     BudgetSchema, type Budget
@@ -16,7 +16,9 @@ const txFromDoc = (doc: DocumentSnapshot): Transaction => {
             rawData[field] = rawData[field].toDate();
         }
     }
-    return TransactionSchema.parse(rawData);
+    // Zod スキーマがなくなったため、型キャストで対応します。
+    // Firestoreからのデータは信頼できるものと仮定します。
+    return rawData as Transaction;
 };
 
 const txToDoc = (tx: Partial<Transaction>): Record<string, any> => {
