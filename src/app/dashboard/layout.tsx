@@ -3,28 +3,28 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AppContainer } from '@/components/finwise/app-container';
+import AppContainer from '@/components/finwise/app-container';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // 読み込みが完了し、ユーザーが未認証であればエントリーページにリダイレクト
-    if (!loading && !user) {
-      router.push('/entry');
+    // AuthProviderでloadingは処理済みなので、ここではuserの有無だけチェックすればOK
+    if (!user) {
+      router.replace('/entry');
     }
-  }, [user, loading, router]);
+  }, [user, router]);
 
-  // 読み込み中、またはユーザーがいない場合はローディング画面などを表示
-  if (loading || !user) {
-    return <div>Loading...</div>; // または適切なローディングコンポーネント
+  // user が存在する場合のみ、ページ内容を表示する
+  if (user) {
+    return <AppContainer>{children}</AppContainer>;
   }
 
-  // ユーザーがいればダッシュボードの内容を表示
-  return <AppContainer>{children}</AppContainer>;
+  // user がいない場合（リダイレクト待ち）は何も表示しない
+  return null;
 }
