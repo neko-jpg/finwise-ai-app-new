@@ -10,10 +10,23 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Transaction } from '@/lib/domain';
+
+// Firestoreのデータをフロントエンドの型に変換するヘルパー関数
+const fromFirestore = (doc: any): Transaction => {
+  const data = doc.data();
+  return {
+    ...data,
+    id: doc.id,
+    bookedAt: (data.bookedAt as Timestamp).toDate(),
+    createdAt: (data.createdAt as Timestamp).toDate(),
+    updatedAt: (data.updatedAt as Timestamp).toDate(),
+  } as Transaction;
+};
 
 export function useTransactions() {
   const { user } = useAuth();
@@ -22,6 +35,7 @@ export function useTransactions() {
 
   useEffect(() => {
     if (!user) {
+      setTransactions([]);
       setLoading(false);
       return;
     }
@@ -34,10 +48,7 @@ export function useTransactions() {
     const unsubscribe = onSnapshot(
       q,
       (querySnapshot) => {
-        const transactionsData: Transaction[] = [];
-        querySnapshot.forEach((doc) => {
-          transactionsData.push({ id: doc.id, ...doc.data() } as Transaction);
-        });
+        const transactionsData = querySnapshot.docs.map(fromFirestore);
         setTransactions(transactionsData);
         setLoading(false);
       },
@@ -56,15 +67,17 @@ export function useTransactions() {
       await addDoc(collection(db, 'transactions'), {
         ...transaction,
         userId: user.uid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     },
     [user],
   );
 
   const updateTransaction = useCallback(
-    async (id: string, updates: Partial<Transaction>) => {
+    async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
       const transactionDoc = doc(db, 'transactions', id);
-      await updateDoc(transactionDoc, updates);
+      await updateDoc(transactionDoc, { ...updates, updatedAt: new Date() });
     },
     [],
   );
@@ -74,8 +87,6 @@ export function useTransactions() {
     await deleteDoc(transactionDoc);
   }, []);
 
-  // ★★★ 修正点 ★★★
-  // create, update, delete関数を return するように変更
   return {
     transactions,
     loading,
