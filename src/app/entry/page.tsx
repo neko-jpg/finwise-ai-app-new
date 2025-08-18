@@ -14,7 +14,7 @@ export default function EntryPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/app');
+      router.replace('/');
     }
   }, [user, loading, router]);
   
@@ -42,7 +42,7 @@ export default function EntryPage() {
             <AuthDialog 
                 open={dialogOpen} 
                 onOpenChange={setDialogOpen} 
-                onSignin={() => router.replace('/app')}
+                onSignin={() => router.replace('/')}
             />
         </div>
       </main>

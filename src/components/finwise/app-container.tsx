@@ -209,7 +209,7 @@ export function AppContainer({ children }: AppContainerProps) {
       </main>
       <BottomNav
         tab={activeTab}
-        setTab={(tab) => handleNavigation(`/app/${tab === 'home' ? '' : tab}`)}
+        setTab={(tab) => handleNavigation(`/${tab === 'home' ? '' : tab}`)}
         onMic={() => setVoiceOpen(true)}
       />
       <VoiceDialog 

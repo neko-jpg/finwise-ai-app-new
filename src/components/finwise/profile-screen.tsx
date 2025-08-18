@@ -61,7 +61,7 @@ export function ProfileScreen({}: ProfileScreenProps) {
             </div>
              <div className="flex items-center justify-between">
                 <p>家族の管理</p>
-                <Button variant="outline" onClick={() => router.push('/app/family')}>移動</Button>
+                <Button variant="outline" onClick={() => router.push('/family')}>移動</Button>
             </div>
         </CardContent>
       </Card>
