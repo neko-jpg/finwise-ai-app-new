@@ -18,8 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/client';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Goal } from '@/lib/domain';
-import type { User } from 'firebase/auth';
+import type { Goal, AuthUser } from '@/lib/domain';
+// import type { User } from 'firebase/auth';
 
 const FormSchema = z.object({
   name: z.string().min(1, '目標名は必須です。').max(50, '50文字以内で入力してください。'),
@@ -36,7 +36,7 @@ interface GoalFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     familyId: string | undefined;
-    user: User | null;
+    user: AuthUser | null;
     onGoalAction: (goal: Goal) => void;
 }
 

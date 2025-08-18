@@ -27,11 +27,40 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { txConverter } from "@/lib/repo";
-import { User } from "firebase/auth";
-import { DecodedIdToken } from "firebase-admin/auth";
+// import { User } from "firebase/auth";
+// import { DecodedIdToken } from "firebase-admin/auth";
+import type { User as ClientUser } from 'firebase/auth';
+import type { DecodedIdToken } from 'firebase-admin/auth';
+import type { AuthUser } from '@/lib/domain';
+
+// どちらの入力でも共通 AuthUser に正規化
+function toAuthUser(u: ClientUser | DecodedIdToken | null | undefined): AuthUser | null {
+  if (!u) return null;
+
+  // クライアントUser（firebase/auth）
+  if ('providerData' in (u as any)) {
+    const cu = u as ClientUser;
+    return {
+      uid: cu.uid,
+      email: cu.email ?? null,
+      displayName: cu.displayName ?? null,
+      photoURL: cu.photoURL ?? null,
+    };
+  }
+
+  // サーバDecodedIdToken（firebase-admin）
+  const su = u as DecodedIdToken;
+  return {
+    uid: su.uid,
+    email: su.email ?? null,
+    displayName: su.name ?? null,
+    photoURL: su.picture ?? null,
+  };
+}
+
 
 interface InjectedPageProps {
-  user: User | DecodedIdToken;
+  user: AuthUser;
   familyId?: string;
   transactions: Transaction[];
   goals: Goal[];
@@ -58,7 +87,8 @@ export function AppContainer({ children, serverUser }: AppContainerProps) {
   // サーバーから渡されたユーザー情報を初期値として使用し、クライアントサイドの認証状態も監視します。
   // これにより、初回読み込み時のチラつきを防ぎつつ、リアルタイムの認証状態の変更にも対応します。
   const { user: clientUser, loading: authLoading } = useAuthState();
-  const user = clientUser || serverUser;
+  // サーバーからのユーザー情報とクライアントの認証状態を正規化してマージ
+  const user = toAuthUser(clientUser) || toAuthUser(serverUser);
 
   const { userProfile, loading: profileLoading } = useUserProfile(user?.uid);
   const familyId = userProfile?.familyId;

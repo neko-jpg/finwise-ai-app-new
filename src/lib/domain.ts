@@ -3,6 +3,15 @@ import type { LucideIcon } from 'lucide-react';
 
 // --- Core Schemas ---
 
+// This is a "thin" user type that abstracts the differences between
+// Firebase client User and admin DecodedIdToken.
+export type AuthUser = {
+  uid: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+};
+
 export const AppUserSchema = z.object({
   uid: z.string(),
   familyId: z.string().optional(),
